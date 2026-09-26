@@ -4,6 +4,7 @@
 単一ファイル `index.html`（オフライン動作・ビルド不要・外部通信なし※Jev remote 設定時のみ送信）。
 
 ## 起動
+- 公開版（GitHub Pages）: https://maro515.github.io/ddx-navigator/ （`main` の `index.html` をそのまま配信。音声入力・書き出しも使える）
 - 公開版（Artifact）: https://claude.ai/artifact/PiJ63YtsRRdiyKjEw2Rjcu （`dist/artifact.html` を再公開で更新。ビューア内ではファイル書き出しが無効）
 - `index.html` をブラウザで開く（スマホなら「ホーム画面に追加」でアプリ様に動作）
 - 開発プレビュー: ルートの `.claude/launch.json` の `ddx-navigator`（port 9021）
