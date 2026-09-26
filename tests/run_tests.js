@@ -178,6 +178,21 @@ check('入力順序不変性 (Top10/Next5/hash 同一)', orderFail === 0, `${ord
   const has = (f, st, v) => e1.items.some(i => i.feature_id === f && i.status === st && (v === undefined || i.value_code === v));
   check('画像: CT の腸管拡張/ニボー→ct sbo、否定所見は登録せず、胆嚢結石は胆石へ', has('ct', 'present', 'sbo') && !e1.items.some(i => i.feature_id === 'xray') && !has('ct', 'absent') && !has('us', 'present', 'appendix') && !has('ct', 'present', 'stone') && has('gallstone_hx', 'present'), JSON.stringify(e1.items.map(i => i.feature_id + ':' + i.status + ':' + i.value_code)));
 }
+/* 9d. LLM ツールスキーマ: nullable フィールドに enum を付けない（API が 400 を返す） */
+{
+  const walk = (o, bad) => { if (!o || typeof o !== 'object') return; if (Array.isArray(o.type) && o.type.includes('null') && o.enum) bad.push(o); for (const k in o) walk(o[k], bad); return bad; };
+  // TOOL() は非公開なので validate 経由で schema を得られない → Extract 内部の SYSTEM/TOOL は直接触れないため文字列検査
+  const src = require('fs').readFileSync(path.join(__dirname, '..', 'build', '65_extract.js'), 'utf8');
+  check('LLM スキーマ: enum と null 型の併用なし', !/enum:\s*\[[^\]]*null/.test(src));
+  const s = new D.ClinicalState({ context: { age_band: '18-29', sex: 'female', pregnancy: 'no' } });
+  s.add({ feature_id: 'abd_pain', value_code: 'epi', severity: 'moderate', time_context: { elapsed_bucket: 'm_1_3', trend: 'fluctuating' } });
+  s.add({ feature_id: 'vomiting', value_code: 'bilious', time_context: { elapsed_bucket: 'm_1_3' } }); s.add({ feature_id: 'weight_loss', status: 'present', time_context: { elapsed_bucket: 'months' } });
+  s.add({ feature_id: 'pain_char', value_code: 'postprandial' });
+  const r = D.runSync(s); const rank = r.ddx.likely.findIndex(x => x.id === 'sma_syndrome') + 1;
+  check('SMA症候群: 慢性心窩部痛＋胆汁性嘔吐＋体重減少＋食後増悪で Top5 に入る', rank > 0 && rank <= 5, 'rank ' + rank);
+  const e = D.Extract.local('CTで大動脈と上腸間膜動脈の角が狭小、十二指腸の圧排あり。');
+  check('画像: SMA症候群の CT 所見 → ct duodenal_compression（虚血ではない）', e.items.some(i => i.feature_id === 'ct' && i.value_code === 'duodenal_compression') && !e.items.some(i => i.value_code === 'ischemia'), JSON.stringify(e.items.map(i => i.feature_id + ':' + i.value_code)));
+}
 /* 10. Jev 障害時の fallback（remote が失敗しても Safety/baseline は継続） */
 (async () => {
   const s = new D.ClinicalState({ context: { age_band: '30-39', sex: 'male', pregnancy: 'no' } });

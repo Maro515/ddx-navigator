@@ -7,7 +7,7 @@
  * ============================================================ */
 (function (g) {
   const KB = {};
-  KB.version = 'abd-pack-0.2.0';
+  KB.version = 'abd-pack-0.2.1';
   KB.scope = { label: '成人の急性腹痛・急性下痢（外来/救急）', min_age_band: '18-29' };
 
   /* ---------- 時間バケット ---------- */
@@ -96,12 +96,12 @@
     bs: [['normal', '正常'], ['hyper', '亢進/金属音'], ['hypo', '減弱'], ['absent', '消失']],
     xray: [['normal', '異常なし'], ['free_air', 'free air'], ['air_fluid', '鏡面像'], ['dilated_loops', '腸管拡張']],
     us: [['normal', '異常なし'], ['appendix', '虫垂腫大'], ['gb', '胆嚢腫大/壁肥厚/結石'], ['cbd_dilated', '総胆管拡張'], ['free_fluid', '腹水/骨盤内液体'], ['hydro', '水腎症'], ['aaa', '大動脈瘤'], ['adnexal', '付属器腫瘤']],
-    ct: [['normal', '異常なし'], ['appendicitis', '虫垂炎'], ['diverticulitis', '憩室炎'], ['free_air', 'free air'], ['sbo', '腸閉塞'], ['ischemia', '腸管虚血所見'], ['pancreatitis', '膵炎'], ['aortic', 'AAA破裂/解離'], ['stone', '尿管結石'], ['colitis', '大腸炎'], ['cholecystitis', '胆嚢炎/胆管炎'], ['abscess', '膿瘍'], ['hernia', '嵌頓ヘルニア'], ['adnexal', '付属器腫大/捻転'], ['volvulus', '捻転(軸捻)']],
+    ct: [['normal', '異常なし'], ['appendicitis', '虫垂炎'], ['diverticulitis', '憩室炎'], ['free_air', 'free air'], ['sbo', '腸閉塞'], ['ischemia', '腸管虚血所見'], ['pancreatitis', '膵炎'], ['aortic', 'AAA破裂/解離'], ['stone', '尿管結石'], ['colitis', '大腸炎'], ['cholecystitis', '胆嚢炎/胆管炎'], ['abscess', '膿瘍'], ['hernia', '嵌頓ヘルニア'], ['adnexal', '付属器腫大/捻転'], ['volvulus', '捻転(軸捻)'], ['duodenal_compression', '十二指腸圧排/大動脈-SMA角狭小（SMA症候群）']],
     scrot: [['normal', '正常'], ['tender_swollen', '圧痛/腫脹']],
     vom: [['nonbilious', '非胆汁性'], ['bilious', '胆汁性'], ['hematemesis', '吐血'], ['coffee_ground', 'コーヒー残渣様']],
     dia: [['watery', '水様'], ['bloody', '血性'], ['mucous', '粘液性']],
     onsetc: [['sudden', '突然(秒〜数分で最大)'], ['rapid', '急速(数十分)'], ['gradual', '緩徐(数時間〜)']],
-    pchar: [['colicky', '疝痛(波がある)'], ['constant', '持続性'], ['migrating_rlq', '臍周囲→右下腹部へ移動'], ['radiate_back', '背部へ放散'], ['radiate_shoulder', '肩へ放散'], ['radiate_groin', '鼠径部へ放散']],
+    pchar: [['colicky', '疝痛(波がある)'], ['constant', '持続性'], ['migrating_rlq', '臍周囲→右下腹部へ移動'], ['radiate_back', '背部へ放散'], ['radiate_shoulder', '肩へ放散'], ['radiate_groin', '鼠径部へ放散'], ['postprandial', '食後に増悪']],
     gib: [['melena', '黒色便'], ['hematochezia', '血便']]
   };
   const vs = arr => arr.map(([code, label]) => ({ code, label }));
@@ -268,6 +268,9 @@
     clear: ['xray', 'distension', 'ct'], note: '重症大腸炎+全身毒性。腹部X線で結腸径' });
   dis('testicular_torsion', '精巣捻転', { urgency: 'emergent', mnm: true, prior: 0.003, onset: { minutes: 1, hours: 1, days: 0.3, weeks: 0.02, months: 0.01, unknown: 0.5 }, trend: {},
     requires: { sex: 'male', age_max: '30-39' }, clear: ['scrotal_exam', 'scrotal_pain'], note: '若年男性の下腹部痛では陰嚢診察を省略しない' });
+  // オーナー要望で追加（2026-09-26）。急性腹症の主対象外だが、亜急性〜慢性の心窩部痛＋胆汁性嘔吐＋体重減少の鑑別として保持。v0.1 ドラフト値
+  dis('sma_syndrome', '上腸間膜動脈症候群（SMA症候群）', { prior: 0.003, onset: { minutes: 0.05, hours: 0.2, days: 0.6, weeks: 1, months: 1, unknown: 0.6 }, trend: { fluctuating: 1.3, worsening: 1.1 },
+    mult: [{ when: { age_max: '30-39' }, x: 2 }] });
   dis('nonspecific_ap', '非特異的腹痛/便秘', { prior: 0.15, onset: { minutes: 0.5, hours: 0.8, days: 1, weeks: 1, months: 0.8, unknown: 0.8 }, trend: BENIGN_TREND });
   dis('dehydration', '脱水/電解質異常（併存病態）', { prior: 0.10, comorbid: true, onset: { minutes: 0.3, hours: 0.8, days: 1, weeks: 0.5, months: 0.2, unknown: 0.7 } });
 
@@ -408,6 +411,11 @@
   // 精巣捻転
   R('testicular_torsion', 'scrotal_pain', null, 0.90, 0.98, { key: true }); R('testicular_torsion', 'scrotal_exam', ['tender_swollen'], 0.92, 0.98, { key: true }); R('testicular_torsion', 'abd_pain', ['supra', 'rlq', 'llq'], 0.60, 0.50);
   R('testicular_torsion', 'vomiting', null, 0.50, 0.55); R('testicular_torsion', 'pain_onset_char', ['sudden'], 0.75, 0.82);
+  // SMA症候群（ドラフト値）
+  R('sma_syndrome', 'abd_pain', ['epi', 'umb'], 0.85, 0.55); R('sma_syndrome', 'pain_char', ['postprandial'], 0.70, 0.85); R('sma_syndrome', 'vomiting', ['bilious'], 0.60, 0.88); R('sma_syndrome', 'vomiting', null, 0.80, 0.55);
+  R('sma_syndrome', 'weight_loss', null, 0.65, 0.90); R('sma_syndrome', 'anorexia', null, 0.60, 0.50); R('sma_syndrome', 'nausea', null, 0.70, 0.45); R('sma_syndrome', 'distension', null, 0.40, 0.80);
+  R('sma_syndrome', 'temp', FEV, 0.05, 0.65); R('sma_syndrome', 'wbc', ['gt15'], 0.05, 0.80); R('sma_syndrome', 'crp', ['gt10'], 0.05, 0.85); R('sma_syndrome', 'rebound_guarding', null, 0.03, 0.75);
+  R('sma_syndrome', 'ct', ['duodenal_compression'], 0.90, 0.98, { key: true }); R('sma_syndrome', 'ct', ['sbo'], 0.30, 0.90);
   // 非特異的腹痛/便秘
   R('nonspecific_ap', 'abd_pain', null, 0.90, 0.20); R('nonspecific_ap', 'rebound_guarding', null, 0.02, 0.75); R('nonspecific_ap', 'rigidity', null, 0.005, 0.97); R('nonspecific_ap', 'temp', HIFEV, 0.03, 0.70);
   R('nonspecific_ap', 'wbc', ['gt15'], 0.04, 0.80); R('nonspecific_ap', 'crp', ['lt1'], 0.75, 0.55); R('nonspecific_ap', 'obstipation', null, 0.30, 0.85); R('nonspecific_ap', 'ct', ['normal'], 0.90, 0.60, { key: true });

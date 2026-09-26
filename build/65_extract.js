@@ -65,8 +65,8 @@ ${catalogText()}`;
       type: 'object', additionalProperties: false, required: ['items', 'context', 'unmapped'],
       properties: {
         items: { type: 'array', items: { type: 'object', additionalProperties: false, required: ['feature_id', 'value_code', 'status', 'elapsed_bucket', 'trend', 'severity', 'quote'],
-          properties: { feature_id: { type: 'string' }, value_code: { type: ['string', 'null'] }, status: { type: 'string', enum: ['present', 'absent', 'unknown'] }, elapsed_bucket: { type: ['string', 'null'] }, trend: { type: ['string', 'null'], enum: ['worsening', 'stable', 'improving', 'fluctuating', 'resolved', null] }, severity: { type: ['string', 'null'], enum: ['mild', 'moderate', 'severe', null] }, quote: { type: 'string' } } } },
-        context: { type: 'object', additionalProperties: false, required: ['age_band', 'sex', 'pregnancy'], properties: { age_band: { type: ['string', 'null'] }, sex: { type: ['string', 'null'], enum: ['female', 'male', null] }, pregnancy: { type: ['string', 'null'], enum: ['no', 'possible', 'confirmed', 'unknown', null] } } },
+          properties: { feature_id: { type: 'string' }, value_code: { type: ['string', 'null'] }, status: { type: 'string', enum: ['present', 'absent', 'unknown'] }, elapsed_bucket: { type: ['string', 'null'], description: '時間バケットのコード。不明なら null' }, trend: { type: ['string', 'null'], description: 'worsening | stable | improving | fluctuating | resolved | null' }, severity: { type: ['string', 'null'], description: 'mild | moderate | severe | null（主訴のみ）' }, quote: { type: 'string' } } } },
+        context: { type: 'object', additionalProperties: false, required: ['age_band', 'sex', 'pregnancy'], properties: { age_band: { type: ['string', 'null'] }, sex: { type: ['string', 'null'], description: 'female | male | null' }, pregnancy: { type: ['string', 'null'], description: 'no | possible | confirmed | unknown | null' } } },
         unmapped: { type: 'array', items: { type: 'string' } }
       }
     }
@@ -81,7 +81,9 @@ ${catalogText()}`;
       if (f.values && it.status === 'present') { if (!value || !f.values.some(v => v.code === value)) continue; }
       if (!f.values) value = null;
       const eb = it.elapsed_bucket && kb.time.hours[it.elapsed_bucket] !== undefined ? it.elapsed_bucket : (f.anchor === 'none' ? null : 'unknown');
-      items.push({ feature_id: f.id, status: ['present', 'absent', 'unknown'].includes(it.status) ? it.status : 'present', value_code: value, severity: f.sev ? (it.severity || null) : null, time_context: { elapsed_bucket: f.anchor === 'none' ? null : eb, trend: it.trend || 'unknown' }, quote: it.quote || '' });
+      const trend = ['worsening', 'stable', 'improving', 'fluctuating', 'resolved'].includes(it.trend) ? it.trend : 'unknown';
+      const sev = ['mild', 'moderate', 'severe'].includes(it.severity) ? it.severity : null;
+      items.push({ feature_id: f.id, status: ['present', 'absent', 'unknown'].includes(it.status) ? it.status : 'present', value_code: value, severity: f.sev ? sev : null, time_context: { elapsed_bucket: f.anchor === 'none' ? null : eb, trend }, quote: it.quote || '' });
     }
     const ctx = {}; const c = raw.context || {};
     if (c.age_band && kb.ageIndex[c.age_band] !== undefined) ctx.age_band = c.age_band;
@@ -135,7 +137,7 @@ ${catalogText()}`;
     ['dysuria', '排尿時痛|排尿痛|頻尿|残尿感', null], ['vaginal_bleeding', '不正(性器)?出血|性器出血', null], ['jaundice_sub', '黄疸|眼球黄染', null], ['weight_loss', '体重(減少|が減)', null],
     ['chest_sx', '胸痛|胸が苦しい|呼吸苦|息切れ|冷汗', null], ['syncope', '失神|気を失|前失神|意識消失', null], ['sick_contact_food', '周囲に同(様|じ)症状|家族も|食中毒|生もの|生肉|生牡蠣|生ガキ', null], ['scrotal_pain', '陰嚢(の)?痛|精巣(の)?痛|睾丸', null],
     ['pain_onset_char', '突然|急に|突発', 'sudden'], ['pain_onset_char', '徐々に|だんだん|次第に', 'gradual'],
-    ['pain_char', '疝痛|波がある|間欠的|差し込む', 'colicky'], ['pain_char', '持続(性|的)(の)?痛|ずっと痛', 'constant'], ['pain_char', '臍(周囲)?から右下|移動', 'migrating_rlq'], ['pain_char', '背中に(放散|抜け)|背部(へ|に)放散|背部痛を伴', 'radiate_back'], ['pain_char', '肩に(放散|抜け)', 'radiate_shoulder'], ['pain_char', '鼠径(部)?に(放散|抜け)|陰部に放散', 'radiate_groin'],
+    ['pain_char', '食後(に|の)?(痛|増悪|悪化)|食事(で|後)(痛|増悪)', 'postprandial'], ['pain_char', '疝痛|波がある|間欠的|差し込む', 'colicky'], ['pain_char', '持続(性|的)(の)?痛|ずっと痛', 'constant'], ['pain_char', '臍(周囲)?から右下|移動', 'migrating_rlq'], ['pain_char', '背中に(放散|抜け)|背部(へ|に)放散|背部痛を伴', 'radiate_back'], ['pain_char', '肩に(放散|抜け)', 'radiate_shoulder'], ['pain_char', '鼠径(部)?に(放散|抜け)|陰部に放散', 'radiate_groin'],
     ['pain_worse_moving', '体動で(増悪|悪化)|動くと痛|振動で痛|歩くと痛|咳で痛', null],
     ['lmp_delayed', '月経(が)?(遅れ|遅延)|生理が(遅れ|来て)', null], ['prior_abd_surgery', '開腹|腹部手術|手術歴|(虫垂|胆嚢|胃|大腸|子宮)(切除|摘出)|帝王切開', null], ['alcohol_heavy', '大酒|多量飲酒|アルコール(多飲|依存)|毎日飲酒|飲酒歴', null],
     ['nsaid_aspirin', 'NSAID|ロキソ|ロキソニン|イブプロフェン|ボルタレン|アスピリン|バファリン|鎮痛薬', null], ['anticoag', '抗凝固|ワーファリン|ワルファリン|DOAC|エリキュース|イグザレルト|リクシアナ|プラザキサ|抗血小板|クロピドグレル', null],
@@ -160,7 +162,7 @@ ${catalogText()}`;
     ['us', '(エコー|超音波|US).*(虫垂(腫大|腫脹)|虫垂炎)', 'appendix'], ['us', '(エコー|超音波|US).*(胆嚢(壁)?肥厚|胆嚢腫大|胆嚢結石|sonographic)', 'gb'], ['us', '(エコー|超音波|US).*(総胆管拡張|胆管拡張)', 'cbd_dilated'], ['us', '(エコー|超音波|US).*(腹水|液体貯留|ダグラス窩)', 'free_fluid'], ['us', '(エコー|超音波|US).*水腎', 'hydro'], ['us', '(エコー|超音波|US).*(大動脈瘤|AAA)', 'aaa'], ['us', '(エコー|超音波|US).*(付属器|卵巣)(腫大|腫瘤)', 'adnexal'], ['us', '(エコー|超音波|US)(は|で)(異常なし|正常)', 'normal'],
     ['ct', 'CT.*虫垂', 'appendicitis'], ['ct', 'CT.*憩室炎', 'diverticulitis'], ['ct', 'CT.*(free ?air|遊離ガス|フリーエア|腹腔内(遊離)?ガス)', 'free_air'],
     ['ct', 'CT.*(腸閉塞|イレウス|SBO|閉塞起点|(小腸|腸管)(の)?拡張|ニボー|鏡面像|niveau)', 'sbo'],
-    ['ct', 'CT.*(腸管虚血|壁造影不良|造影不良|造影欠損|SMA|上腸間膜動脈|腸間膜動脈|門脈ガス|腸管気腫|血栓)', 'ischemia'], ['ct', 'CT.*膵(炎|腫大|周囲)', 'pancreatitis'], ['ct', 'CT.*(大動脈瘤|解離|AAA|フラップ)', 'aortic'],
+    ['ct', 'CT.*(上腸間膜動脈症候群|SMA症候群|十二指腸(の)?(圧排|狭窄|通過障害)|大動脈.{0,6}上腸間膜動脈.{0,6}角)', 'duodenal_compression'], ['ct', '(?![^。]*(症候群|十二指腸|の角|角狭小|角が))CT.*(腸管虚血|壁造影不良|造影不良|造影欠損|SMA|上腸間膜動脈|腸間膜動脈|門脈ガス|腸管気腫|血栓)', 'ischemia'], ['ct', 'CT.*膵(炎|腫大|周囲)', 'pancreatitis'], ['ct', 'CT.*(大動脈瘤|解離|AAA|フラップ)', 'aortic'],
     ['ct', 'CT.*(尿管結石|尿路結石|腎結石|(?<![胆嚢胆])結石)', 'stone'], ['ct', 'CT.*(大腸炎|腸炎|(結腸|大腸|腸管)(の)?壁肥厚)', 'colitis'], ['ct', 'CT.*(胆嚢炎|胆管炎|胆嚢壁肥厚|胆嚢周囲)', 'cholecystitis'], ['ct', 'CT.*膿瘍', 'abscess'], ['ct', 'CT.*(嵌頓|ヘルニア)', 'hernia'], ['ct', 'CT.*(付属器|卵巣)', 'adnexal'], ['ct', 'CT.*(軸捻|捻転)', 'volvulus'],
     ['ct', 'CT(は|で|では|上|:|：)?\\s*(明らかな)?(異常なし|異常所見なし|正常|特記所見なし|特記すべき所見なし|有意な所見なし)', 'normal'],
     ['gallstone_hx', '(CT|エコー|超音波|US).*(胆嚢結石|胆石)', null]
