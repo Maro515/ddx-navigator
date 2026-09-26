@@ -90,8 +90,8 @@ ${catalogText()}`;
 
   /* ---------------- LLM 抽出（Claude Messages API, ブラウザ直接） ---------------- */
   const LLM = {
-    config: { apiKey: '', model: 'claude-opus-5', confirm: true, timeoutMs: 45000 },
-    models: [{ id: 'claude-opus-5', label: 'Claude Opus 5（既定・高精度）' }, { id: 'claude-sonnet-5', label: 'Claude Sonnet 5（速い・安い）' }, { id: 'claude-haiku-4-5', label: 'Claude Haiku 4.5（最速・最安）' }],
+    config: { apiKey: '', model: 'claude-opus-5-5', confirm: true, timeoutMs: 60000 },
+    models: [{ id: 'claude-opus-5-5', label: 'Claude Opus 5.5（最新・既定）' }, { id: 'claude-opus-5', label: 'Claude Opus 5' }, { id: 'claude-sonnet-5', label: 'Claude Sonnet 5（速い・安い）' }, { id: 'claude-haiku-4-5', label: 'Claude Haiku 4.5（最速・最安）' }],
     ready() { return !!LLM.config.apiKey; },
     async extract(scrubbedText) {
       const ctrl = new AbortController(); const timer = setTimeout(() => ctrl.abort(), LLM.config.timeoutMs);
@@ -103,7 +103,9 @@ ${catalogText()}`;
           tools: [TOOL()], tool_choice: { type: 'auto' },
           messages: [{ role: 'user', content: `次のメモから項目を抽出し、record_findings を呼び出してください。\n\n${scrubbedText}` }]
         };
-        if (/haiku-4-5/.test(LLM.config.model)) { /* Haiku 4.5: effort 非対応 */ } else body.output_config = { effort: 'low' };
+        // Opus 5.5 / Opus 5 / Sonnet 5: thinking は既定で adaptive（5.5 は無効化不可）。抽出は effort:low で十分。
+        // tool_choice は 'auto'（Opus 5.5 は any/tool の強制指定を受け付けない）。Haiku 4.5 は effort 非対応。
+        if (/haiku-4-5/.test(LLM.config.model)) { /* no effort */ } else body.output_config = { effort: 'low' };
         const res = await fetch('https://api.anthropic.com/v1/messages', {
           method: 'POST', signal: ctrl.signal,
           headers: { 'content-type': 'application/json', 'x-api-key': LLM.config.apiKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },

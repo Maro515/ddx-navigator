@@ -27,7 +27,7 @@
 | `tests/run_tests.js` | 回帰テスト：合成症例 224 件の Top-k recall、入力順序不変性、欠損区別、矛盾、ノイズ耐性、時間境界、Safety、MNM解除、Jev障害 fallback、KB整合性 |
 
 ## AI 解析の設定
-設定 > AI 解析 に Anthropic API キーを入れると、除去後の本文がブラウザから直接 `https://api.anthropic.com/v1/messages` に送られます（既定モデル `claude-opus-5`、Sonnet 5 / Haiku 4.5 に変更可）。キー未設定・通信不可・拒否時はローカル解析に自動で切り替わります。送信前に除去後の文面を確認する画面が出ます（設定でスキップ可）。
+設定 > AI 解析 に Anthropic API キーを入れると、除去後の本文がブラウザから直接 `https://api.anthropic.com/v1/messages` に送られます（既定モデル `claude-opus-5-5`（Opus 5 / Sonnet 5 / Haiku 4.5 に変更可））。キー未設定・通信不可・拒否時はローカル解析に自動で切り替わります。送信前に除去後の文面を確認する画面が出ます（設定でスキップ可）。
 音声入力は Chrome/Safari の通常ブラウザで動作します（Artifact ビューア内ではマイクが使えません）。
 
 ## 開発コマンド
