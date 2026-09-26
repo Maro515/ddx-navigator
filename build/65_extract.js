@@ -50,7 +50,9 @@
 - 時間は相対表現から elapsed_bucket を選ぶ（「昨日から」→d_1_2、「3時間前」→h_1_3、「今朝」→hours、「先週」→w_1_2）。不明なら null。
 - 主訴（腹痛・下痢・嘔吐）には severity を推定して付ける（激痛/我慢できない=severe、軽い=mild、それ以外=moderate）。悪化/改善/持続/変動/消失 は trend。
 - 腹痛は部位ごとに value_code（rlq/ruq/epi/llq/luq/umb/diffuse/supra/flank_r/flank_l）。部位が複数なら複数項目。
-- 画像や検査の所見も該当する value_code に対応付ける（例: CTで虫垂腫大→ct appendicitis、エコーで胆嚢壁肥厚→us gb）。
+- 画像所見は modality の feature（xray / us / ct）に、所見ごとに value_code を1つずつ付けて複数項目にする（例: 「CTで虫垂腫大」→ ct appendicitis、「CTで小腸拡張とニボー」→ ct sbo、「エコーで胆嚢壁肥厚」→ us gb、「CTで上腸間膜動脈の造影欠損」→ ct ischemia、「CTで尿管結石」→ ct stone、「CTで異常なし」→ ct normal）。
+- 「free air なし」「虫垂腫大は指摘できず」のような否定の画像所見は項目として出さない（画像全体が正常なら normal を1つ）。該当コードの無い画像所見（腹水、リンパ節腫大など）は unmapped に入れる。
+- 画像で偶発的に見つかった胆石は gallstone_hx（胆石あり）にする。
 - 年齢帯・性別・妊娠可能性が読み取れれば context に入れる。個人を特定する情報は出力しない。
 - 各項目には根拠となった短い引用(quote)を付ける。
 
@@ -123,7 +125,7 @@ ${catalogText()}`;
   };
 
   /* ---------------- ローカル抽出（日本語ルール） ---------------- */
-  const NEG = '(?:なし|無し|ない|認めず|認めない|否定|陰性|\\(-\\)|（-）|−|マイナス|みられず|見られず|はない)';
+  const NEG = '(?:なし|無し|ない|認めず|認めない|認められず|否定|陰性|\\(-\\)|（-）|−|マイナス|みられず|見られず|はない|指摘できず|指摘されず|指摘なし|描出されず|検出されず|ありません)';
   const LOC = [['rlq', '右下腹'], ['ruq', '右上腹|右季肋'], ['epi', '心窩|みぞおち|(?<![右左])上腹部'], ['llq', '左下腹'], ['luq', '左上腹|左季肋'], ['umb', '臍|へそ|おへそ'], ['diffuse', '腹部全体|全体的|びまん|お腹全体|腹全体'], ['supra', '(?<![右左])下腹部|恥骨上'], ['flank_r', '右側腹|右背|右腰|右CVA'], ['flank_l', '左側腹|左背|左腰|左CVA']];
   const KW = [ // [feature_id, regex, value|null]
     ['diarrhea', '水様(便|下痢)', 'watery'], ['diarrhea', '血性下痢|血便を伴う下痢', 'bloody'], ['diarrhea', '粘液(便|性下痢)', 'mucous'], ['diarrhea', '下痢|軟便', 'watery'],
@@ -139,7 +141,7 @@ ${catalogText()}`;
     ['nsaid_aspirin', 'NSAID|ロキソ|ロキソニン|イブプロフェン|ボルタレン|アスピリン|バファリン|鎮痛薬', null], ['anticoag', '抗凝固|ワーファリン|ワルファリン|DOAC|エリキュース|イグザレルト|リクシアナ|プラザキサ|抗血小板|クロピドグレル', null],
     ['recent_abx', '抗菌薬|抗生剤|抗生物質', null], ['hospitalized_recent', '最近(の)?入院|入院歴|施設入所|退院後', null], ['travel', '海外渡航|渡航歴|旅行から', null],
     ['af_vascular', '心房細動|AF|Af|動脈硬化|閉塞性動脈|心筋梗塞の既往|脳梗塞の既往', null], ['cv_risk', '高血圧|脂質異常|高脂血症|喫煙|タバコ', null], ['diabetes', '糖尿病|DM|インスリン', null],
-    ['immunosupp', 'ステロイド|免疫抑制|化学療法|抗がん剤|化療', null], ['gallstone_hx', '胆石', null], ['ibd_hx', '潰瘍性大腸炎|クローン|IBD', null], ['divertic_hx', '憩室', null], ['pud_hx', '(胃|十二指腸)潰瘍(の)?(既往|歴)|潰瘍歴', null], ['hernia_hx', 'ヘルニア(の)?既往|ヘルニア歴|脱腸', null], ['similar_episodes', '以前(に)?も同(様|じ)|同様の発作|繰り返し', null],
+    ['immunosupp', 'ステロイド|免疫抑制|化学療法|抗がん剤|化療', null], ['gallstone_hx', '胆石', null], ['ibd_hx', '潰瘍性大腸炎|クローン|IBD', null], ['divertic_hx', '憩室.{0,4}(既往|歴)|憩室症', null], ['pud_hx', '(胃|十二指腸)潰瘍(の)?(既往|歴)|潰瘍歴', null], ['hernia_hx', 'ヘルニア(の)?既往|ヘルニア歴|脱腸', null], ['similar_episodes', '以前(に)?も同(様|じ)|同様の発作|繰り返し', null],
     ['rebound_guarding', '反跳痛|Blumberg|ブルンベルグ|筋性防御|腹膜刺激', null], ['rigidity', '板状硬', null], ['tender_rlq', 'McBurney|マックバーニー|右下腹部(の)?圧痛', null], ['tender_ruq', '右上腹部(の)?圧痛|右季肋部(の)?圧痛', null], ['murphy', 'Murphy|マーフィー', null],
     ['tender_llq', '左下腹部(の)?圧痛', null], ['tender_epi', '心窩部(の)?圧痛|(?<![右左])上腹部(の)?圧痛', null], ['distension', '腹部膨満|膨隆|お腹が張', null],
     ['bowel_sounds', '腸(蠕動)?音(の)?亢進|金属音', 'hyper'], ['bowel_sounds', '腸(蠕動)?音(の)?(減弱|低下)', 'hypo'], ['bowel_sounds', '腸(蠕動)?音(の)?消失', 'absent'], ['bowel_sounds', '腸(蠕動)?音(は)?正常', 'normal'],
@@ -154,9 +156,14 @@ ${catalogText()}`;
     ['alp_ggt', '(ALP|γ-?GTP|GGT).*(上昇|高値)', 'elevated'], ['renal', '(Cre|クレアチニン|BUN|腎機能).*(上昇|高値|悪化|障害)', 'elevated'], ['hb', '(Hb|ヘモグロビン|貧血).*(低下|進行)|貧血あり|貧血', 'low'],
     ['acidosis', '代謝性アシドーシス|アシドーシス', 'metabolic'], ['ddimer', 'D-?ダイマー\\s*(上昇|高値|陽性)', 'elevated'], ['ddimer', 'D-?ダイマー\\s*(正常|陰性)', 'normal'],
     ['stool_test', '(CD|C\\.?\\s?diff|ディフィシル).*(陽性|\\+)', 'cdiff_pos'], ['stool_test', '便培養.*(陽性|検出)', 'culture_pos'], ['stool_test', '(便培養|CDトキシン).*(陰性)', 'neg'],
-    ['xray', 'free ?air|フリーエア|遊離ガス', 'free_air'], ['xray', '鏡面像|ニボー|niveau', 'air_fluid'], ['xray', '(腸管|小腸)(の)?拡張', 'dilated_loops'],
+    ['xray', '(?<!CT[^。]*)(?<!エコー[^。]*)(?<!超音波[^。]*)(free ?air|フリーエア|遊離ガス)', 'free_air'], ['xray', '(?<!CT[^。]*)(?<!エコー[^。]*)(?<!超音波[^。]*)(鏡面像|ニボー|niveau)', 'air_fluid'], ['xray', '(?<!CT[^。]*)(?<!エコー[^。]*)(?<!超音波[^。]*)(腸管|小腸)(の)?拡張', 'dilated_loops'],
     ['us', '(エコー|超音波|US).*(虫垂(腫大|腫脹)|虫垂炎)', 'appendix'], ['us', '(エコー|超音波|US).*(胆嚢(壁)?肥厚|胆嚢腫大|胆嚢結石|sonographic)', 'gb'], ['us', '(エコー|超音波|US).*(総胆管拡張|胆管拡張)', 'cbd_dilated'], ['us', '(エコー|超音波|US).*(腹水|液体貯留|ダグラス窩)', 'free_fluid'], ['us', '(エコー|超音波|US).*水腎', 'hydro'], ['us', '(エコー|超音波|US).*(大動脈瘤|AAA)', 'aaa'], ['us', '(エコー|超音波|US).*(付属器|卵巣)(腫大|腫瘤)', 'adnexal'], ['us', '(エコー|超音波|US)(は|で)(異常なし|正常)', 'normal'],
-    ['ct', 'CT.*虫垂', 'appendicitis'], ['ct', 'CT.*憩室炎', 'diverticulitis'], ['ct', 'CT.*(free ?air|遊離ガス|フリーエア)', 'free_air'], ['ct', 'CT.*(腸閉塞|イレウス|SBO)', 'sbo'], ['ct', 'CT.*(腸管虚血|壁造影不良|SMA)', 'ischemia'], ['ct', 'CT.*膵(炎|腫大)', 'pancreatitis'], ['ct', 'CT.*(大動脈瘤|解離|AAA)', 'aortic'], ['ct', 'CT.*(尿管結石|結石)', 'stone'], ['ct', 'CT.*(大腸炎|腸炎|壁肥厚)', 'colitis'], ['ct', 'CT.*(胆嚢炎|胆管炎)', 'cholecystitis'], ['ct', 'CT.*膿瘍', 'abscess'], ['ct', 'CT.*ヘルニア', 'hernia'], ['ct', 'CT.*(付属器|卵巣)', 'adnexal'], ['ct', 'CT.*捻転', 'volvulus'], ['ct', 'CT(は|で)?(異常なし|正常|特記所見なし)', 'normal']
+    ['ct', 'CT.*虫垂', 'appendicitis'], ['ct', 'CT.*憩室炎', 'diverticulitis'], ['ct', 'CT.*(free ?air|遊離ガス|フリーエア|腹腔内(遊離)?ガス)', 'free_air'],
+    ['ct', 'CT.*(腸閉塞|イレウス|SBO|閉塞起点|(小腸|腸管)(の)?拡張|ニボー|鏡面像|niveau)', 'sbo'],
+    ['ct', 'CT.*(腸管虚血|壁造影不良|造影不良|造影欠損|SMA|上腸間膜動脈|腸間膜動脈|門脈ガス|腸管気腫|血栓)', 'ischemia'], ['ct', 'CT.*膵(炎|腫大|周囲)', 'pancreatitis'], ['ct', 'CT.*(大動脈瘤|解離|AAA|フラップ)', 'aortic'],
+    ['ct', 'CT.*(尿管結石|尿路結石|腎結石|(?<![胆嚢胆])結石)', 'stone'], ['ct', 'CT.*(大腸炎|腸炎|(結腸|大腸|腸管)(の)?壁肥厚)', 'colitis'], ['ct', 'CT.*(胆嚢炎|胆管炎|胆嚢壁肥厚|胆嚢周囲)', 'cholecystitis'], ['ct', 'CT.*膿瘍', 'abscess'], ['ct', 'CT.*(嵌頓|ヘルニア)', 'hernia'], ['ct', 'CT.*(付属器|卵巣)', 'adnexal'], ['ct', 'CT.*(軸捻|捻転)', 'volvulus'],
+    ['ct', 'CT(は|で|では|上|:|：)?\\s*(明らかな)?(異常なし|異常所見なし|正常|特記所見なし|特記すべき所見なし|有意な所見なし)', 'normal'],
+    ['gallstone_hx', '(CT|エコー|超音波|US).*(胆嚢結石|胆石)', null]
   ];
   function bucketTime(text) {
     const m1 = text.match(/(\d+)\s*(分|時間|日|週間|週|か月|ヶ月|カ月)\s*(前|ほど前|くらい前|から)/);
@@ -207,6 +214,7 @@ ${catalogText()}`;
         const extra = { time_context: { elapsed_bucket: f.anchor === 'none' ? null : (tb || 'unknown'), trend: (f.type === 'chief_complaint' || f.type === 'symptom') ? tr : 'unknown' } };
         if (f.sev && !neg) extra.severity = sevOf(s);
         if (f.values && !neg && val === null) continue;
+        if (f.multi && neg) continue; // 画像の「〜なし」は所見として登録しない（異常なし は normal で扱う）
         add(fid, f.values ? val : null, s.slice(0, 60), neg ? 'absent' : 'present', extra);
       }
       numbers(s, (fid, val, q) => add(fid, val, q, 'present', { time_context: { elapsed_bucket: tb || 'unknown', trend: 'unknown' } }));

@@ -20,7 +20,7 @@
       return v === c.is;
     }
     if (c.f) {
-      if (c.unobserved) return !state.isObserved(c.f) && !state.isPending(c.f) && !state.isNotAssessable(c.f);
+      if (c.unobserved) return !state.isAnswered(c.f);
       if (c.present) return state.has(c.f, null);
       if (c.absent) return state.isAbsent(c.f);
       if (c.in) return state.has(c.f, c.in);
@@ -38,10 +38,10 @@
     }
     for (const r of kb.safetyRules) if (evalCond(r.when, state)) {
       alerts.push({ id: r.id, level: r.level, label: r.label, message: r.message, force_next: r.force_next });
-      for (const f of r.force_next || []) if (!state.isObserved(f) && !state.isPending(f) && !state.isNotAssessable(f)) { if (!forced.includes(f)) forced.push(f); (forcedReason[f] = forcedReason[f] || []).push(r.label); }
+      for (const f of r.force_next || []) if (!state.isAnswered(f)) { if (!forced.includes(f)) forced.push(f); (forcedReason[f] = forcedReason[f] || []).push(r.label); }
     }
     for (const r of kb.prerequisiteRules) if (evalCond(r.when, state)) {
-      for (const f of r.force_next || []) if (!state.isObserved(f) && !state.isPending(f) && !state.isNotAssessable(f)) { if (!forced.includes(f)) forced.push(f); (forcedReason[f] = forcedReason[f] || []).push(r.label); }
+      for (const f of r.force_next || []) if (!state.isAnswered(f)) { if (!forced.includes(f)) forced.push(f); (forcedReason[f] = forcedReason[f] || []).push(r.label); }
     }
     for (const r of kb.contradictionRules) if (evalCond(r.when, state)) contradictions.push({ id: r.id, message: r.message });
     // 古い重要情報の再確認（バイタル/乳酸）

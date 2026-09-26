@@ -115,6 +115,9 @@
     isObserved(feature_id) { return this.get(feature_id).some(o => o.status === 'present' || o.status === 'absent'); }
     isPending(feature_id) { return this.get(feature_id).some(o => o.status === 'pending'); }
     isNotAssessable(feature_id) { return this.get(feature_id).some(o => o.status === 'not_assessed'); }
+    isUnknown(feature_id) { return this.get(feature_id).some(o => o.status === 'unknown'); }
+    /* 取得済み・結果待ち・実施不可・不明 のいずれかなら「これ以上尋ねない」 */
+    isAnswered(feature_id) { return this.isObserved(feature_id) || this.isPending(feature_id) || this.isNotAssessable(feature_id) || this.isUnknown(feature_id); }
     isStale(obs) {
       const f = KB().feature[obs.feature_id];
       const limit = f.fresh !== undefined ? f.fresh : KB().freshness[f.type];

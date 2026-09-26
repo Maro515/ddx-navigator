@@ -164,6 +164,20 @@ check('入力順序不変性 (Top10/Next5/hash 同一)', orderFail === 0, `${ord
   check('緊急枠: hCG 陰性で異所性妊娠が除外済みへ', r.next.emergency.cleared.some(m => m.id === 'ectopic_pregnancy') && !r.next.emergency.frame.some(m => m.id === 'ectopic_pregnancy'));
   check('鑑別枠: 可能性順 Top10 に関係する項目のみで構成', r.next.differential.top.length === 5 && r.next.differential.top.every(it => (KB.relByFeature[it.feature_id] || []).some(rel => r.ddx.likely.some(x => x.id === rel.d))));
 }
+/* 9c. 不明/実施不可 は候補から消える。画像所見の否定は登録しない。CT の腸閉塞所見は ct sbo へ */
+{
+  const s = new D.ClinicalState({ context: { age_band: '18-29', sex: 'female', pregnancy: 'possible' } });
+  s.add({ feature_id: 'abd_pain', value_code: 'rlq', severity: 'severe', time_context: { elapsed_bucket: 'h_3_6', trend: 'worsening' } });
+  let r = D.runSync(s); const wasForced = r.next.forced.some(x => x.feature_id === 'hcg');
+  s.add({ feature_id: 'hcg', status: 'unknown' }); r = D.runSync(s);
+  const gone = !r.next.forced.some(x => x.feature_id === 'hcg') && !r.next.all.some(x => x.feature_id === 'hcg') && !r.next.emergency.order.some(x => x.feature_id === 'hcg');
+  check('「不明」を選ぶと強制項目・候補・除外順から消える', wasForced && gone);
+  s.add({ feature_id: 'us', status: 'not_assessed' }); r = D.runSync(s);
+  check('「実施不可」を選ぶと候補・除外順から消える', !r.next.all.some(x => x.feature_id === 'us') && !r.next.emergency.order.some(x => x.feature_id === 'us'));
+  const e1 = D.Extract.local('造影CTで小腸の拡張とニボーあり。CT：free airなし。超音波で虫垂腫大は指摘できず。CTでは胆嚢結石のみ。');
+  const has = (f, st, v) => e1.items.some(i => i.feature_id === f && i.status === st && (v === undefined || i.value_code === v));
+  check('画像: CT の腸管拡張/ニボー→ct sbo、否定所見は登録せず、胆嚢結石は胆石へ', has('ct', 'present', 'sbo') && !e1.items.some(i => i.feature_id === 'xray') && !has('ct', 'absent') && !has('us', 'present', 'appendix') && !has('ct', 'present', 'stone') && has('gallstone_hx', 'present'), JSON.stringify(e1.items.map(i => i.feature_id + ':' + i.status + ':' + i.value_code)));
+}
 /* 10. Jev 障害時の fallback（remote が失敗しても Safety/baseline は継続） */
 (async () => {
   const s = new D.ClinicalState({ context: { age_band: '30-39', sex: 'male', pregnancy: 'no' } });

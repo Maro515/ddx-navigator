@@ -38,7 +38,7 @@
     for (const did in focus) for (const r of kb.relByDisease[did] || []) {
       const f = kb.feature[r.f];
       if (!featureApplicable(f, ctx)) continue;
-      if (state.isPending(r.f) || state.isNotAssessable(r.f)) continue;
+      if (state.isPending(r.f) || state.isNotAssessable(r.f) || state.isUnknown(r.f)) continue;
       const cur = state.get(r.f).filter(o => o.status === 'present' || o.status === 'absent');
       let remeasure = false;
       if (cur.length) { if (cur.every(o => state.isStale(o))) remeasure = true; else continue; }
@@ -116,7 +116,7 @@
         const obs = state.get(fid).filter(o => o.status === 'present' || o.status === 'absent');
         const done = obs.length > 0 && !obs.every(o => state.isStale(o));
         const pos = done && rels.some(r => obs.some(o => o.status === 'present' && (!r.values || r.values.includes(o.value_code))));
-        plan.push({ feature_id: fid, label: f.label, type: f.type, typeLabel: kb.typeLabel[f.type], key: rels.some(r => r.key), done, positive: pos, pending: state.isPending(fid), na: state.isNotAssessable(fid), cost: f.acq.cost, inv: f.acq.inv, delay: f.acq.delay });
+        plan.push({ feature_id: fid, label: f.label, type: f.type, typeLabel: kb.typeLabel[f.type], key: rels.some(r => r.key), done, positive: pos, pending: state.isPending(fid), na: state.isNotAssessable(fid) || state.isUnknown(fid), cost: f.acq.cost, inv: f.acq.inv, delay: f.acq.delay });
       }
       // 最短除外: 未取得の決定的項目のうち負担最小
       const todo = plan.filter(x => !x.done && !x.pending && !x.na);
