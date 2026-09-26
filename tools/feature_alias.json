@@ -1,0 +1,136 @@
+{
+ "heartburn": {
+  "to": "heartburn_regurg"
+ },
+ "chronic_liver_disease_hx": {
+  "to": "cirrhosis_hx"
+ },
+ "malignancy_hx": {
+  "to": "cancer_hx"
+ },
+ "postprandial_fullness": {
+  "to": "early_satiety_bloating"
+ },
+ "dark_urine_pale_stool": {
+  "to": "urine_stool_color",
+  "values": {
+   "*": "dark_urine"
+  }
+ },
+ "platelets": {
+  "to": "chronic_liver_labs",
+  "values": {
+   "low": "plt_low",
+   "normal": null
+  }
+ },
+ "albumin": {
+  "to": "chronic_liver_labs",
+  "values": {
+   "low": "alb_low",
+   "normal": null
+  }
+ },
+ "pt_inr": {
+  "to": "chronic_liver_labs",
+  "values": {
+   "prolonged": "pt_prolonged",
+   "normal": null
+  }
+ },
+ "chest_xray": {
+  "to": "cxr",
+  "values": {
+   "normal": "normal",
+   "pneumomediastinum": "pneumomediastinum",
+   "effusion_pneumothorax": "infiltrate_effusion",
+   "mediastinal_widening": "mediastinal_wide"
+  }
+ },
+ "ammonia": {
+  "to": "ammonia"
+ },
+ "chronic_liver_signs": {
+  "to": "skin_finding",
+  "values": {
+   "*": "spider_angioma_palmar"
+  }
+ },
+ "eosinophils": {
+  "to": "eosinophilia",
+  "values": {
+   "high": "elevated",
+   "normal": null
+  }
+ },
+ "tenesmus": {
+  "to": "tenesmus_urgency"
+ },
+ "purpura_palpable": {
+  "to": "skin_finding",
+  "values": {
+   "*": "purpura"
+  }
+ },
+ "rash_dermatomal": {
+  "to": "skin_finding",
+  "values": {
+   "*": "zoster_vesicles"
+  }
+ },
+ "sodium": {
+  "to": "electrolyte",
+  "values": {
+   "low": "hypona",
+   "normal": null
+  }
+ },
+ "potassium": {
+  "to": "electrolyte",
+  "values": {
+   "low": "hypok",
+   "high": "hyperk",
+   "normal": null
+  }
+ },
+ "calcium": {
+  "to": "electrolyte",
+  "values": {
+   "high": "hyperca",
+   "low": "hypoca",
+   "normal": null
+  }
+ },
+ "cxr": {
+  "to": "cxr",
+  "values": {
+   "infiltrate": "infiltrate_effusion",
+   "effusion": "infiltrate_effusion",
+   "pneumothorax": "pneumomediastinum",
+   "free_air_diaphragm": "free_air",
+   "mediastinal_air": "pneumomediastinum",
+   "infiltrate_effusion": "infiltrate_effusion",
+   "free_air": "free_air",
+   "mediastinal_wide": "mediastinal_wide",
+   "pneumomediastinum": "pneumomediastinum",
+   "normal": "normal"
+  }
+ },
+ "menstrual_relation": {
+  "to": "menstrual_relation",
+  "values": {
+   "during_menses": "with_menses",
+   "with_menses": "with_menses",
+   "premenstrual": "premenstrual",
+   "midcycle": "midcycle",
+   "delayed": "@lmp_delayed",
+   "postmenopausal": null
+  }
+ },
+ "subcutaneous_emphysema": {
+  "to": "subcutaneous_emphysema"
+ },
+ "vaginal_discharge": {
+  "to": "vaginal_discharge"
+ }
+}

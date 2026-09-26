@@ -101,12 +101,18 @@
 
     /* ---------- エマージェンシー枠: 候補に挙がった重大疾患を個別に除外 ---------- */
     // 枠に入る条件: 未除外 かつ（支持所見あり or 事後確率 ≥3% or 決定的陽性所見）
-    const frame = [], outOfFrame = [], cleared = [];
+    const frameAll = [], outOfFrame = [], cleared = [];
     for (const m of ddx.mnm) {
       if (m.status === 'cleared') { cleared.push(m); continue; }
-      const raised = m.positiveKey || m.support.length > 0 || m.p >= 0.03;
-      (raised ? frame : outOfFrame).push(m);
+      // 候補に挙がる条件: 決定的陽性所見 / 事後確率≥3% / 強い支持所見(lnLR≥1.8) / 支持所見2つ以上でうち1つが中等度以上(lnLR≥1.0)
+      const strong = m.support.filter(x => x.lnLR >= 1.0).length, vstrong = m.support.some(x => x.lnLR >= 1.8);
+      const topP = ddx.likely.length ? ddx.likely[0].p : 1;
+      const raised = m.positiveKey || vstrong || (m.support.length >= 2 && strong >= 1) || m.p >= Math.max(0.015, 0.1 * topP) || (m.rank > 0 && m.rank <= 8);
+      (raised ? frameAll : outOfFrame).push(m);
     }
+    frameAll.sort((a, b) => (b.openScore - a.openScore) || (b.p - a.p));
+    const FRAME_MAX = 6;
+    const frame = frameAll.slice(0, FRAME_MAX), frameMore = frameAll.slice(FRAME_MAX);
     const emDisease = {};
     for (const m of frame) {
       const plan = [];
@@ -139,7 +145,7 @@
     for (const fi of forced) { const e = exclScore[fi.feature_id]; if (e) fi.clears = e.clears; }
     const order = Object.values(exclScore).filter(e => !forcedIds.has(e.feature_id)).map(e => { const burden = 1 + (e.cost + e.inv + e.delay) / 3; e.efficiency = e.value / burden; e.deferred = !!state.deferred[e.feature_id]; if (e.deferred) e.efficiency *= 0.3; return e; })
       .sort((a, b) => b.efficiency - a.efficiency);
-    const emergency = { frame: frame.map(m => emDisease[m.id]), outOfFrame: outOfFrame.map(m => ({ id: m.id, label: m.label, status: m.status })), cleared: cleared.map(m => ({ id: m.id, label: m.label })), order: order.slice(0, 5), orderAll: order };
+    const emergency = { frame: frame.map(m => emDisease[m.id]), more: frameMore.map(m => ({ id: m.id, label: m.label, status: m.status, p: m.p })), outOfFrame: outOfFrame.map(m => ({ id: m.id, label: m.label, status: m.status })), cleared: cleared.map(m => ({ id: m.id, label: m.label })), order: order.slice(0, 5), orderAll: order };
 
     /* ---------- 鑑別枠: 可能性順 Top10 の絞り込み（MNM 解除価値を除いた優先度） ---------- */
     const likelyIds = new Set(ddx.likely.filter(x => !x.comorbid).map(x => x.id));

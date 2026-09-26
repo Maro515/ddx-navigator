@@ -478,6 +478,19 @@
     { id: 'E0', citation: 'v0.1 専門家ドラフト（未承認）。感度/特異度は一般的教科書・系統的レビューの近似値。', approval_status: 'draft' }
   ];
 
+  /* ---------- 拡張 API（疾患パックの追加用。11_kb_*.js から呼ぶ） ---------- */
+  KB.addFeature = function (o) { if (KB.feature[o.id]) return KB.feature[o.id]; const d = def(o.id, o.label, o.type, o.cat, o); KB.feature[o.id] = d; return d; };
+  KB.addValue = function (fid, code, label) { const f = KB.feature[fid]; if (!f) throw new Error('unknown feature ' + fid); if (!f.values) f.values = []; if (!f.values.some(v => v.code === code)) f.values.push({ code, label }); };
+  KB.addDisease = function (id, label, o) { if (KB.disease[id]) return KB.disease[id]; dis(id, label, o); KB.disease[id] = D[D.length - 1]; return KB.disease[id]; };
+  KB.addRelation = function (d, f, values, sens, spec, opts) { R(d, f, values, sens, spec, opts); };
+  KB.reindex = function () {
+    KB.features = F; KB.feature = Object.fromEntries(F.map(f => [f.id, f]));
+    KB.diseases = D; KB.disease = Object.fromEntries(D.map(d => [d.id, d]));
+    KB.relations = REL; KB.relByDisease = {}; KB.relByFeature = {};
+    for (const r of REL) { (KB.relByDisease[r.d] = KB.relByDisease[r.d] || []).push(r); (KB.relByFeature[r.f] = KB.relByFeature[r.f] || []).push(r); }
+  };
+  KB.packs = [{ id: 'abd_core', label: '腹痛/下痢パック（コア）', version: KB.version }];
+
   g.DDX = g.DDX || {};
   g.DDX.KB = KB;
 })(typeof window !== 'undefined' ? window : globalThis);

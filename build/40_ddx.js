@@ -16,6 +16,7 @@
     const c = state.context, rq = d.requires || {};
     if (rq.sex && c.sex && c.sex !== rq.sex) return { ok: false, reason: rq.sex === 'female' ? '女性のみ' : '男性のみ' };
     if (rq.pregnancy_not && rq.pregnancy_not.includes(c.pregnancy)) return { ok: false, reason: '妊娠可能性なし' };
+    if (rq.pregnancy_in && !rq.pregnancy_in.includes(c.pregnancy)) return { ok: false, reason: '妊娠中のみ' };
     if (rq.age_max && ageIdx(c.age_band) !== null && ageIdx(c.age_band) > ageIdx(rq.age_max)) return { ok: false, reason: '年齢帯が対象外' };
     if (rq.age_min && ageIdx(c.age_band) !== null && ageIdx(c.age_band) < ageIdx(rq.age_min)) return { ok: false, reason: '年齢帯が対象外' };
     return { ok: true };

@@ -118,6 +118,7 @@
       if (UI.open[key]) h += `<div class="detail"><div class="tiny muted">${esc(m.note || '')}</div><div class="ev"><span class="lab">除外項目</span>${m.plan.map(x => `<span class="tag ${x.done ? (x.positive ? 'ref' : 'sup') : ''}">${x.done ? (x.positive ? '⚠' : '✓') : '○'} ${esc(x.label)}${x.key ? '★' : ''}</span>`).join('')}</div></div>`;
       h += `</div>`;
     }
+    if (em.more && em.more.length) h += `<details class="small" style="margin-top:6px"><summary>ほかに候補となり得る重大疾患 (${em.more.length})</summary><div class="tiny muted" style="margin-top:4px">${em.more.map(m => esc(m.label)).join('、')}</div></details>`;
     if (em.cleared.length) h += `<div class="tiny muted" style="margin-top:6px">✓ 概ね除外: ${em.cleared.map(m => esc(m.label)).join('、')}</div>`;
     h += `</div>`;
     // 3. 可能性の高い順
