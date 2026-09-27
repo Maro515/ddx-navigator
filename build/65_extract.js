@@ -35,32 +35,71 @@
   function catalogText() {
     const kb = KB(); const lines = [];
     for (const f of kb.features) {
-      const vals = f.values ? ' 値: ' + f.values.map(v => `${v.code}=${v.label}`).join(', ') : ' 値: なし(present/absent で表現)';
+      // 腹痛は部位ごとに複数項目を立てる（KB 上は単一値でも部位の併記を許す）
+      const vals = f.values ? ` 値（${f.multi || f.id === 'abd_pain' ? '複数可' : '1つ'}）: ` + f.values.map(v => `${v.code}=${v.label}`).join(', ') : ' 値なし（present/absent で表現）';
       lines.push(`- ${f.id} [${kb.typeLabel[f.type]}] ${f.label}${vals}${f.sev ? ' ／ severity 必須候補' : ''}${f.anchor !== 'none' ? ' ／ 時間: ' + kb.anchorLabel[f.anchor] : ''}`);
     }
     const t = kb.time; const buckets = t.tier1.map(x => `${x.code}=${x.label}`).join(', ') + '; 詳細: ' + Object.values(t.tier2).flat().map(x => `${x.code}=${x.label}`).join(', ');
     return lines.join('\n') + `\n\n時間バケット(elapsed_bucket): ${buckets}\n経過(trend): ${kb.trend.map(x => `${x.code}=${x.label}`).join(', ')}\n程度(severity): mild=軽, moderate=中, severe=高\n文脈: age_band ∈ {${kb.context.age_band.map(x => x.code).join(', ')}}, sex ∈ {female, male}, pregnancy ∈ {no, possible, confirmed, unknown}`;
   }
-  const SYSTEM = () => `あなたは救急・一般外来の医師の口述メモから、鑑別診断支援システムの構造化項目を抽出する係です。
-出力は必ず record_findings ツールを1回呼び出して返してください。自由文は書きません。
-ルール:
-- 下のカタログにある feature_id と value_code だけを使う。該当しない情報は unmapped に短く列挙し、無理に当てはめない。
-- 「なし/否定/陰性」は status=absent、「不明/聞けていない」は unknown。それ以外は present。値付き項目の特定の値だけを否定する場合（「めまいなし」「黒色便なし」）は status=absent に value_code も付ける。項目全体の否定は value_code=null。
-- 数値は閾値でカテゴリ化する（例: 体温38.2→temp 38_39、CRP 5.2 mg/dL→crp 5_10、WBC 12,300→wbc 10_15、SBP 86→sbp lt90、SpO2 92→spo2 lt94）。
-- 時間は相対表現から elapsed_bucket を選ぶ（「昨日から」→d_1_2、「3時間前」→h_1_3、「今朝」→hours、「先週」→w_1_2）。不明なら null。
-- 主訴（腹痛・下痢・嘔吐）には severity を推定して付ける（激痛/我慢できない=severe、軽い=mild、それ以外=moderate）。悪化/改善/持続/変動/消失 は trend。
-- 腹痛は部位ごとに value_code（rlq/ruq/epi/llq/luq/umb/diffuse/supra/flank_r/flank_l）。部位が複数なら複数項目。
-- 画像所見は modality の feature（xray / us / ct）に、所見ごとに value_code を1つずつ付けて複数項目にする（例: 「CTで虫垂腫大」→ ct appendicitis、「CTで小腸拡張とニボー」→ ct sbo、「エコーで胆嚢壁肥厚」→ us gb、「CTで上腸間膜動脈の造影欠損」→ ct ischemia、「CTで尿管結石」→ ct stone、「CTで異常なし」→ ct normal）。
-- 「free air なし」「虫垂腫大は指摘できず」のような否定の画像所見は項目として出さない（画像全体が正常なら normal を1つ）。該当コードの無い画像所見（腹水、リンパ節腫大など）は unmapped に入れる。
-- 画像で偶発的に見つかった胆石は gallstone_hx（胆石あり）にする。
-- 肝胆膵・脾・腎梗塞・腹水・腸重積・腸管壁肥厚などの CT 所見も ct の値にする。MRI/MRCP の同じ所見も ct に入れる（例: 「MRCPで総胆管拡張」→ ct biliary_dilation、「CTで門脈血栓」→ ct pvt、「CTで腹水」→ ct ascites）。身体診察の腹水（波動・濁音界移動）だけが ascites_exam。
-- 画像の「肝硬変像」を既往（cirrhosis_hx）にしない。圧痛だけの記載を腹痛（abd_pain）にしない。「無痛性」「痛みを伴わない」は abd_pain を absent にする。
-- 妊娠週数は pregnancy_status（14週未満 first_tri、それ以降 late）。免疫チェックポイント阻害薬（ニボルマブ等）の使用は ici_use。
-- 年齢帯・性別・妊娠可能性が読み取れれば context に入れる。個人を特定する情報は出力しない。
-- 各項目には根拠となった短い引用(quote)を付ける。
+  // 指示文（GPT-6 Luna を主対象に調整。Claude でも同じ文を使う）。構成: 役割 → 手順 → 規則 → カタログ → 最終確認。
+  // 長いカタログの後ろに要点を繰り返すのは、思考 low の小型モデルが末尾の指示を強く守るため。
+  const SYSTEM = () => `# 役割
+あなたは救急・一般外来の診療メモ（日本語）を、鑑別診断支援システムの構造化項目に変換する抽出器です。診断や推論はせず、メモに書かれた所見だけを記録します。
+結果は record_findings ツールを1回だけ呼び出して返します。自由文は書きません。
 
-カタログ:
-${catalogText()}`;
+# 手順
+1. メモを文ごとに読み、主訴・症状・経過・既往/背景・身体所見・バイタル・検査値・画像/内視鏡所見を1つずつ拾う。主訴（腹痛・下痢・嘔吐など）と、検査・画像・内視鏡の異常所見は特に漏らさない。
+2. 拾った情報ごとに、下の「カタログ」から最も近い feature_id と value_code を選ぶ。対応する項目が無ければ unmapped に短く書く（無理に当てはめない）。
+3. 「規則」と「最終確認」に照らして直し、record_findings を呼ぶ。
+
+# 規則
+## status（所見の有無）
+- present: メモにある所見。absent: 「なし/否定/陰性/認めない」と明記された所見。unknown: 「不明/未確認/聞けていない」と明記された所見だけ。
+- メモに書かれていない項目は出さない。カタログとの対応に迷ったことを unknown で表さない（最も近い項目を present で選ぶか、unmapped に入れる）。
+- 値付き項目の特定の値だけを否定するとき（「黒色便なし」）は absent に value_code を付ける。項目全体の否定は value_code=null。
+
+## 値（value_code）
+- カタログで「値なし」の項目は value_code=null。値付き項目を present にするときは value_code を必ず付ける。
+- 「値（1つ）」の項目は値を1つだけ出す。時点の違う値があれば受診時（最初に書かれた）の値。「値（複数可）」の項目だけ、所見ごとに別の項目として複数出してよい。
+- 数値は閾値でカテゴリ化する（体温38.2→temp 38_39、CRP 5.2 mg/dL→crp 5_10、WBC 12,300→wbc 10_15、SBP 86→sbp lt90、SpO2 92→spo2 lt94、血糖49→glucose lt70）。
+- 数値の無い表現: 「CRP上昇/高値」→crp 5_10（軽度なら 1_5、著明なら gt10）、「白血球増多」→wbc 10_15（著明なら gt15）、「頻脈」→hr 100_120、「ショック/血圧低下」→sbp lt90、「貧血」→hb low、「低アルブミン血症」→chronic_liver_labs alb_low、「PT延長/PT-INR上昇」→chronic_liver_labs pt_prolonged。
+- 腹痛は部位ごとに abd_pain の値（rlq/ruq/epi/llq/luq/umb/diffuse/supra/flank_r/flank_l）。部位が複数なら複数項目。「上腹部痛」「心窩部痛」は epi、「下腹部痛」は supra。部位の書かれていない腹痛は、同じメモに圧痛部位があればその部位、無ければ diffuse（主訴としての腹痛は必ず残す）。
+- 圧痛だけの記載は abd_pain にせず、tender_* などの診察項目にする。「無痛性」「痛みを伴わない」は abd_pain を absent（value_code=null）。
+- 主訴（腹痛・下痢・嘔吐）には severity（激痛/我慢できない=severe、軽い=mild、それ以外=moderate）。悪化/改善/持続/変動/消失は trend。
+- 時間は相対表現から elapsed_bucket（「昨日から」→d_1_2、「3時間前」→h_1_3、「今朝」→hours、「先週」→w_1_2）。不明なら null。
+
+## 画像・内視鏡
+- 画像は検査ごとの項目（xray / us / ct）に、異常所見1つにつき value_code を1つ付けて複数項目にする。MRI・MRCP の所見も ct の同じ値に入れる（「MRCPで胆管の多発狭窄」→ct biliary_dilation）。
+- 腹水・門脈血栓・肝胆膵・脾・腎梗塞・腸重積・腸管壁肥厚などの CT 所見も ct の値（「CTで腹水」→ct ascites）。身体診察の腹水（波動・濁音界移動）だけが ascites_exam。
+- 上部・下部内視鏡に加え、小腸内視鏡・カプセル内視鏡・EUS・食道造影・食道内圧検査の所見も endoscopy に入れる（食道造影で拡張した食道と平滑な先細り→endoscopy achalasia）。胃・食道・十二指腸の腫瘍/狭窄は tumor、大腸・直腸・小腸は tumor_lower。胃のポリープは多数でも gastric_polyp（polyposis は腸管のポリポーシス症候群）。
+- normal は「異常なし」「正常」「所見なし」と、その検査全体が正常と書かれたときだけ使う。部分的な否定や一部位だけの正常（「腫瘍はない」「出血源はない」「回腸末端は正常」「free air はない」「転移はない」「閉塞性病変はない」）は normal にしない。同じ検査に異常所見が1つでもあれば normal は出さない。
+- 否定の画像・内視鏡所見（「水腎症なし」「肝外胆管に結石はない」）は項目として出さない。検査全体が正常のときだけ normal を present で1つ出す（normal を absent にしない）。
+- 画像で偶発的に見つかった胆嚢結石は gallstone_hx（肝内結石・総胆管結石は画像の値にする）。画像の「肝硬変像」を cirrhosis_hx にしない。
+
+## 背景・既往・診察
+- 「〜の既往」「〜後」「再発する」「繰り返す」も背景項目にする（「反復する/以前にも同様の発作」→similar_episodes、「再発する十二指腸潰瘍」→pud_hx、「急性膵炎の5週後」→pancreatitis_hx、「ポリープ切除の翌日」「内視鏡治療後」→ingestion_event endoscopy_recent、「胃切除後」→gastrectomy_hx）。
+- 本人の単発の大腸ポリープ切除歴を fhx_polyposis（ポリポーシス/家族歴）にしない。腹部以外の手術（整形外科など）は prior_abd_surgery にしない。鎮痛薬・NSAIDs・アスピリンの服用は nsaid_aspirin。
+- 打診の鼓音は bowel_sounds にしない（bowel_sounds は聴診の腸蠕動音）。
+- 鼠径部・大腿部・腹壁の腫瘤や膨隆は groin_bulge（abd_mass は腹部の腫瘤）。肛門周囲の腫脹・膿瘍・痔瘻は今回の所見でも perianal_disease。
+- 妊娠週数は pregnancy_status（14週未満 first_tri、以降 late）。免疫チェックポイント阻害薬（ニボルマブ等）の使用は ici_use。
+
+## 文脈・引用
+- 年齢帯・性別・妊娠可能性が読み取れれば context に入れる。個人を特定する情報は出力しない。
+- 各項目の quote には根拠となるメモの原文を短く（30字以内）入れる。
+
+# カタログ
+各行: feature_id [種別] 名称 値: code=意味。「値（1つ）」は値を1つだけ、「値（複数可）」は所見ごとに複数項目にできる。
+${catalogText()}
+
+# 最終確認（record_findings を呼ぶ前に）
+- 各文の主訴・症状・診察・検査・画像/内視鏡・既往を、対応する項目として拾ったか。
+- メモに無い項目や、対応の迷いを unknown で出していないか。
+- normal を部分的な否定から作っていないか。同じ検査に normal と異常所見が並んでいないか。
+- 「値（1つ）」の項目に値が2つ以上ないか。値付き項目の present に value_code があるか。`;
+
+  // 利用者メッセージ（メモは区切りで囲み、指示と取り違えないようにする）
+  const USER = text => `次の診療メモから項目を抽出し、record_findings を呼び出してください。\n\n<memo>\n${text}\n</memo>`;
 
   const TOOL = () => ({
     name: 'record_findings', description: '抽出した構造化項目を記録する', strict: true,
@@ -68,9 +107,9 @@ ${catalogText()}`;
       type: 'object', additionalProperties: false, required: ['items', 'context', 'unmapped'],
       properties: {
         items: { type: 'array', items: { type: 'object', additionalProperties: false, required: ['feature_id', 'value_code', 'status', 'elapsed_bucket', 'trend', 'severity', 'quote'],
-          properties: { feature_id: { type: 'string' }, value_code: { type: ['string', 'null'] }, status: { type: 'string', enum: ['present', 'absent', 'unknown'] }, elapsed_bucket: { type: ['string', 'null'], description: '時間バケットのコード。不明なら null' }, trend: { type: ['string', 'null'], description: 'worsening | stable | improving | fluctuating | resolved | null' }, severity: { type: ['string', 'null'], description: 'mild | moderate | severe | null（主訴のみ）' }, quote: { type: 'string' } } } },
+          properties: { feature_id: { type: 'string', description: 'カタログの feature_id' }, value_code: { type: ['string', 'null'], description: 'カタログの値コード。値なしの項目・項目全体の否定は null' }, status: { type: 'string', enum: ['present', 'absent', 'unknown'], description: 'unknown はメモに「不明/未確認」と書かれたときだけ' }, elapsed_bucket: { type: ['string', 'null'], description: '時間バケットのコード。不明なら null' }, trend: { type: ['string', 'null'], description: 'worsening | stable | improving | fluctuating | resolved | null' }, severity: { type: ['string', 'null'], description: 'mild | moderate | severe | null（主訴のみ）' }, quote: { type: 'string', description: '根拠となるメモの原文（短く）' } } } },
         context: { type: 'object', additionalProperties: false, required: ['age_band', 'sex', 'pregnancy'], properties: { age_band: { type: ['string', 'null'] }, sex: { type: ['string', 'null'], description: 'female | male | null' }, pregnancy: { type: ['string', 'null'], description: 'no | possible | confirmed | unknown | null' } } },
-        unmapped: { type: 'array', items: { type: 'string' } }
+        unmapped: { type: 'array', items: { type: 'string' }, description: 'カタログに対応が無い所見' }
       }
     }
   });
@@ -96,6 +135,30 @@ ${catalogText()}`;
     return { items, context: ctx, unmapped: (raw.unmapped || []).slice(0, 10) };
   }
 
+  // 整合性の補正: 「normal なし」は意味を持たないので捨てる。同じ検査に異常所見があれば normal を捨てる。検査値・バイタルは最初の値だけ残す（AI の値をローカル解析より優先）
+  function tidy(items) {
+    const kb = KB(), abn = new Set(), one = new Set();
+    for (const i of items) if (i.status === 'present' && i.value_code && i.value_code !== 'normal') abn.add(i.feature_id);
+    return items.filter(i => {
+      if (i.status === 'absent' && i.value_code === 'normal') return false;
+      if (i.status !== 'present' || !i.value_code) return true;
+      const f = kb.feature[i.feature_id];
+      if (f.multi && i.value_code === 'normal' && abn.has(f.id)) return false;
+      if ((f.type === 'lab' || f.type === 'vital') && !f.multi) { if (one.has(f.id)) return false; one.add(f.id); }
+      return true;
+    });
+  }
+  // AI の抽出にローカル解析のバイタル/検査値を足して補正する（アプリと評価スクリプトで共通）
+  function mergeLocal(out, loc) {
+    const have = new Set(out.items.map(i => i.feature_id + '|' + (i.value_code || '')));
+    for (const it of loc.items) if (['vital', 'lab'].includes(KB().feature[it.feature_id].type) && !have.has(it.feature_id + '|' + (it.value_code || ''))) out.items.push(it);
+    // AI が腹痛そのものを落としたときは、ローカル解析の「部位不明の腹痛（diffuse）」で主訴を補う
+    if (!out.items.some(i => i.feature_id === 'abd_pain' && i.status === 'present')) out.items.push(...loc.items.filter(i => i.feature_id === 'abd_pain' && i.status === 'present'));
+    out.items = tidy(out.items);
+    out.context = Object.assign({}, loc.context, out.context);
+    return out;
+  }
+
   /* ---------------- LLM 抽出（Claude Messages API, ブラウザ直接） ---------------- */
   const LLM = {
     config: { apiKey: '', model: 'claude-opus-5-5', confirm: true, timeoutMs: 60000 },
@@ -109,7 +172,7 @@ ${catalogText()}`;
           model: LLM.config.model, max_tokens: 4096,
           system: [{ type: 'text', text: SYSTEM(), cache_control: { type: 'ephemeral' } }],
           tools: [TOOL()], tool_choice: { type: 'auto' },
-          messages: [{ role: 'user', content: `次のメモから項目を抽出し、record_findings を呼び出してください。\n\n${scrubbedText}` }]
+          messages: [{ role: 'user', content: USER(scrubbedText) }]
         };
         // Opus 5.5 / Opus 5 / Sonnet 5: thinking は既定で adaptive（5.5 は無効化不可）。抽出は effort:low で十分。
         // tool_choice は 'auto'（Opus 5.5 は any/tool の強制指定を受け付けない）。Haiku 4.5 は effort 非対応。
@@ -165,7 +228,7 @@ ${catalogText()}`;
     ['hcg', '(血清)?hCG[^。、]{0,4}(著明)?(高値|上昇)', 'pos'], ['hcg', '(妊娠反応|hCG|HCG)(は|が)?\\s*(陽性|\\(\\+\\)|（\\+）|\\+)', 'pos'], ['hcg', '(妊娠反応|hCG|HCG)(は|が)?\\s*(陰性|\\(-\\)|（-）|-)', 'neg'],
     ['urinalysis', '(血尿|(?<!便)潜血(?!便)).*(膿尿|白血球)|(膿尿|白血球).*(血尿|(?<!便)潜血(?!便))', 'both'], ['urinalysis', '血尿|(?<!便)潜血(?!便)', 'hematuria'], ['urinalysis', '尿(蛋白|タンパク)(は)?(陰性|なく|なし|認めない|乏しい)|尿所見(は)?(正常|乏しい|異常なし)|尿(蛋白|タンパク)(は)?少な|尿(沈渣|定性)[^。、]{0,8}(正常|異常なし|(は|が)?(ない|なし|認めない))', 'normal'], ['urinalysis', '膿尿|尿中白血球|尿WBC', 'pyuria'], ['urinalysis', '尿(検査|所見)(は)?正常|尿所見なし', 'normal'],
     ['troponin', 'トロポニン\\s*(陽性|上昇|\\+)', 'pos'], ['troponin', 'トロポニン\\s*(陰性|正常|-)', 'neg'], ['ecg', '(心電図|ECG)[^。]*((尖鋭|テント状)(な)?T波|QRS(幅)?(の)?(拡大|延長))', 'peaked_t'], ['ecg', '(心電図|ECG).*(ST(上昇|低下|変化)?|虚血|陰性T波|T波(の)?(陰転|平低化))', 'ischemic'], ['ecg', '(心電図|ECG).*(心房細動|AF|Af)', 'af'], ['ecg', '(心電図|ECG)(は|に)?(正常|異常なし)', 'normal'],
-    ['lipase', '(?<!(腹水|穿刺液|ドレーン|排液)[^。]{0,8})(リパーゼ|アミラーゼ).*(3倍|著明|高値|上昇)', 'ge3x'], ['lipase', '(?<!(腹水|穿刺液|ドレーン|排液)[^。]{0,8})(リパーゼ|アミラーゼ).*(軽度上昇|やや高)', 'lt3x'], ['lipase', '(?<!(腹水|穿刺液|ドレーン|排液)[^。]{0,8})(リパーゼ|アミラーゼ).*(正常|基準内)', 'normal'],
+    ['lipase', '(?<!(腹水|穿刺液|ドレーン|排液)[^。]{0,8})(リパーゼ|アミラーゼ).*((?<![\\d.])([3-9]|\\d{2,})(\\.\\d+)?倍|著明|高値|上昇)', 'ge3x'], ['lipase', '(?<!(腹水|穿刺液|ドレーン|排液)[^。]{0,8})(リパーゼ|アミラーゼ).*(軽度上昇|やや高)', 'lt3x'], ['lipase', '(?<!(腹水|穿刺液|ドレーン|排液)[^。]{0,8})(リパーゼ|アミラーゼ).*(正常(?!上限)|基準内)', 'normal'],
     ['liver_enz', '(AST|ALT|肝酵素|トランスアミナーゼ|肝機能).*(上昇|高値|高い|異常)', 'elevated'], ['liver_enz', '(AST|ALT|肝酵素).*(正常|基準内)', 'normal'], ['bili', '(ビリルビン|T-?Bil).*(上昇|高値|高い)', 'elevated'], ['bili', '(ビリルビン|T-?Bil).*(正常|基準内)', 'normal'],
     ['alp_ggt', '(ALP|γ-?GTP|GGT|胆道系酵素).*(上昇|高値|高い)', 'elevated'], ['renal', '(Cre|クレアチニン|BUN|腎機能).*(上昇|高値|悪化|障害)|(?<![A-Za-z])Cr(?![A-Za-z])[^。、]{0,8}(上昇|高値|高い)|(急性)?腎障害|腎不全|AKI', 'elevated'], ['hb', '(Hb|ヘモグロビン|貧血).*(低下|進行)|貧血あり|貧血', 'low'],
     ['acidosis', '代謝性アシドーシス|アシドーシス', 'metabolic'], ['ddimer', 'D-?ダイマー\\s*(上昇|高値|陽性)', 'elevated'], ['ddimer', 'D-?ダイマー\\s*(正常|陰性)', 'normal'],
@@ -471,14 +534,11 @@ ${catalogText()}`;
     const loc = local(sc.text);
     if (!opts.useLLM || !LLM.ready()) return Object.assign(loc, { scrubbed: sc, llm: null, fallback: !opts.useLLM ? 'llm_off' : 'no_key' });
     try {
-      const out = await LLM.extract(sc.text);
-      const have = new Set(out.items.map(i => i.feature_id + '|' + (i.value_code || '')));
-      for (const it of loc.items) if (['vital', 'lab'].includes(KB().feature[it.feature_id].type) && !have.has(it.feature_id + '|' + (it.value_code || ''))) out.items.push(it);
-      out.context = Object.assign({}, loc.context, out.context);
+      const out = mergeLocal(await LLM.extract(sc.text), loc);
       return Object.assign(out, { scrubbed: sc, llm: { ok: true, model: out.model, latency: out.latency, usage: out.usage } });
     } catch (e) {
       return Object.assign(loc, { scrubbed: sc, llm: { ok: false, error: String(e && e.message || e) }, fallback: 'llm_error' });
     }
   }
-  DDX.Extract = { scrub, local, extract, LLM, validate, catalogText, ageBand, SYSTEM, TOOL };
+  DDX.Extract = { scrub, local, extract, LLM, validate, tidy, mergeLocal, catalogText, ageBand, SYSTEM, USER, TOOL };
 })(typeof window !== 'undefined' ? window : globalThis);

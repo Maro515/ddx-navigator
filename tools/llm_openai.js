@@ -6,7 +6,7 @@ module.exports = async function extractOpenAI({ apiKey, model, text, timeoutMs =
   const body = {
     model, store: false,
     instructions: D.Extract.SYSTEM(),
-    input: [{ role: 'user', content: `次のメモから項目を抽出し、record_findings を呼び出してください。\n\n${text}` }],
+    input: [{ role: 'user', content: D.Extract.USER(text) }],
     tools: [{ type: 'function', name: tool.name, description: tool.description, parameters: tool.input_schema, strict: true }],
     tool_choice: { type: 'function', name: tool.name }
   };

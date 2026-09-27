@@ -47,7 +47,7 @@ if (provider && !dry) {
 }
 const cacheDir = path.join(os.homedir(), '.cache', 'ddx-navigator', 'llm');
 if (provider && useCache) fs.mkdirSync(cacheDir, { recursive: true });
-const promptHash = crypto.createHash('sha1').update(D.Extract.SYSTEM() + JSON.stringify(D.Extract.TOOL())).digest('hex').slice(0, 10);
+const promptHash = crypto.createHash('sha1').update(D.Extract.SYSTEM() + D.Extract.USER('') + JSON.stringify(D.Extract.TOOL())).digest('hex').slice(0, 10);
 const stats = { calls: 0, cached: 0, fail: 0, errors: {}, usage: { input_tokens: 0, output_tokens: 0, cache_read_input_tokens: 0, cache_creation_input_tokens: 0 }, latency: [] };
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
@@ -71,10 +71,9 @@ async function llmExtract(text) {
   }
   let result;
   if (out) {
-    // アプリの extract() と同じ合成: AI の項目＋ローカル解析のバイタル/検査値
-    const have = new Set(out.items.map(i => i.feature_id + '|' + (i.value_code || '')));
-    for (const it of loc.items) if (['vital', 'lab'].includes(KB.feature[it.feature_id].type) && !have.has(it.feature_id + '|' + (it.value_code || ''))) out.items.push(it);
-    result = { ok: true, items: out.items, context: Object.assign({}, loc.context, out.context), usage: out.usage || {}, latency: out.latency };
+    // アプリの extract() と同じ合成: AI の項目＋ローカル解析のバイタル/検査値、整合性の補正
+    D.Extract.mergeLocal(out, loc);
+    result = { ok: true, items: out.items, context: out.context, usage: out.usage || {}, latency: out.latency };
     const u = out.usage || {};
     for (const k of Object.keys(stats.usage)) stats.usage[k] += u[k] || 0;
     stats.latency.push(out.latency || 0);
