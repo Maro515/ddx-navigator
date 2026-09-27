@@ -480,5 +480,5 @@ ${catalogText()}`;
       return Object.assign(loc, { scrubbed: sc, llm: { ok: false, error: String(e && e.message || e) }, fallback: 'llm_error' });
     }
   }
-  DDX.Extract = { scrub, local, extract, LLM, validate, catalogText, ageBand };
+  DDX.Extract = { scrub, local, extract, LLM, validate, catalogText, ageBand, SYSTEM, TOOL };
 })(typeof window !== 'undefined' ? window : globalThis);
