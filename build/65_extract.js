@@ -53,6 +53,9 @@
 - 画像所見は modality の feature（xray / us / ct）に、所見ごとに value_code を1つずつ付けて複数項目にする（例: 「CTで虫垂腫大」→ ct appendicitis、「CTで小腸拡張とニボー」→ ct sbo、「エコーで胆嚢壁肥厚」→ us gb、「CTで上腸間膜動脈の造影欠損」→ ct ischemia、「CTで尿管結石」→ ct stone、「CTで異常なし」→ ct normal）。
 - 「free air なし」「虫垂腫大は指摘できず」のような否定の画像所見は項目として出さない（画像全体が正常なら normal を1つ）。該当コードの無い画像所見（腹水、リンパ節腫大など）は unmapped に入れる。
 - 画像で偶発的に見つかった胆石は gallstone_hx（胆石あり）にする。
+- 肝胆膵・脾・腎梗塞・腹水・腸重積・腸管壁肥厚などの CT 所見も ct の値にする。MRI/MRCP の同じ所見も ct に入れる（例: 「MRCPで総胆管拡張」→ ct biliary_dilation、「CTで門脈血栓」→ ct pvt、「CTで腹水」→ ct ascites）。身体診察の腹水（波動・濁音界移動）だけが ascites_exam。
+- 画像の「肝硬変像」を既往（cirrhosis_hx）にしない。圧痛だけの記載を腹痛（abd_pain）にしない。「無痛性」「痛みを伴わない」は abd_pain を absent にする。
+- 妊娠週数は pregnancy_status（14週未満 first_tri、それ以降 late）。免疫チェックポイント阻害薬（ニボルマブ等）の使用は ici_use。
 - 年齢帯・性別・妊娠可能性が読み取れれば context に入れる。個人を特定する情報は出力しない。
 - 各項目には根拠となった短い引用(quote)を付ける。
 
@@ -138,28 +141,28 @@ ${catalogText()}`;
     ['dysuria', '排尿時痛|排尿痛|頻尿|残尿感', null], ['vaginal_bleeding', '不正(性器)?出血|性器出血', null], ['jaundice_sub', '黄疸|眼球黄染', null], ['weight_loss', '体重(減少|が減)', null],
     ['chest_sx', '胸痛|胸が苦しい|呼吸苦|息切れ|冷汗', null], ['syncope', '失神|気を失|前失神|意識消失', null], ['sick_contact_food', '周囲に同(様|じ)症状|家族も|食中毒|生もの|生肉|生牡蠣|生ガキ', null], ['scrotal_pain', '陰嚢(の)?痛|精巣(の)?痛|睾丸', null],
     ['pain_onset_char', '突然|急に|突発', 'sudden'], ['pain_onset_char', '徐々に|だんだん|次第に', 'gradual'],
-    ['pain_char', '食後(に|の)?(痛|増悪|悪化)|食事(で|後)(痛|増悪)', 'postprandial'], ['pain_char', '疝痛|波がある|間欠的|差し込む', 'colicky'], ['pain_char', '持続(性|的)(の)?痛|ずっと痛', 'constant'], ['pain_char', '臍(周囲)?から右下|移動', 'migrating_rlq'], ['pain_char', '背中に(放散|抜け)|背部(へ|に)放散|背部痛を伴', 'radiate_back'], ['pain_char', '肩に(放散|抜け)', 'radiate_shoulder'], ['pain_char', '鼠径(部)?に(放散|抜け)|陰部に放散', 'radiate_groin'],
+    ['pain_char', '食後(に|の)?(痛|増悪|悪化)|食事(で|後)(痛|増悪)', 'postprandial'], ['pain_char', '疝痛|波がある|間欠的|差し込む', 'colicky'], ['pain_char', '持続(性|的)(の)?痛|ずっと痛', 'constant'], ['pain_char', '(臍(周囲)?|心窩部|みぞおち|上腹部)から右下|右下腹部(へ|に)移動|痛み(が|の)?移動|移動性(の)?(痛|疼痛)', 'migrating_rlq'], ['pain_char', '背中(に|へ)(放散|抜け)|背部(へ|に)放散|背部痛を伴', 'radiate_back'], ['pain_char', '肩(甲部)?(に|へ)(放散|抜け)', 'radiate_shoulder'], ['pain_char', '鼠径(部)?(に|へ)(放散|抜け)|陰部(に|へ)放散', 'radiate_groin'],
     ['pain_worse_moving', '体動で(増悪|悪化)|動くと痛|振動で痛|歩くと痛|咳で痛', null],
     ['lmp_delayed', '月経(が)?(遅れ|遅延)|生理が(遅れ|来て)', null], ['prior_abd_surgery', '開腹|腹部手術|手術歴|(虫垂|胆嚢|胃|大腸|子宮)(切除|摘出)|帝王切開', null], ['alcohol_heavy', '大酒|多量飲酒|アルコール(多飲|依存)|毎日飲酒|飲酒歴', null],
     ['nsaid_aspirin', 'NSAID|ロキソ|ロキソニン|イブプロフェン|ボルタレン|アスピリン|バファリン|鎮痛薬', null], ['anticoag', '抗凝固|ワーファリン|ワルファリン|DOAC|エリキュース|イグザレルト|リクシアナ|プラザキサ|抗血小板|クロピドグレル', null],
     ['recent_abx', '抗菌薬|抗生剤|抗生物質', null], ['hospitalized_recent', '最近(の)?入院|入院歴|施設入所|退院後', null], ['travel', '海外渡航|渡航歴|旅行から', null],
     ['af_vascular', '心房細動|AF|Af|動脈硬化|閉塞性動脈|心筋梗塞の既往|脳梗塞の既往', null], ['cv_risk', '高血圧|脂質異常|高脂血症|喫煙|タバコ', null], ['diabetes', '糖尿病|DM|インスリン', null],
-    ['immunosupp', 'ステロイド|免疫抑制|化学療法|抗がん剤|化療', null], ['gallstone_hx', '胆石', null], ['ibd_hx', '潰瘍性大腸炎|クローン|IBD', null], ['divertic_hx', '憩室.{0,4}(既往|歴)|憩室症', null], ['pud_hx', '(胃|十二指腸)潰瘍(の)?(既往|歴)|潰瘍歴', null], ['hernia_hx', 'ヘルニア(の)?既往|ヘルニア歴|脱腸', null], ['similar_episodes', '以前(に)?も同(様|じ)|同様の発作|繰り返し', null],
-    ['rebound_guarding', '反跳痛|Blumberg|ブルンベルグ|筋性防御|腹膜刺激', null], ['rigidity', '板状硬', null], ['tender_rlq', 'McBurney|マックバーニー|右下腹部(の)?圧痛', null], ['tender_ruq', '右上腹部(の)?圧痛|右季肋部(の)?圧痛', null], ['murphy', 'Murphy|マーフィー', null],
-    ['tender_llq', '左下腹部(の)?圧痛', null], ['tender_epi', '心窩部(の)?圧痛|(?<![右左])上腹部(の)?圧痛', null], ['distension', '腹部膨満|膨隆|お腹が張', null],
+    ['immunosupp', 'ステロイド|免疫抑制|化学療法|抗がん剤|化療', null], ['gallstone_hx', '胆石', null], ['ibd_hx', '潰瘍性大腸炎|クローン|Crohn|IBD|炎症性腸疾患', null], ['divertic_hx', '憩室.{0,4}(既往|歴)|憩室症', null], ['pud_hx', '(胃|十二指腸)潰瘍(の)?(既往|歴)|潰瘍歴', null], ['hernia_hx', 'ヘルニア(の)?既往|ヘルニア歴|脱腸', null], ['similar_episodes', '以前(に)?も同(様|じ)|同様の発作|繰り返し', null],
+    ['rebound_guarding', '反跳痛|Blumberg|ブルンベルグ|筋性防御|腹膜刺激', null], ['rigidity', '板状硬', null], ['tender_rlq', 'McBurney|マックバーニー|右下腹部(の|に)?圧痛', null], ['tender_ruq', '右上腹部(の|に)?圧痛|右季肋部(の|に)?圧痛', null], ['murphy', 'Murphy|マーフィー', null],
+    ['tender_llq', '左下腹部(の|に)?圧痛', null], ['tender_epi', '心窩部(の|に)?圧痛|(?<![右左])上腹部(の|に)?圧痛', null], ['distension', '腹部膨満|(?<!(腹壁|鼠径|大腿|臍)部?(の)?)膨隆|お腹が張', null],
     ['bowel_sounds', '腸(蠕動)?音(の)?亢進|金属音', 'hyper'], ['bowel_sounds', '腸(蠕動)?音(の)?(減弱|低下)', 'hypo'], ['bowel_sounds', '腸(蠕動)?音(の)?消失', 'absent'], ['bowel_sounds', '腸(蠕動)?音(は)?正常', 'normal'],
-    ['cva_tender', 'CVA|肋骨脊柱角|叩打痛', null], ['pulsatile_mass', '拍動性(の)?腫瘤|拍動する', null], ['hernia_irreducible', '還納(不能|できない)|嵌頓', null], ['pain_disproportion', '所見に比して|所見に乏しい(のに|が)|痛みが強い割に', null],
+    ['cva_tender', 'CVA|肋骨脊柱角|(?<!肝(臓)?(の)?)叩打痛', null], ['pulsatile_mass', '拍動性(の)?腫瘤|拍動する', null], ['hernia_irreducible', '還納(不能|できない)|嵌頓', null], ['pain_disproportion', '所見に比して|所見に乏しい(のに|が)|痛みが強い割に', null],
     ['psoas_obturator', 'psoas|腸腰筋徴候|閉鎖筋徴候|obturator', null], ['dehydration_signs', '脱水|口腔(内)?乾燥|ツルゴール|皮膚の張り', null], ['rectal_blood', '直腸診で(血|出血)|直腸診.*血', null], ['adnexal_tender', '付属器(の)?圧痛|子宮頸部移動痛|CMT', null],
     ['scrotal_exam', '陰嚢(の)?(腫脹|圧痛|腫大)|精巣(の)?(腫脹|圧痛)', 'tender_swollen'],
     // 神経症状（拡張項目 neuro_sx）: 値ごとに明示ルール
     ['neuro_sx', '末梢神経障害|ニューロパチー|多発(性)?(単)?神経炎|(四肢|手足|両手|両足|手|足)(の|に)?(しびれ|痺れ)|しびれ|痺れ|知覚(障害|鈍麻)|感覚(障害|鈍麻)|筋力低下|脱力|下垂足|手袋靴下|(四肢|手|足|下肢|上肢)(の)?麻痺', 'paresthesia_weakness'],
-    ['neuro_sx', '頭痛|項部硬直|髄膜刺激', 'headache'], ['neuro_sx', '錯乱|失調|眼球運動障害|眼振|(意識|認知)(の)?変容', 'confusion_ataxia'],
+    ['neuro_sx', '頭痛|項部硬直|髄膜刺激', 'headache'], ['neuro_sx', '錯乱|失調|眼球運動障害|眼振', 'confusion_ataxia'],
     ['neuro_sx', 'めまい|眩暈|回転性', 'vertigo'], ['neuro_sx', '眼痛|視力(低下|障害)|霧視|かすみ|視野', 'eye_pain_visual'], ['neuro_sx', '局所神経|片麻痺|構音障害|失語|顔面麻痺', 'focal_deficit'], ['neuro_sx', '神経(学的)?(症状|所見|異常|脱落)', null],
  ['skin_pallor_cold', '末梢冷感|冷感|蒼白|顔色不良', null], ['consciousness', '意識(障害|レベル低下|混濁|変容)|JCS|GCS\\s*1[0-4]|傾眠|せん妄', 'altered'], ['consciousness', '意識(清明|は清明|レベル清明)', 'alert'],
     ['hcg', '(妊娠反応|hCG|HCG)\\s*(陽性|\\(\\+\\)|（\\+）|\\+)', 'pos'], ['hcg', '(妊娠反応|hCG|HCG)\\s*(陰性|\\(-\\)|（-）|-)', 'neg'],
-    ['urinalysis', '(血尿|潜血).*(膿尿|白血球)|(膿尿|白血球).*(血尿|潜血)', 'both'], ['urinalysis', '血尿|潜血', 'hematuria'], ['urinalysis', '膿尿|尿中白血球|尿WBC', 'pyuria'], ['urinalysis', '尿(検査|所見)(は)?正常|尿所見なし', 'normal'],
+    ['urinalysis', '(血尿|(?<!便)潜血).*(膿尿|白血球)|(膿尿|白血球).*(血尿|(?<!便)潜血)', 'both'], ['urinalysis', '血尿|(?<!便)潜血', 'hematuria'], ['urinalysis', '膿尿|尿中白血球|尿WBC', 'pyuria'], ['urinalysis', '尿(検査|所見)(は)?正常|尿所見なし', 'normal'],
     ['troponin', 'トロポニン\\s*(陽性|上昇|\\+)', 'pos'], ['troponin', 'トロポニン\\s*(陰性|正常|-)', 'neg'], ['ecg', '(心電図|ECG).*(ST|虚血|T波)', 'ischemic'], ['ecg', '(心電図|ECG).*(心房細動|AF|Af)', 'af'], ['ecg', '(心電図|ECG)(は|に)?(正常|異常なし)', 'normal'],
-    ['lipase', '(リパーゼ|アミラーゼ).*(3倍|著明|高値|上昇)', 'ge3x'], ['lipase', '(リパーゼ|アミラーゼ).*(軽度上昇|やや高)', 'lt3x'], ['lipase', '(リパーゼ|アミラーゼ).*(正常|基準内)', 'normal'],
+    ['lipase', '(?<!(腹水|穿刺液|ドレーン|排液)[^。]{0,8})(リパーゼ|アミラーゼ).*(3倍|著明|高値|上昇)', 'ge3x'], ['lipase', '(?<!(腹水|穿刺液|ドレーン|排液)[^。]{0,8})(リパーゼ|アミラーゼ).*(軽度上昇|やや高)', 'lt3x'], ['lipase', '(?<!(腹水|穿刺液|ドレーン|排液)[^。]{0,8})(リパーゼ|アミラーゼ).*(正常|基準内)', 'normal'],
     ['liver_enz', '(AST|ALT|肝酵素|トランスアミナーゼ).*(上昇|高値)', 'elevated'], ['liver_enz', '(AST|ALT|肝酵素).*(正常|基準内)', 'normal'], ['bili', '(ビリルビン|T-?Bil).*(上昇|高値)', 'elevated'], ['bili', '(ビリルビン|T-?Bil).*(正常|基準内)', 'normal'],
     ['alp_ggt', '(ALP|γ-?GTP|GGT).*(上昇|高値)', 'elevated'], ['renal', '(Cre|クレアチニン|BUN|腎機能).*(上昇|高値|悪化|障害)', 'elevated'], ['hb', '(Hb|ヘモグロビン|貧血).*(低下|進行)|貧血あり|貧血', 'low'],
     ['acidosis', '代謝性アシドーシス|アシドーシス', 'metabolic'], ['ddimer', 'D-?ダイマー\\s*(上昇|高値|陽性)', 'elevated'], ['ddimer', 'D-?ダイマー\\s*(正常|陰性)', 'normal'],
@@ -168,10 +171,46 @@ ${catalogText()}`;
     ['us', '(エコー|超音波|US).*(虫垂(腫大|腫脹)|虫垂炎)', 'appendix'], ['us', '(エコー|超音波|US).*(胆嚢(壁)?肥厚|胆嚢腫大|胆嚢結石|sonographic)', 'gb'], ['us', '(エコー|超音波|US).*(総胆管拡張|胆管拡張)', 'cbd_dilated'], ['us', '(エコー|超音波|US).*(腹水|液体貯留|ダグラス窩)', 'free_fluid'], ['us', '(エコー|超音波|US).*水腎', 'hydro'], ['us', '(エコー|超音波|US).*(大動脈瘤|AAA)', 'aaa'], ['us', '(エコー|超音波|US).*(付属器|卵巣)(腫大|腫瘤)', 'adnexal'], ['us', '(エコー|超音波|US)(は|で)(異常なし|正常)', 'normal'],
     ['ct', 'CT.*虫垂', 'appendicitis'], ['ct', 'CT.*憩室炎', 'diverticulitis'], ['ct', 'CT.*(free ?air|遊離ガス|フリーエア|腹腔内(遊離)?ガス)', 'free_air'],
     ['ct', 'CT.*(腸閉塞|イレウス|SBO|閉塞起点|(小腸|腸管)(の)?拡張|ニボー|鏡面像|niveau)', 'sbo'],
-    ['ct', 'CT.*(上腸間膜動脈症候群|SMA症候群|十二指腸(の)?(圧排|狭窄|通過障害)|大動脈.{0,6}上腸間膜動脈.{0,6}角)', 'duodenal_compression'], ['ct', '(?![^。]*(症候群|十二指腸|の角|角狭小|角が))CT.*(腸管虚血|壁造影不良|造影不良|造影欠損|SMA|上腸間膜動脈|腸間膜動脈|門脈ガス|腸管気腫|血栓)', 'ischemia'], ['ct', 'CT.*膵(炎|腫大|周囲)', 'pancreatitis'], ['ct', 'CT.*(大動脈瘤|解離|AAA|フラップ)', 'aortic'],
-    ['ct', 'CT.*(尿管結石|尿路結石|腎結石|(?<![胆嚢胆])結石)', 'stone'], ['ct', 'CT.*(大腸炎|腸炎|(結腸|大腸|腸管)(の)?壁肥厚)', 'colitis'], ['ct', 'CT.*(胆嚢炎|胆管炎|胆嚢壁肥厚|胆嚢周囲)', 'cholecystitis'], ['ct', 'CT.*膿瘍', 'abscess'], ['ct', 'CT.*(嵌頓|ヘルニア)', 'hernia'], ['ct', 'CT.*(付属器|卵巣)', 'adnexal'], ['ct', 'CT.*(軸捻|捻転)', 'volvulus'],
+    ['ct', 'CT.*(上腸間膜動脈症候群|SMA症候群|十二指腸(の)?(圧排|狭窄|通過障害)|大動脈.{0,6}上腸間膜動脈.{0,6}角)', 'duodenal_compression'], ['ct', '(?![^。]*(症候群|十二指腸|の角|角狭小|角が))CT.*(腸管虚血|壁造影不良|造影不良|造影欠損|SMA|上腸間膜動脈|腸間膜動脈|門脈ガス|腸管気腫|(?<!(門脈|静脈|SMV)(内)?(の)?)血栓)', 'ischemia'], ['ct', 'CT.*膵(炎|腫大|周囲)', 'pancreatitis'], ['ct', 'CT.*(大動脈瘤|解離|AAA|フラップ)', 'aortic'],
+    ['ct', 'CT.*(尿管結石|尿路結石|腎結石|(?<![胆嚢胆])結石)', 'stone'], ['ct', 'CT.*(大腸炎|腸炎|(大腸|結腸|S状結腸|直腸|盲腸|上行結腸|横行結腸|下行結腸)[^。]{0,6}壁(の)?肥厚)', 'colitis'], ['ct', 'CT.*(胆嚢炎|胆管炎|胆嚢壁肥厚|胆嚢周囲)', 'cholecystitis'], ['ct', 'CT.*膿瘍', 'abscess'], ['ct', 'CT.*(嵌頓|(?<!内)ヘルニア)', 'hernia'], ['ct', 'CT.*(付属器|卵巣)', 'adnexal'], ['ct', 'CT.*(軸捻|捻転)', 'volvulus'],
     ['ct', 'CT(は|で|では|上|:|：)?\\s*(明らかな)?(異常なし|異常所見なし|正常|特記所見なし|特記すべき所見なし|有意な所見なし)', 'normal'],
-    ['gallstone_hx', '(CT|エコー|超音波|US).*(胆嚢結石|胆石)', null]
+    ['gallstone_hx', '(CT|エコー|超音波|US).*(胆嚢結石|胆石)', null],
+    // 腹部CT（ct_other / ct_wall_mass / 肝胆膵画像を集約した値。MRI/MRCP の同じ所見もここ）
+    ['ct', '(CT|ＣＴ|MRI|MRCP)[^。]*((肝|肝臓)(内)?(の)?(腫瘤|腫瘍|SOL|占拠性病変|結節)|肝(転移|細胞癌)|HCC)', 'liver_mass'],
+    ['ct', '(CT|ＣＴ|MRI|MRCP)[^。]*(脂肪肝|肝(の)?脂肪(沈着|化))', 'fatty_liver'],
+    ['ct', '(CT|ＣＴ|MRI|MRCP)[^。]*(肝硬変|肝(表面|辺縁)(の)?(凹凸|不整|鈍)|肝(の)?萎縮)', 'cirrhotic_liver'],
+    ['ct', '(CT|ＣＴ|MRI|MRCP)[^。]*((肝内|肝外|総)?胆管(の)?(拡張|狭窄))', 'biliary_dilation'],
+    ['ct', '(CT|ＣＴ|MRI|MRCP)[^。]*(胆嚢(の)?壁(の)?肥厚|胆嚢(の)?(腫瘤|腫瘍|隆起))', 'gb_wall_thick'],
+    ['ct', '(CT|ＣＴ|MRI|MRCP)[^。]*(膵(臓)?(の)?(腫瘤|腫瘍|癌|低吸収)|(主)?膵管(の)?拡張)', 'pancreatic_mass'],
+    ['ct', '(CT|ＣＴ|MRI|MRCP)[^。]*(膵(の)?嚢胞|IPMN|嚢胞性膵)', 'pancreatic_cyst'],
+    ['ct', '(CT|ＣＴ|MRI|MRCP)[^。]*(びまん性(の)?膵腫大|ソーセージ様|capsule-like)', 'diffuse_pancreas_swelling'],
+    ['ct', '(CT|ＣＴ|MRI|MRCP)[^。]*(膵(石|石灰化)|膵管(の)?不整)', 'chronic_pancreatitis'],
+    ['ct', '(CT|ＣＴ|MRI|MRCP)[^。]*(門脈(内)?(の)?(血栓|閉塞)|(上)?腸間膜静脈(内)?(の)?血栓|SMV(内)?(の)?血栓)', 'pvt'],
+    ['ct', '(CT|ＣＴ|MRI|MRCP)[^。]*(腹水|腹腔内(の)?液体貯留)', 'ascites'],
+    ['ct', '(CT|ＣＴ|MRI|MRCP)[^。]*(胃(の)?壁(の)?肥厚|胃壁肥厚)', 'gastric_wall_thick'],
+    ['ct', '(CT|ＣＴ|MRI|MRCP)[^。]*(脾梗塞)', 'splenic_infarct'],
+    ['ct', '(CT|ＣＴ|MRI|MRCP)[^。]*(脾(臓)?(の)?(破裂|損傷)|脾動脈瘤破裂)', 'splenic_rupture'],
+    ['ct', '(CT|ＣＴ|MRI|MRCP)[^。]*(肝脾腫|脾腫|肝腫大)', 'hepatosplenomegaly'],
+    ['ct', '(CT|ＣＴ|MRI|MRCP)[^。]*(腎梗塞|腎(の)?楔状(の)?造影不良)', 'renal_infarct'],
+    ['ct', '(CT|ＣＴ|MRI|MRCP)[^。]*((後腹膜|腹腔内|腸間膜)(の)?(腫瘤|腫瘍))', 'retro_mass'],
+    ['ct', '(CT|ＣＴ|MRI|MRCP)[^。]*(腸管(壁)?(内)?気腫|腸管壁内(の)?ガス|pneumatosis)', 'pneumatosis'],
+    ['ct', '(CT|ＣＴ|MRI|MRCP)[^。]*(腸腰筋(の)?(膿瘍|腫大))', 'psoas_abscess'],
+    ['ct', '(CT|ＣＴ|MRI|MRCP)[^。]*(腹直筋鞘(内)?血腫|腹壁(の)?血腫)', 'wall_hematoma'],
+    ['ct', '(CT|ＣＴ|MRI|MRCP)[^。]*((腸)?重積|target sign|ターゲットサイン)', 'intussusception'],
+    ['ct', '(CT|ＣＴ|MRI|MRCP)[^。]*((腸管|小腸|大腸|結腸|S状結腸|直腸|盲腸|上行結腸|横行結腸|下行結腸)[^。]{0,6}壁(の)?肥厚|腸管壁肥厚)', 'wall_thick'],
+    ['ct', '(CT|ＣＴ|MRI|MRCP)[^。]*((腸管|小腸|大腸|結腸|S状結腸|直腸|盲腸)[^。]{0,6}(腫瘤|腫瘍|全周性(の)?(壁肥厚|狭窄)|apple core))', 'bowel_mass'],
+    ['ct', '(CT|ＣＴ|MRI|MRCP)[^。]*(内ヘルニア|傍十二指腸|網嚢孔|closed ?loop|クローズドループ|beak sign)', 'internal_hernia'],
+    // 検査（拡張項目。明示ルールのみで抽出）
+    ['fobt', '便潜血(反応)?\\s*(検査)?\\s*(は|で)?\\s*(陽性|\\(\\+\\)|（\\+）|\\+)', 'pos'], ['fobt', '便潜血(反応)?\\s*(検査)?\\s*(は|で)?\\s*(陰性|\\(-\\)|（-）|-)', 'neg'],
+    ['electrolyte', '低Na|低ナトリウム', 'hypona'], ['electrolyte', '高K(?![A-Za-z])|高カリウム', 'hyperk'], ['electrolyte', '低K(?![A-Za-z])|低カリウム', 'hypok'], ['electrolyte', '高Ca|高カルシウム', 'hyperca'],
+    ['ck', '(?<![A-Za-z])(CK|CPK)(?!-?MB)\\s*(の)?(上昇|高値)', 'elevated'], ['ck', '(?<![A-Za-z])(CK|CPK)(?!-?MB)\\s*(は)?(正常|基準内)', 'normal'],
+    ['ldh', '(?<![A-Za-z])(LDH?|乳酸脱水素酵素)\\s*(の)?(上昇|高値)', 'elevated'], ['ldh', '(?<![A-Za-z])LDH?\\s*(は)?(正常|基準内)', 'normal'],
+    ['sil2r', '(sIL-?2R|可溶性IL-?2(受容体|レセプター))\\s*(の)?(上昇|高値)', 'elevated'],
+    ['ammonia', '(アンモニア|NH3)\\s*(の)?(上昇|高値)|高アンモニア', 'elevated'], ['ammonia', '(アンモニア|NH3)\\s*(は)?(正常|基準内)', 'normal'],
+    ['hemolysis_labs', '溶血(所見|性)?(あり|を認め)|ハプトグロビン(の)?(低値|低下|感度以下)|網(状)?赤血球(の)?(増加|上昇)|間接(型)?ビリルビン(優位)?', 'positive'],
+    ['ici_use', '免疫チェックポイント阻害|(?<![A-Za-z])ICI(?![A-Za-z])|ニボルマブ|オプジーボ|ペムブロリズマブ|キイトルーダ|イピリムマブ|ヤーボイ|アテゾリズマブ|テセントリク|デュルバルマブ|イミフィンジ|アベルマブ|バベンチオ|トレメリムマブ|イジュド|セミプリマブ|リブタヨ|抗PD-?L?1|抗CTLA-?4', null],
+    ['pregnancy_status', '産褥|産後|出産後|分娩後', 'postpartum'], ['pregnancy_status', '不妊治療|排卵誘発|体外受精|hCG投与', 'infertility_tx'], ['pregnancy_status', '妊娠初期|つわり', 'first_tri'], ['pregnancy_status', '妊娠(中期|後期)|臨月', 'late'],
+    ['diarrhea_pattern', '脂肪便|油っぽい便|便が(水に)?浮く', 'steatorrhea'],
   ];
   function bucketTime(text) {
     const m1 = text.match(/(\d+)\s*(分|時間|日|週間|週|か月|ヶ月|カ月)\s*(前|ほど前|くらい前|から)/);
@@ -202,6 +241,16 @@ ${catalogText()}`;
     for (m of text.matchAll(/(?:乳酸|Lac|ラクテート|lactate)\s*[:：=]?\s*(\d{1,2}(?:\.\d+)?)/gi)) { const v = parseFloat(m[1]); add('lactate', v < 2 ? 'lt2' : v <= 4 ? '2_4' : 'gt4', m[0]); }
     for (m of text.matchAll(/(?:血糖|BS|Glu|グルコース)\s*[:：=]?\s*(\d{2,4})/gi)) { const v = +m[1]; add('glucose', v > 250 ? 'gt250' : 'normal', m[0]); }
     for (m of text.matchAll(/(?:Hb|ヘモグロビン)\s*[:：=]?\s*(\d{1,2}(?:\.\d+)?)/g)) { const v = parseFloat(m[1]); add('hb', v < 11 ? 'low' : 'normal', m[0]); }
+    // 検査値パネルと同じ変換（DDX.LABS.resolve）。AST と ALT が同じ文にあればパターンも出る
+    if (DDX.LABS && DDX.LABS.resolve) {
+      const LV = {}, pick = (id, re, f) => { const mm = text.match(re); if (mm) { let v = parseFloat(mm[1]); if (f) v = f(v, mm); if (v >= 0) LV[id] = v; } };
+      pick('na', /(?<![A-Za-z])Na\s*[:：=]?\s*(1\d{2})(?!\d)/); pick('k', /(?<![A-Za-z])K\s*[:：=]?\s*(\d(?:\.\d+)?)(?![\d.])/); pick('ca', /(?<![A-Za-z])Ca\s*[:：=]?\s*(\d{1,2}(?:\.\d+)?)(?![\d.\-])/);
+      pick('ck', /(?<![A-Za-z])C(?:P)?K(?!-?MB)\s*[:：=]?\s*(\d{2,6})/); pick('ldh', /(?<![A-Za-z])LDH?\s*[:：=]?\s*(\d{2,5})/); pick('nh3', /(?:NH3|NH₃|アンモニア)\s*[:：=]?\s*(\d{2,4})/);
+      pick('plt', /(?:Plt|PLT|血小板)\s*[:：=]?\s*(\d+(?:\.\d+)?)\s*(万)?/, (v, mm) => mm[2] ? v : DDX.LABS.byId.plt.norm(v));
+      pick('ast', /(?<![A-Za-z])(?:AST|GOT)\s*[:：=]?\s*(\d{1,5})/); pick('alt', /(?<![A-Za-z])(?:ALT|GPT)\s*[:：=]?\s*(\d{1,5})/);
+      for (const x of DDX.LABS.resolve(LV, {})) add(x.f, x.code, Object.keys(LV).join('/'), x.status);
+    }
+    for (m of text.matchAll(/妊娠\s*(\d{1,2})\s*週/g)) add('pregnancy_status', +m[1] < 14 ? 'first_tri' : 'late', m[0]);
   }
   /* 拡張パックの feature（ext:true）用の語彙をラベルから自動生成 */
   let KW_EXT = null;
@@ -209,7 +258,8 @@ ${catalogText()}`;
     if (KW_EXT) return KW_EXT;
     KW_EXT = [];
     const esc = t => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    const MANUAL = { radiation_hx: ['放射線治療', '放射線照射', '照射歴'], cancer_hx: ['癌の既往', 'がんの既往', '担癌', '悪性腫瘍の既往', '化学療法中'], cirrhosis_hx: ['肝硬変', '慢性肝炎', 'B型肝炎', 'C型肝炎', '慢性肝疾患'], dialysis_ckd: ['透析', '腎不全', 'CKD'], opioid_use: ['オピオイド', 'オキシコドン', 'モルヒネ', 'フェンタニル', 'トラマドール'], heartburn_regurg: ['胸やけ', '胸焼け', '呑酸', '逆流症状'], dysphagia: ['嚥下障害', '嚥下痛', '飲み込みにくい', 'つかえ'], hepatomegaly: ['肝腫大', '肝を触知', '肝叩打痛'], splenomegaly: ['脾腫', '脾を触知'], ascites_exam: ['腹水', '波動', 'shifting'], leg_edema: ['下腿浮腫', '下肢浮腫', '浮腫あり'], pruritus: ['瘙痒', 'そう痒', 'かゆみ'], tenesmus_urgency: ['しぶり腹', '便意切迫', 'テネスムス'], early_satiety_bloating: ['早期飽満', '早期満腹', '食後膨満', 'もたれ'], carnett_sign: ['Carnett', 'カーネット'], sti_risk: ['性感染症', 'STI', '複数パートナー', 'MSM', 'IUD'], raw_fish_intake: ['生魚', 'サバ', 'イカ', 'アジ', '刺身', '寿司'], pain_fasting_nocturnal: ['空腹時痛', '夜間痛', '空腹時に痛'], pain_relief_leaning_forward: ['前屈で軽減', '前かがみ', '坐位で軽減'], steatorrhea: ['脂肪便', '油っぽい便'], fatigue: ['倦怠感', 'だるさ', '疲労感'], obesity: ['肥満', 'BMI'], subcutaneous_emphysema: ['皮下気腫', 'Hamman'], forceful_vomiting_prior: ['激しい嘔吐の後', '嘔吐直後'], allergy_hx: ['喘息', 'アトピー', 'アレルギー性鼻炎', 'アレルギー'], new_medication: ['新しく開始', '開始した薬', '漢方', 'サプリ', '健康食品'], hepatotoxic_drug_supplement: ['健康食品', 'サプリ', '漢方', '免疫チェックポイント'], pancreatitis_hx: ['膵炎の既往', '膵炎歴', '高TG', '高トリグリセリド'], diabetes_new_worsening: ['糖尿病の新規発症', '血糖コントロール悪化'], blood_sexual_exposure: ['輸血歴', '刺青', '注射薬物', '性的接触'], eosinophilia: ['好酸球増多', '好酸球'], igg4: ['IgG4'], diarrhea_pattern: ['下痢', '便'], urine_stool_color: ['尿', '便'], abd_mass: ['腫瘤', '腫瘍を触知', 'しこり'], skin_finding: ['皮疹', '紫斑', '水疱', '紅斑', '色素沈着', 'くも状血管腫', '手掌紅斑'], electrolyte: ['Na', 'K', 'Ca', 'ナトリウム', 'カリウム', 'カルシウム'], endocrine_lab: ['TSH', 'コルチゾール', '甲状腺'], hemolysis_labs: ['溶血', 'ハプトグロビン', 'LDH'], menstrual_relation: ['月経', '生理', '排卵'], pregnancy_status: ['妊娠', '産褥', '分娩', '不妊治療'], ingestion_event: ['誤飲', '異物', '服用', '内視鏡'], paracentesis: ['腹水穿刺', 'SAAG'], endoscopy: ['内視鏡', '胃カメラ', 'EGD', 'GIF', 'CF', '大腸カメラ'], cxr: ['胸部X線', '胸部レントゲン', '胸写', 'CXR'], ct_other: ['CT'] };
+    const MANUAL = { nocturnal_sx: [/(夜間|夜中|睡眠中|就寝中)[^。]{0,10}(目が覚め|目を覚ま|覚醒|起き(る|た|て))|夜間覚醒/], groin_bulge: [/(鼠径|大腿|腹壁|臍)部?(の|に)?(膨隆|腫瘤|しこり|ふくらみ|腫脹)|(鼠径|大腿|臍|腹壁|白線|半月状線)ヘルニア(?!の既往|の術後|術後|の手術)/], autoimmune_hx: ['膠原病', 'SLE', '全身性エリテマトーデス', 'ループス', '関節リウマチ', '強皮症', '皮膚筋炎', '多発性筋炎', 'シェーグレン', 'MCTD', '混合性結合組織病', '血管炎の既往', '結節性多発動脈炎', 'EGPA', '好酸球性多発血管炎'], thrombophilia_hx: ['抗リン脂質抗体', 'APS', 'プロテインC', 'プロテインS', 'アンチトロンビン', '血栓性素因', '凝固異常', '血栓症の既往', 'DVT', '深部静脈血栓', '肺塞栓の既往', '骨髄増殖性', '真性多血症', '本態性血小板血症', 'エストロゲン', '経口避妊薬', 'ピル'], bedridden_psych: ['長期臥床', '寝たきり', '臥床', '施設入所', '認知症', '精神疾患', 'パーキンソン', '統合失調症'], radiation_hx: ['放射線治療', '放射線照射', '照射歴'], cancer_hx: ['癌の既往', 'がんの既往', '担癌', '悪性腫瘍の既往', '化学療法中'], cirrhosis_hx: [/(?<!(CT|ＣＴ|エコー|超音波|US|MRI|MRCP)[^。]*)(肝硬変|慢性肝炎|B型肝炎|C型肝炎|慢性肝疾患)(?!像|様)/], dialysis_ckd: ['透析', '腎不全', 'CKD'], opioid_use: ['オピオイド', 'オキシコドン', 'モルヒネ', 'フェンタニル', 'トラマドール'], heartburn_regurg: ['胸やけ', '胸焼け', '呑酸', '逆流症状'], dysphagia: ['嚥下障害', '嚥下痛', '飲み込みにくい', 'つかえ'], hepatomegaly: [/(?<!(CT|ＣＴ|エコー|超音波|US|MRI|MRCP)[^。]*)(肝腫大|肝を触知|肝叩打痛|肝(臓)?を\d*横指)/], splenomegaly: [/(?<!(CT|ＣＴ|エコー|超音波|US|MRI|MRCP)[^。]*)(脾腫|脾を触知|脾(臓)?を触)/], ascites_exam: [/(?<!(CT|ＣＴ|エコー|超音波|US|MRI|MRCP)[^。]*)(腹水|波動|shifting|蛙腹)/], leg_edema: [/(下腿|下肢|両足|足|脚)(の|に)?(浮腫|むくみ)|圧痕性浮腫|pitting/], pruritus: ['瘙痒', 'そう痒', 'かゆみ'], tenesmus_urgency: ['しぶり腹', '便意切迫', 'テネスムス'], early_satiety_bloating: ['早期飽満', '早期満腹', '食後膨満', 'もたれ'], carnett_sign: ['Carnett', 'カーネット'], sti_risk: ['性感染症', 'STI', '複数パートナー', 'MSM', 'IUD'], raw_fish_intake: ['生魚', 'サバ', 'イカ', 'アジ', '刺身', '寿司'], pain_fasting_nocturnal: ['空腹時痛', '夜間痛', '空腹時に痛'], pain_relief_leaning_forward: ['前屈で軽減', '前かがみ', '坐位で軽減'], steatorrhea: ['脂肪便', '油っぽい便'], fatigue: ['倦怠感', 'だるさ', '疲労感'], obesity: ['肥満', 'BMI'], subcutaneous_emphysema: ['皮下気腫', 'Hamman'], forceful_vomiting_prior: ['激しい嘔吐の後', '嘔吐直後'], allergy_hx: ['喘息', 'アトピー', 'アレルギー性鼻炎', 'アレルギー'], new_medication: ['新しく開始', '開始した薬', '漢方', 'サプリ', '健康食品'], pancreatitis_hx: ['膵炎の既往', '膵炎歴', '高TG', '高トリグリセリド'], diabetes_new_worsening: ['糖尿病の新規発症', '血糖コントロール悪化'], blood_sexual_exposure: ['輸血歴', '刺青', '注射薬物', '性的接触'], eosinophilia: ['好酸球増多', '好酸球'], igg4: ['IgG4'], diarrhea_pattern: ['下痢', '便'], urine_stool_color: ['尿', '便'], abd_mass: ['腫瘤', '腫瘍を触知', 'しこり'], skin_finding: ['皮疹', '紫斑', '水疱', '紅斑', '色素沈着', 'くも状血管腫', '手掌紅斑'], endocrine_lab: ['TSH', 'コルチゾール', '甲状腺'], menstrual_relation: ['月経', '生理', '排卵'], ingestion_event: ['誤飲', '異物', '服用', '内視鏡'], paracentesis: ['腹水穿刺', 'SAAG'], endoscopy: ['内視鏡', '胃カメラ', 'EGD', 'GIF', 'CF', '大腸カメラ'], cxr: ['胸部X線', '胸部レントゲン', '胸写', 'CXR'] };
+    const EXPLICIT = new Set(['neuro_sx', 'electrolyte', 'pregnancy_status', 'fobt', 'ck', 'ldh', 'sil2r', 'ammonia', 'ici_use', 'hemolysis_labs']);
     const GENERIC = /^(腹部|上腹部|下腹部|骨盤|腫瘤|触知|正常|異常|異常なし|なし|所見|既往|歴|使用|服用|摂取|上昇|低下|陽性|陰性|その他|増多|性状|変化|急性|慢性|検査|血清|末梢|皮膚|神経|症状|パターン|状態|関連|リスク|持続|反復|大量|少量|頻回|軽減|増悪|数時間|数日|以内|新規|最近|一時|治療中|治療歴|状態)$/;
     for (const f of KB().features) {
       if (!f.ext) continue;
@@ -217,9 +267,10 @@ ${catalogText()}`;
       const strip = t => t.replace(/（.*?）|\(.*?\)/g, '').trim();
       const stem = t => { const m = t.replace(/(の)?(既往|歴|所見|検査|触知|の使用|使用|摂取)$/, ''); return m.length >= 2 ? m : t; };
       const manual = f.kw || MANUAL[f.id];
-      const terms = manual ? manual.map(t => t.trim()).filter(Boolean) : strip(f.label).split(/[/／・]/).map(t => stem(t.trim())).filter(t => t.length >= 2 && !GENERIC.test(t));
+      if (EXPLICIT.has(f.id)) continue;
+      const terms = manual ? manual.map(t => t instanceof RegExp ? t : t.trim()).filter(Boolean) : strip(f.label).split(/[/／・]/).map(t => stem(t.trim())).filter(t => t.length >= 2 && !GENERIC.test(t));
       if (!terms.length) continue;
-      const fre = terms.map(esc).join('|');
+      const fre = terms.map(t => t instanceof RegExp ? t.source : esc(t)).join('|');
       if (f.values) {
         // 値付き: 項目語と値語の両方が同じ文にあるときだけ（値語だけでは反応しない）
         for (const v of f.values) { const vt = strip(v.label).split(/[/／、・]/).map(t => t.trim()).filter(t => t.length >= 2 && !GENERIC.test(t)); if (vt.length) KW_EXT.push([f.id, vt.map(esc).join('|'), v.code, fre]); }
@@ -235,11 +286,12 @@ ${catalogText()}`;
     for (const s of sentences) {
       const tb = bucketTime(s), tr = trendOf(s);
       // 腹痛（部位）
-      if (/痛/.test(s)) {
+      if (/痛/.test(s.replace(/圧痛|叩打痛|反跳痛|移動痛|放散痛|無痛/g, ''))) {
         let any = false;
         for (const [code, re] of LOC) { const m = s.match(new RegExp(re)); if (m) { any = true; const neg = negated(s, m.index, m[0].length) && /痛.{0,4}(なし|ない)/.test(s); add('abd_pain', code, s.slice(0, 60), neg ? 'absent' : 'present', { severity: sevOf(s), time_context: { elapsed_bucket: tb || 'unknown', trend: tr } }); } }
         if (!any && /腹痛|お腹が痛|腹が痛/.test(s)) add('abd_pain', 'diffuse', s.slice(0, 60), /腹痛(は|も)?(なし|ない)/.test(s) ? 'absent' : 'present', { severity: sevOf(s), time_context: { elapsed_bucket: tb || 'unknown', trend: tr } });
       }
+      if (/無痛性|痛み(の|を)?(ない|伴わない|なし)|腹痛(は|を)?伴わ/.test(s)) add('abd_pain', null, s.slice(0, 60), 'absent', { time_context: { elapsed_bucket: tb || 'unknown', trend: 'unknown' } });
       for (const [fid, re, val, fre] of KW.concat(extKW())) {
         if (fre && !new RegExp(fre).test(s)) continue; // 値付き拡張項目: 項目語が同じ文に必要
         const m = s.match(new RegExp(re)); if (!m) continue;
@@ -250,7 +302,7 @@ ${catalogText()}`;
         if (f.multi && f.type === 'imaging' && neg) continue; // 画像の「〜なし」は所見として登録しない（異常なし は normal で扱う）。症状系の multi は値付き absent で登録
         add(fid, f.values ? val : null, s.slice(0, 60), neg ? 'absent' : 'present', extra);
       }
-      numbers(s, (fid, val, q) => add(fid, val, q, 'present', { time_context: { elapsed_bucket: tb || 'unknown', trend: 'unknown' } }));
+      numbers(s, (fid, val, q, st) => add(fid, val, q, st || 'present', { time_context: { elapsed_bucket: tb || 'unknown', trend: 'unknown' } }));
     }
     // 文脈
     const ctx = {}; const am = text.match(/(\d{1,3})\s*歳/) || text.match(/(\d)0代/);

@@ -43,7 +43,10 @@
   "values": {
    "normal": "normal",
    "pneumomediastinum": "pneumomediastinum",
-   "effusion_pneumothorax": "infiltrate_effusion",
+   "effusion_pneumothorax": [
+    "effusion",
+    "pneumothorax"
+   ],
    "mediastinal_widening": "mediastinal_wide"
   }
  },
@@ -104,15 +107,24 @@
  "cxr": {
   "to": "cxr",
   "values": {
-   "infiltrate": "infiltrate_effusion",
-   "effusion": "infiltrate_effusion",
-   "pneumothorax": "pneumomediastinum",
+   "infiltrate": "infiltrate",
+   "effusion": "effusion",
+   "pneumothorax": "pneumothorax",
    "free_air_diaphragm": "free_air",
-   "mediastinal_air": "pneumomediastinum",
-   "infiltrate_effusion": "infiltrate_effusion",
+   "mediastinal_air": [
+    "pneumomediastinum",
+    "mediastinal_wide"
+   ],
+   "infiltrate_effusion": [
+    "infiltrate",
+    "effusion"
+   ],
    "free_air": "free_air",
    "mediastinal_wide": "mediastinal_wide",
-   "pneumomediastinum": "pneumomediastinum",
+   "pneumomediastinum": [
+    "pneumomediastinum",
+    "pneumothorax"
+   ],
    "normal": "normal"
   }
  },
@@ -143,6 +155,258 @@
   "to": "neuro_sx",
   "values": {
    "*": "paresthesia_weakness"
+  }
+ },
+ "steatorrhea": {
+  "to": "diarrhea_pattern",
+  "values": {
+   "*": "steatorrhea"
+  }
+ },
+ "hepatotoxic_drug_supplement": {
+  "to": "new_medication"
+ },
+ "painless_bleed": {
+  "to": "gi_bleed",
+  "values": {
+   "*": "hematochezia"
+  }
+ },
+ "drug_hx_metabolic": {
+  "to": "drug_hx_metabolic",
+  "values": {
+   "nsaid": "@nsaid_aspirin",
+   "diuretic": [
+    "diuretic",
+    "laxative"
+   ],
+   "*": "="
+  }
+ },
+ "ct_other": {
+  "to": "ct",
+  "values": {
+   "liver_mass": "liver_mass",
+   "splenic_lesion": [
+    "splenic_infarct",
+    "splenic_rupture"
+   ],
+   "renal_infarct": "renal_infarct",
+   "ascites": "ascites",
+   "mass": "retro_mass",
+   "pneumatosis": "pneumatosis",
+   "psoas_abscess": "psoas_abscess",
+   "wall_hematoma": "wall_hematoma",
+   "pvt": "pvt",
+   "intussusception": "intussusception",
+   "hepatosplenomegaly": "hepatosplenomegaly"
+  }
+ },
+ "ct_wall_mass": {
+  "to": "ct",
+  "values": {
+   "wall_thick": "wall_thick",
+   "mass": "bowel_mass",
+   "intussusception": "intussusception",
+   "internal_hernia": "internal_hernia"
+  }
+ },
+ "hb_imaging": {
+  "expand": [
+   {
+    "to": "ct",
+    "values": {
+     "normal": "normal",
+     "liver_mass": "liver_mass",
+     "fatty_liver": "fatty_liver",
+     "cirrhotic_liver": "cirrhotic_liver",
+     "biliary_dilation": "biliary_dilation",
+     "gb_wall_thick": "gb_wall_thick",
+     "pancreatic_mass": "pancreatic_mass",
+     "pancreatic_cyst": "pancreatic_cyst",
+     "diffuse_pancreas_swelling": "diffuse_pancreas_swelling",
+     "chronic_pancreatitis": "chronic_pancreatitis",
+     "portal_thrombosis": "pvt",
+     "ascites": "ascites",
+     "gastric_wall_thick": "gastric_wall_thick"
+    }
+   },
+   {
+    "to": "us",
+    "values": {
+     "normal": "normal",
+     "biliary_dilation": "cbd_dilated",
+     "gb_wall_thick": "gb",
+     "ascites": "free_fluid"
+    }
+   }
+  ]
+ },
+ "extraintestinal": {
+  "expand": [
+   {
+    "to": "skin_finding",
+    "values": {
+     "*": "erythema_nodosum"
+    },
+    "sens": 0.2,
+    "spec": 0.9
+   },
+   {
+    "to": "arthralgia",
+    "sens": 0.2,
+    "spec": 0.9
+   },
+   {
+    "to": "oral_aphthae_behcet",
+    "sens": 0.2,
+    "spec": 0.9
+   },
+   {
+    "to": "neuro_sx",
+    "values": {
+     "*": "eye_pain_visual"
+    },
+    "sens": 0.2,
+    "spec": 0.9
+   }
+  ]
+ },
+ "autoimmune_hx": {
+  "expand": [
+   {
+    "to": "autoimmune_hx"
+   },
+   {
+    "to": "allergy_hx",
+    "sens": 0.2,
+    "spec": 0.9
+   },
+   {
+    "to": "hepatitis_serology",
+    "values": {
+     "*": "hbs_ag_igm_hbc_pos"
+    },
+    "sens": 0.2,
+    "spec": 0.95
+   }
+  ]
+ },
+ "thrombophilia_hx": {
+  "expand": [
+   {
+    "to": "thrombophilia_hx",
+    "sens": 0.3,
+    "spec": 0.97
+   },
+   {
+    "to": "cirrhosis_hx",
+    "sens": 0.25,
+    "spec": 0.9
+   },
+   {
+    "to": "cancer_hx",
+    "sens": 0.2,
+    "spec": 0.9
+   },
+   {
+    "to": "prior_abd_surgery",
+    "sens": 0.2,
+    "spec": 0.85
+   }
+  ]
+ },
+ "ck_ldh": {
+  "expand": [
+   {
+    "to": "ck",
+    "values": {
+     "elevated": "elevated",
+     "normal": "normal"
+    }
+   },
+   {
+    "to": "ldh",
+    "values": {
+     "elevated": "elevated",
+     "normal": "normal"
+    }
+   }
+  ]
+ },
+ "ldh_sil2r": {
+  "expand": [
+   {
+    "to": "ldh",
+    "values": {
+     "high": "elevated",
+     "normal": "normal"
+    }
+   },
+   {
+    "to": "sil2r",
+    "values": {
+     "high": "elevated",
+     "normal": "normal"
+    }
+   }
+  ]
+ },
+ "hemolysis_labs": {
+  "expand": [
+   {
+    "to": "hemolysis_labs"
+   },
+   {
+    "to": "ldh",
+    "values": {
+     "positive": "elevated"
+    }
+   }
+  ]
+ },
+ "hair_nail_pigment": {
+  "expand": [
+   {
+    "to": "hair_nail_pigment"
+   },
+   {
+    "to": "skin_finding",
+    "values": {
+     "*": "pigmentation"
+    }
+   }
+  ]
+ },
+ "drug_hx_colitis": {
+  "to": "drug_hx_colitis",
+  "values": {
+   "ici": "DROP",
+   "*": "="
+  }
+ },
+ "endoscopy": {
+  "to": "endoscopy",
+  "values": {
+   "ulcer": "peptic_ulcer",
+   "peptic_ulcer": [
+    "peptic_ulcer",
+    "erosive_gastritis"
+   ],
+   "*": "="
+  }
+ },
+ "sx_sequence": {
+  "to": "sx_sequence",
+  "values": {
+   "pain_then_diarrhea_then_blood": "pain_then_diarrhea_then_blood"
+  }
+ },
+ "ingestion_event": {
+  "to": "ingestion_event",
+  "values": {
+   "none": null,
+   "*": "="
   }
  }
 }

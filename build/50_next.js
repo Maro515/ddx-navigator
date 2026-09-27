@@ -13,7 +13,7 @@
   function H(p) { let h = 0; for (const x of p) if (x > 0) h -= x * Math.log(x); return h; }
   function ageIdx(b) { const i = KB().ageIndex[b]; return i === undefined ? null : i; }
   function featureApplicable(f, ctx) {
-    const femaleOnly = ['adnexal_tender', 'hcg', 'lmp_delayed', 'vaginal_bleeding'];
+    const femaleOnly = ['adnexal_tender', 'hcg', 'lmp_delayed', 'vaginal_bleeding', 'pregnancy_status', 'menstrual_relation', 'vaginal_discharge'];
     const maleOnly = ['scrotal_exam', 'scrotal_pain'];
     if (ctx.sex === 'male' && femaleOnly.includes(f.id)) return false;
     if (ctx.sex === 'female' && maleOnly.includes(f.id)) return false;

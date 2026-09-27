@@ -1,6 +1,6 @@
 /* 回帰テスト（合成症例）: node tests/run_tests.js */
 const path = require('path');
-for (const f of ['10_kb', '11_kb_abd_ext', '12_evidence', '15_demo', '18_bodymap', '20_state', '30_safety', '40_ddx', '50_next', '60_audit', '65_extract']) require(path.join(__dirname, '..', 'build', f + '.js'));
+for (const f of ['10_kb', '11_kb_abd_ext', '12_evidence', '15_demo', '18_bodymap', '19_labs', '20_state', '30_safety', '40_ddx', '50_next', '60_audit', '65_extract']) require(path.join(__dirname, '..', 'build', f + '.js'));
 const D = globalThis.DDX, KB = D.KB;
 let seed = 12345; const rnd = () => { seed = (seed * 1103515245 + 12345) & 0x7fffffff; return seed / 0x7fffffff; };
 const pick = a => a[Math.floor(rnd() * a.length)];
@@ -197,6 +197,57 @@ check('入力順序不変性 (Top10/Next5/hash 同一)', orderFail === 0, `${ord
   check('SMA症候群: 慢性心窩部痛＋胆汁性嘔吐＋体重減少＋食後増悪で Top5 に入る', rank > 0 && rank <= 5, 'rank ' + rank);
   const e = D.Extract.local('CTで大動脈と上腸間膜動脈の角が狭小、十二指腸の圧排あり。');
   check('画像: SMA症候群の CT 所見 → ct duodenal_compression（虚血ではない）', e.items.some(i => i.feature_id === 'ct' && i.value_code === 'duodenal_compression') && !e.items.some(i => i.value_code === 'ischemia'), JSON.stringify(e.items.map(i => i.feature_id + ':' + i.value_code)));
+  {
+    // ---- 項目重複の統合（docs/feature_dedup_candidates.md、2026-09-27 承認分）----
+    const gone = ['ct_other', 'ct_wall_mass', 'hb_imaging', 'steatorrhea', 'hepatotoxic_drug_supplement', 'painless_bleed', 'extraintestinal', 'ck_ldh', 'ldh_sil2r', 'mononeuritis', 'paralysis_weakness'];
+    check('統合: 統合元の項目が KB に残っていない', gone.every(f => !KB.feature[f]), gone.filter(f => KB.feature[f]).join(','));
+    const dupVals = KB.features.filter(f => f.values && new Set(f.values.map(v => v.code)).size !== f.values.length).map(f => f.id);
+    check('統合: どの項目にも値コードの重複がない（胸部X線の気胸/縦隔気腫など）', !dupVals.length, dupVals.join(','));
+    const relsTo = (d, f) => KB.relations.filter(r => r.d === d && r.f === f);
+    const cp = KB.diseases.find(d => /慢性膵炎/.test(d.label));
+    check('統合: 慢性膵炎の脂肪便は下痢パターン1項目で参照', cp && relsTo(cp.id, 'diarrhea_pattern').some(r => r.values && r.values.includes('steatorrhea')));
+    check('二重計上: 腸間膜虚血・腎梗塞は心電図AFを参照しない（既往AFへ自動導出）', relsTo('mesenteric_ischemia', 'ecg').every(r => !r.values || !r.values.includes('af')) && !relsTo('renal_infarction', 'ecg').length);
+    check('ICI: ICI大腸炎と薬物性肝障害の両方が ici_use を参照', relsTo('drug_colitis_other', 'ici_use').length > 0 && relsTo('drug_induced_liver_injury', 'ici_use').length > 0);
+    const intus = KB.diseases.find(d => /腸重積/.test(d.label));
+    check('画像: 腸重積は腹部CTの1値で参照（旧 2 項目の二重計上なし）', intus && relsTo(intus.id, 'ct').some(r => r.values && r.values.includes('intussusception')));
+    // 語彙の誤反応と新しい語彙
+    const fmt = it => it.feature_id + (it.value_code ? ':' + it.value_code : '') + (it.status === 'absent' ? '(absent)' : '');
+    const hasT = (arr, t) => arr.some(x => x === t || x.startsWith(t + ':') || x.startsWith(t + '('));
+    const V = [
+      ['昨日から水様の下痢が続いている。', ['diarrhea:watery'], ['nocturnal_sx']], ['夜間も下痢で目が覚める。', ['nocturnal_sx'], []],
+      ['内診で子宮頸部移動痛あり。', ['adnexal_tender'], ['pain_char:migrating_rlq']], ['臍周囲から右下腹部に痛みが移動した。', ['pain_char:migrating_rlq'], []],
+      ['痛みは右鼠径部へ放散する。', ['pain_char:radiate_groin'], ['groin_bulge']], ['右鼠径部に膨隆あり。', ['groin_bulge'], []],
+      ['便潜血陽性。', ['fobt:pos'], ['urinalysis']], ['尿潜血陽性。', ['urinalysis:hematuria'], []],
+      ['腹水穿刺でアミラーゼ高値。', ['paracentesis:amylase_high'], ['lipase']], ['肝叩打痛あり。', ['hepatomegaly'], ['cva_tender']], ['右CVA叩打痛あり。', ['cva_tender'], []],
+      ['CTで小腸の壁肥厚。', ['ct:wall_thick'], ['ct:colitis']], ['意識変容あり。', ['consciousness:altered'], ['neuro_sx']],
+      ['左側結腸限局の浮腫。', [], ['leg_edema']], ['血管性浮腫あり。', [], ['leg_edema']], ['両下腿浮腫あり。', ['leg_edema'], []],
+      ['CTで肝硬変像あり。', ['ct:cirrhotic_liver'], ['cirrhosis_hx']], ['肝硬変の既往あり。', ['cirrhosis_hx'], []], ['肝炎ウイルスマーカー陰性。', [], ['autoimmune_hx']],
+      ['腹壁の膨隆あり。', [], ['distension']], ['右下腹部に圧痛あり。', ['tender_rlq'], ['abd_pain']], ['炎症性腸疾患の既往あり。', ['ibd_hx'], []],
+      ['CTで肝腫瘤と腹水。', ['ct:liver_mass', 'ct:ascites'], ['ascites_exam']], ['CTで門脈血栓あり。', ['ct:pvt'], ['ct:ischemia']], ['MRCPで総胆管拡張。', ['ct:biliary_dilation'], []],
+      ['CTで内ヘルニアによる closed loop。', ['ct:internal_hernia'], ['ct:hernia']], ['ニボルマブ投与中。', ['ici_use'], []], ['無痛性の血便。', ['gi_bleed:hematochezia', 'abd_pain(absent)'], []],
+      ['妊娠32週。', ['pregnancy_status:late'], []], ['Na 128、K 6.1、Ca 11.2。', ['electrolyte:hypona', 'electrolyte:hyperk', 'electrolyte:hyperca'], []],
+      ['AST 250 ALT 480。', ['liver_enz:elevated', 'ast_alt_pattern:alt_dominant'], []], ['脂肪便あり。', ['diarrhea_pattern:steatorrhea'], []], ['低カリウム血症あり。', ['electrolyte:hypok'], []], ['CK 3500。', ['ck:elevated'], ['electrolyte']]
+    ];
+    const bad = [];
+    for (const [text, must, mustNot] of V) { const got = D.Extract.local(text).items.map(fmt); if (!must.every(t => hasT(got, t)) || mustNot.some(t => hasT(got, t))) bad.push(text + ' → ' + got.join(', ')); }
+    check('語彙: 誤反応 14 件の修正と新語彙（CT集約・検査・ICI・妊娠週数）', !bad.length, bad.join(' | '));
+    // 自動導出
+    const s1 = new D.ClinicalState({ context: { age_band: '70-79', sex: 'male' } });
+    s1.add({ feature_id: 'ecg', value_code: 'af' }); s1.add({ feature_id: 'diabetes', status: 'present' }); s1.add({ feature_id: 'hernia_irreducible', status: 'present' });
+    check('導出: 心電図AF→既往AF、糖尿病→冠危険因子、還納不能→膨隆、男性→妊娠状態なし', s1.has('af_vascular') && s1.has('cv_risk') && s1.has('groin_bulge') && s1.isAbsent('pregnancy_status'));
+    const s2 = new D.ClinicalState({ context: { age_band: '70-79', sex: 'male' } });
+    s2.add({ feature_id: 'diabetes', status: 'present' }); s2.add({ feature_id: 'cv_risk', status: 'absent' });
+    check('導出: 利用者の入力（冠危険因子なし）を自動導出で上書きしない', s2.isAbsent('cv_risk'));
+    const s3 = new D.ClinicalState({ context: { age_band: '30-39', sex: 'female', pregnancy: 'confirmed', preg_stage: 'late' } });
+    for (const it of D.Extract.local('右上腹部痛と嘔気が今朝から。血圧150/95。').items) s3.add(it);
+    const r3 = D.runSync(s3); const hr = r3.ddx.likely.findIndex(x => x.id === 'aflp_hellp') + 1;
+    check('導出: 妊娠時期（中期〜後期）を設定すると HELLP/AFLP が Top10 に入る', hr > 0 && hr <= 10, 'rank ' + hr);
+    // 検査値パネル
+    const R = (v, c) => D.LABS.resolve(v, c || {}).map(x => x.f + ':' + x.code + ':' + x.status);
+    check('検査値: AST高値の後に ALT 正常を入れても肝酵素は上昇のまま', R({ ast: 80, alt: 20 }, { sex: 'male' }).includes('liver_enz:elevated:present'));
+    check('検査値: K 6.0 → 高K あり・低K なし、Na 140 → 低Na なし', (x => x.includes('electrolyte:hyperk:present') && x.includes('electrolyte:hypok:absent') && x.includes('electrolyte:hypona:absent'))(R({ k: 6.0, na: 140 })));
+    check('検査値: AST 1500/ALT 1200 → 1000超、Plt 123000 → 12.3 で減少', R({ ast: 1500, alt: 1200 }).includes('ast_alt_pattern:gt1000:present') && D.LABS.byId.plt.norm(123000) === 12.3 && R({ plt: 12.3 }).includes('chronic_liver_labs:plt_low:present'));
+  }
   {
     // 神経症状（拡張 multi 項目）: 値ごとの否定は他の値の relation に影響しない
     const run = text => { const st = new D.ClinicalState({ context: { age_band: '40-49', sex: 'male' } }); for (const it of D.Extract.local(text).items) st.add(it); const dd = D.Differential.compute(st); const lp = dd.likely.find(x => x.id === 'lead_poisoning'); return { sup: (lp && lp.support || []).map(x => x.feature_id), ref: (lp && lp.refute || []).map(x => x.feature_id) }; };

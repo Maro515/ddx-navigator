@@ -16,7 +16,7 @@
   function timeText(o) { const f = KB().feature[o.feature_id]; if (f.anchor === 'none' || !o.time_context.elapsed_bucket) return ''; const b = o.time_context.elapsed_bucket; if (KB().time.tier1Of(b) === 'unknown') return ''; return KB().time.label(b) + '前'; }
   function obsLine(o) {
     const f = KB().feature[o.feature_id]; const st = KB().status.find(s => s.code === o.status);
-    const v = o.status === 'present' ? (f.values ? valueLabel(f, o.value_code) : 'あり') : (st ? st.label : o.status);
+    const v = o.status === 'present' ? (f.values ? valueLabel(f, o.value_code) : 'あり') : (o.status === 'absent' && o.value_code && f.values ? valueLabel(f, o.value_code) + ' なし' : (st ? st.label : o.status));
     const sev = o.severity ? { mild: '軽', moderate: '中', severe: '高' }[o.severity] : '';
     const tr = o.time_context.trend && o.time_context.trend !== 'unknown' ? (KB().trend.find(t => t.code === o.time_context.trend) || {}).label : '';
     return { label: f.label.replace('（部位）', ''), value: v, meta: [o.note, sev && '程度' + sev, timeText(o), tr].filter(Boolean).join(' · '), absent: o.status === 'absent' };
@@ -52,7 +52,7 @@
   function renderInput() {
     const st = UI.state, c = st.context, kb = KB();
     let h = '';
-    h += `<div class="ctxrow"><select data-ctx="age_band" aria-label="年齢帯"><option value="">年齢帯</option>${kb.context.age_band.map(o => `<option value="${o.code}" ${o.code === c.age_band ? 'selected' : ''}>${esc(o.label)}</option>`).join('')}</select><select data-ctx="sex" aria-label="性別"><option value="">性別</option>${kb.context.sex.map(o => `<option value="${o.code}" ${o.code === c.sex ? 'selected' : ''}>${esc(o.label)}</option>`).join('')}</select>${c.sex !== 'male' ? `<select data-ctx="pregnancy" aria-label="妊娠可能性">${kb.context.pregnancy.map(o => `<option value="${o.code}" ${o.code === c.pregnancy ? 'selected' : ''}>${esc(o.label)}</option>`).join('')}</select>` : ''}</div>`;
+    h += `<div class="ctxrow"><select data-ctx="age_band" aria-label="年齢帯"><option value="">年齢帯</option>${kb.context.age_band.map(o => `<option value="${o.code}" ${o.code === c.age_band ? 'selected' : ''}>${esc(o.label)}</option>`).join('')}</select><select data-ctx="sex" aria-label="性別"><option value="">性別</option>${kb.context.sex.map(o => `<option value="${o.code}" ${o.code === c.sex ? 'selected' : ''}>${esc(o.label)}</option>`).join('')}</select>${c.sex !== 'male' ? `<select data-ctx="pregnancy" aria-label="妊娠可能性">${kb.context.pregnancy.map(o => `<option value="${o.code}" ${o.code === c.pregnancy ? 'selected' : ''}>${esc(o.label)}</option>`).join('')}</select>` : ''}${c.sex !== 'male' && c.pregnancy !== 'no' ? `<select data-ctx="preg_stage" aria-label="妊娠時期"><option value="">妊娠時期</option>${kb.context.preg_stage.map(o => `<option value="${o.code}" ${o.code === c.preg_stage ? 'selected' : ''}>${esc(o.label)}</option>`).join('')}</select>` : ''}</div>`;
     h += `<div class="inputbox"><div class="tawrap"><textarea id="freeText" rows="5" placeholder="例）40代女性。昨日から右下腹部痛が悪化、嘔気あり。反跳痛あり。体温38.2、CRP 5.8。妊娠反応陰性。">${esc(UI.draft || '')}</textarea><button class="mic ${UI.listening ? 'rec' : ''}" data-act="mic" title="音声入力" aria-label="音声入力">${UI.listening ? '⏹' : '🎤'}</button></div>
       <div class="inputacts"><button class="big" data-act="body">🧍 部位</button><button class="big" data-act="labs">🧪 検査値</button><button class="big primary grow" data-act="analyze" ${UI.busy ? 'disabled' : ''}>${UI.busy ? '解析中…' : '情報を追加'}</button></div>
       <div class="tiny muted">送信前に氏名・ID・日付・連絡先などは自動で除去されます${DDX.Extract.LLM.ready() ? '' : '。AI 未設定のためローカル解析で動作中（設定で API キーを登録）'}</div></div>`;
@@ -67,9 +67,9 @@
       if (UI.lastResult && UI.lastResult.llm && UI.lastResult.llm.ok === false) h += `<div class="tiny" style="color:var(--danger)">AI: ${esc(UI.lastResult.llm.error)}</div>`;
       h += `</div></div>`;
     }
-    const cur = st.current();
+    const cur = st.current().filter(o => !(o.derived && o.status === 'absent'));
     if (cur.length) {
-      h += `<div class="card"><details ${UI.open.entered ? 'open' : ''} data-details="entered"><summary>入力済み ${cur.length} 件</summary><div class="items" style="margin-top:8px">${cur.map(o => { const l = obsLine(o); return `<div class="item ${l.absent ? 'abs' : ''} ${st.isStale(o) ? 'stale' : ''}"><div class="grow"><b>${esc(l.label)}</b> ${esc(l.value)}<div class="tiny muted">${esc(l.meta)}${st.isStale(o) ? ' · 古い' : ''}</div></div><button class="ghost" data-del="${o.obs_id}" aria-label="削除">✕</button></div>`; }).join('')}</div></details></div>`;
+      h += `<div class="card"><details ${UI.open.entered ? 'open' : ''} data-details="entered"><summary>入力済み ${cur.length} 件</summary><div class="items" style="margin-top:8px">${cur.map(o => { const l = obsLine(o); return `<div class="item ${l.absent ? 'abs' : ''} ${st.isStale(o) ? 'stale' : ''}"><div class="grow"><b>${esc(l.label)}</b> ${esc(l.value)}<div class="tiny muted">${o.derived ? esc(o.note || '自動') + '（自動）' : esc(l.meta)}${st.isStale(o) ? ' · 古い' : ''}</div></div>${o.derived ? '' : `<button class="ghost" data-del="${o.obs_id}" aria-label="削除">✕</button>`}</div>`; }).join('')}</div></details></div>`;
     } else if (!UI.lastAdded.length) {
       h += `<div class="card"><div class="empty">話すか書くだけで、鑑別と次の一手を出します。<br><br>まだ何も入力されていません。上の欄に主訴・経過・所見・検査値を自由に入れてください。</div></div>`;
     }
@@ -98,7 +98,7 @@
     function base(f) { return f.label.replace(/（.*?）|\s*\(.*?\)/g, ''); }
   }
   function evidenceHtml(x) {
-    const kb = KB(); const item = (s, cls) => { const f = kb.feature[s.feature_id]; const o = s.obs; const v = o ? (o.status === 'present' ? (f.values ? valueLabel(f, o.value_code) : 'あり') : 'なし') : ''; return `<span class="tag ${cls}">${esc(f.label.replace('（部位）', ''))}${v ? ': ' + esc(v) : ''}</span>`; };
+    const kb = KB(); const item = (s, cls) => { const f = kb.feature[s.feature_id]; const o = s.obs; const v = o ? (o.status === 'present' ? (f.values ? valueLabel(f, o.value_code) : 'あり') : (o.value_code && f.values ? valueLabel(f, o.value_code) + ' なし' : 'なし')) : ''; return `<span class="tag ${cls}">${esc(f.label.replace('（部位）', ''))}${v ? ': ' + esc(v) : ''}</span>`; };
     let h = '';
     if (x.support.length) h += `<div class="ev"><span class="lab">支持</span>${x.support.slice(0, 6).map(s => item(s, 'sup')).join('')}</div>`;
     if (x.refute.length) h += `<div class="ev"><span class="lab">反証</span>${x.refute.slice(0, 6).map(s => item(s, 'ref')).join('')}</div>`;
@@ -214,7 +214,12 @@
     const st = UI.labs, it = DDX.LABS.byId[st.sel]; let v = parseFloat(st.buf); if (!(v >= 0)) { toast('数値を入力してください'); return; }
     if (it.norm) v = it.norm(v);
     UI.labValues[it.id] = v;
-    if (it.map) { const m = it.map(v, UI.state.context); UI.state.add({ feature_id: m.f, status: 'present', value_code: m.code, time_context: { elapsed_bucket: 'h_1_3', trend: 'unknown' }, note: `${it.label} ${v} ${it.unit}` }); toast(`${it.label} ${v} ${it.unit} → ${valueLabel(KB().feature[m.f], m.code)}`); recompute('lab_value'); }
+    if (it.map) {
+      const mine = DDX.LABS.resolve(UI.labValues, UI.state.context).filter(x => x.from.includes(it.id));
+      for (const x of mine) UI.state.add({ feature_id: x.f, status: x.status, value_code: x.code, time_context: { elapsed_bucket: 'h_1_3', trend: 'unknown' }, note: `${x.from.map(id => DDX.LABS.byId[id].label + ' ' + UI.labValues[id]).join(' / ')} ${x.from.length === 1 ? it.unit : ''}`.trim() });
+      const pos = mine.filter(x => x.status === 'present').map(x => { const f = KB().feature[x.f]; return f.multi || x.f === 'ast_alt_pattern' ? valueLabel(f, x.code) : `${f.label.replace(/（.*?）/g, '')} ${valueLabel(f, x.code)}`; });
+      toast(`${it.label} ${v} ${it.unit} → ${pos.length ? pos.join('、') : '異常なし'}`); recompute('lab_value');
+    }
     else { insertText(`${it.label} ${v} ${it.unit}。`); toast(`${it.label} ${v} ${it.unit} を入力欄に追加`); }
     st.sel = null; st.buf = ''; renderLabs();
   }
@@ -269,7 +274,7 @@
   }
 
   /* ---------- demo ---------- */
-  function demoStart(i) { const d = DDX.DEMO_TEXT[i]; if (!d) return; UI.state = new DDX.ClinicalState({}); UI.demoQueue = { label: d.label, steps: d.steps.slice() }; UI.lastAdded = []; UI.lastResult = null; UI.tab = 'input'; demoNext(); }
+  function demoStart(i) { const d = DDX.DEMO_TEXT[i]; if (!d) return; UI.state = new DDX.ClinicalState({}); UI.labValues = {}; UI.demoQueue = { label: d.label, steps: d.steps.slice() }; UI.lastAdded = []; UI.lastResult = null; UI.tab = 'input'; demoNext(); }
   function demoNext() { if (!UI.demoQueue || !UI.demoQueue.steps.length) return; const t = UI.demoQueue.steps.shift(); if (!UI.demoQueue.steps.length) UI.demoQueue = null; UI.draft = t; UI.tab = 'input'; renderAll(); }
 
   /* ---------- events ---------- */
@@ -278,7 +283,7 @@
     document.querySelectorAll('nav.tabs button').forEach(b => b.addEventListener('click', () => { UI.tab = b.dataset.tab; renderTabs(); }));
     $('#sheetWrap .bg').addEventListener('click', () => { if (UI.labs) closeLabs(); else closeBody(); });
     document.addEventListener('input', e => { if (e.target.id === 'freeText') UI.draft = e.target.value; });
-    document.addEventListener('change', e => { const t = e.target; if (t.dataset.ctx) { UI.state.context[t.dataset.ctx] = t.value || null; if (t.dataset.ctx === 'sex' && t.value === 'male') UI.state.context.pregnancy = 'no'; recompute('context'); } });
+    document.addEventListener('change', e => { const t = e.target; if (t.dataset.ctx) { UI.state.context[t.dataset.ctx] = t.value || null; if (t.dataset.ctx === 'sex' && t.value === 'male') { UI.state.context.pregnancy = 'no'; UI.state.context.preg_stage = null; } if (t.dataset.ctx === 'pregnancy' && t.value === 'no') UI.state.context.preg_stage = null; if (t.dataset.ctx === 'preg_stage' && (t.value === 'first_tri' || t.value === 'late')) UI.state.context.pregnancy = 'confirmed'; recompute('context'); } });
     document.addEventListener('toggle', e => { const d = e.target.dataset && e.target.dataset.details; if (d) UI.open[d] = e.target.open; }, true);
     document.addEventListener('click', async e => {
       const el = e.target.closest('[data-act],[data-toggle],[data-del],[data-qa],[data-ins],[data-bregion],[data-bview],[data-btoggle],[data-lab],[data-key],[data-labchoice]'); if (!el) return; const d = el.dataset;
@@ -308,7 +313,7 @@
         case 'localOnly': await runExtract(UI.pending.text, false); break;
         case 'cancelSend': UI.pending = null; renderInput(); break;
         case 'saveLLM': { const L = DDX.Extract.LLM; L.config.apiKey = $('#apiKey').value.trim(); L.config.model = $('#model').value; L.config.confirm = $('#confirmSend').checked; LS.set('ddxnav_llm', { apiKey: L.config.apiKey, model: L.config.model, confirm: L.config.confirm }); toast('保存しました'); renderAll(); break; }
-        case 'newCase': if (UI.confirmKey === 'newCase') { UI.confirmKey = null; UI.state = new DDX.ClinicalState({}); UI.lastAdded = []; UI.lastResult = null; UI.demoQueue = null; UI.open = {}; UI.draft = ''; recompute('new_case'); UI.tab = 'input'; } else { UI.confirmKey = 'newCase'; renderSettings(); setTimeout(() => { if (UI.confirmKey === 'newCase') { UI.confirmKey = null; renderSettings(); } }, 4000); } break;
+        case 'newCase': if (UI.confirmKey === 'newCase') { UI.confirmKey = null; UI.state = new DDX.ClinicalState({}); UI.labValues = {}; UI.lastAdded = []; UI.lastResult = null; UI.demoQueue = null; UI.open = {}; UI.draft = ''; recompute('new_case'); UI.tab = 'input'; } else { UI.confirmKey = 'newCase'; renderSettings(); setTimeout(() => { if (UI.confirmKey === 'newCase') { UI.confirmKey = null; renderSettings(); } }, 4000); } break;
         case 'exportCase': download(`ddx_case_${UI.state.case_token}.json`, JSON.stringify(UI.state.toJSON(), null, 2)); break;
         case 'exportLog': download('ddx_audit_log.json', DDX.Audit.export()); break;
         case 'clearLog': if (UI.confirmKey === 'clearLog') { UI.confirmKey = null; DDX.Audit.clear(); renderSettings(); } else { UI.confirmKey = 'clearLog'; renderSettings(); setTimeout(() => { if (UI.confirmKey === 'clearLog') { UI.confirmKey = null; renderSettings(); } }, 4000); } break;

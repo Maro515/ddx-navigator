@@ -19,7 +19,7 @@
 | `build/50_next.js` | Next-Item Engine：**エマージェンシー枠**（候補に挙がった重大疾患を個別に除外。除外チェックリスト・最短除外・同時除外の推奨順）と**鑑別枠**（可能性順 Top10 の絞り込み、EIG ベース）を分離。EIG（エントロピー減少）+管理影響+MNM解除価値+緊急性(+Jev)−費用−侵襲−待ち−重複。Safety forced が常に上位。Jev アダプタ（none/mock/remote） |
 | `build/60_audit.js` | 監査ログ（版・state hash・Top10・Next5・安全フラグ・Jev状態）、`DDX.run` パイプライン |
 | `build/65_extract.js` | フリーテキスト → 構造化。**PII 除去**（氏名・ID・日付・電話・住所・メール・生年月日・正確な年齢→年齢帯）→ **LLM 抽出**（Claude Messages API をブラウザから直接呼び出し、tool use `record_findings` で JSON 強制、カタログ外は捨てる）→ **ローカル抽出**（日本語ルール、数値閾値、否定判定。API 不可時の fallback、バイタル/検査値は常に補完） |
-| `build/19_labs.js` | 検査値パネルの項目定義（血算: WBC/Hb/Plt、生化学: CRP/AST/ALT/ALP/γ-GTP/T-Bil/アミラーゼ/リパーゼ/BUN/Cre/Na/K/Cl/血糖/乳酸/CK/LDH/D-dimer/hs-TnT/CK-MB/BNP/NT-proBNP/Ca/P/Mg/アンモニア、尿定性は選択式）。Hb は男性 <13 / 女性 <12 で低下。単位・基準値は国立がん研究センター中央病院「検査基準値一覧」（https://www.ncc.go.jp/jp/ncch/division/clinical_laboratory/kensa.pdf）に準拠（WBC 10³/μL、Plt 10⁴/μL、Na/K/Cl mmol/L、ALP は JSCC 法 106～322、トロポニンは TnI ng/mL 0.03 以下 など）。数値→KB 値コードの閾値はここで定義。対応 feature の無い項目は入力欄にテキストで残す |
+| `build/19_labs.js` | 検査値パネルの項目定義（血算: WBC/Hb/Plt、生化学: CRP/AST/ALT/ALP/γ-GTP/T-Bil/アミラーゼ/リパーゼ/BUN/Cre/Na/K/Cl/血糖/乳酸/CK/LDH/D-dimer/hs-TnT/CK-MB/BNP/NT-proBNP/Ca/P/Mg/アンモニア、尿定性は選択式）。Hb は男性 <13 / 女性 <12 で低下。単位・基準値は国立がん研究センター中央病院「検査基準値一覧」（https://www.ncc.go.jp/jp/ncch/division/clinical_laboratory/kensa.pdf）に準拠（WBC 10³/μL、Plt 10⁴/μL、Na/K/Cl mmol/L、ALP は JSCC 法 106～322、トロポニンは TnI ng/mL 0.03 以下 など）。数値→KB 値コードの閾値はここで定義（異常の判定は臨床的カットオフ: 低Na <135、高K >5.5、低K <3.5、高Ca >10.5、Plt <15。CK/LD/アンモニアは基準上限超）。`DDX.LABS.resolve` が入力済みの全検査値から所見を作り、同じ項目に書く検査（AST/ALT など）は最も異常な値を採る。AST と ALT が揃えば AST/ALT パターンも付ける。対応 feature の無い項目（Cl/P/Mg/CK-MB/BNP）は入力欄にテキストで残す |
 | `build/75_ui_simple.js` | 簡素UI 3画面（入力 / 結果 / 設定）。大きな文字、音声入力（Web Speech API、テキスト欄右下の🎤）、人体図は部位名の挿入のみ。🧪検査値は一覧→電卓キーパッドで数値入力し即登録。結果は「先に確認」「まず除外」「可能性の高い順」「次に聞く・調べる」で、質問はタップで即答 |
 | `build/_legacy/70_ui.js` | 旧・選択式UI（assemble 対象外） |
 | `build/15_demo.js` | デモ症例（フリーテキストのメモを順に投入） |
@@ -53,7 +53,8 @@ TypeSafe/Jev の実 API 仕様に合わせるには `DDX.Jev.remote()` と `buil
 ## 疾患カバレッジ
 - コア（腹痛/下痢パック v0.2）: 30 疾患。文献値・専門家ドラフト値
 - 拡張パック（腹部症状）: 184 疾患（上部消化管・肝胆膵・下部消化管・血管・婦人科・泌尿器・全身/代謝・胸部/その他・腹壁/ヘルニア）。妊娠中限定疾患は `requires.pregnancy_in`、性別は解剖学的限定のみ hard、それ以外は事前確率 ×1.5 の soft
-- 合成テストの Top10 recall: コア 94%、拡張 70%（拡張はドラフト値のため要レビュー）
+- 合成テストの Top10 recall: コア 95%、拡張 69%（拡張はドラフト値のため要レビュー）
+- 所見項目の重複整理: `docs/feature_dedup_candidates.md`（2026-09-27 承認・反映）。統合・分解は `tools/feature_alias.json`（`expand` で 1 対多、値マップは値リスト・`=` 恒等・`@項目`・`null` に対応）、項目の上書き・値の追加・関係の追加/削除は `tools/feature_defs.json`。一方の入力から他方を立てる自動導出（心電図AF→既往AF、糖尿病→冠危険因子、妊娠時期→妊娠状態 など）は `build/20_state.js` の `DERIVE`
 
 ## 根拠ポリシー（EvidenceSource）
 - 一次文献（査読論文・系統的レビュー・学会ガイドライン）、**2016年以降**、**N ≥ 300**

@@ -12,7 +12,7 @@
   class ClinicalState {
     constructor(init) {
       this.case_token = (init && init.case_token) || token();
-      this.context = Object.assign({ age_band: null, sex: null, setting: 'emergency', pregnancy: 'unknown', trauma: 'no' }, init && init.context);
+      this.context = Object.assign({ age_band: null, sex: null, setting: 'emergency', pregnancy: 'unknown', preg_stage: null, trauma: 'no' }, init && init.context);
       this.observations = []; // all, including superseded
       this.deferred = {};     // feature_id -> true (「後で」)
       this.created_at = (init && init.created_at) || Date.now();
@@ -91,6 +91,7 @@
           out.push(best);
         }
       }
+      derive(out, this.context, this.created_at);
       return out.sort((a, b) => a.entered_seq - b.entered_seq);
     }
     superseded() {
@@ -146,6 +147,32 @@
     hash() { let h = 0, s = this.canonical(); for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0; return (h >>> 0).toString(16); }
     toJSON() { return { case_token: this.case_token, context: this.context, observations: this.observations, deferred: this.deferred, created_at: this.created_at, kb_version: KB().version }; }
     static fromJSON(j) { const s = new ClinicalState({ case_token: j.case_token, context: j.context, created_at: j.created_at }); for (const o of j.observations || []) s.observations.push(ClinicalState.normalize(o)); s.deferred = j.deferred || {}; return s; }
+  }
+  /* 自動導出: 一方の入力から他方の項目を立てる（利用者が直接入力した項目があればそちらを優先し、導出しない）。
+     重複項目の統合（docs/feature_dedup_candidates.md 4章）で、疾患側は導出先だけを参照するようにしてある */
+  const DERIVE = [
+    { from: 'diabetes_new_worsening', to: 'diabetes', why: '糖尿病の新規発症/悪化' },
+    { from: 'diabetes', to: 'cv_risk', why: '糖尿病' },
+    { from: 'ecg', values: ['af'], to: 'af_vascular', why: '心電図で心房細動' },
+    { from: 'hernia_irreducible', to: 'groin_bulge', why: '還納不能ヘルニア' }
+  ];
+  function derive(out, ctx, t0) {
+    const kb = KB(); const has = fid => out.some(o => o.feature_id === fid);
+    const push = (fid, status, value, src, why) => {
+      if (!kb.feature[fid] || has(fid)) return;
+      const o = ClinicalState.normalize({ obs_id: 'drv-' + fid, feature_id: fid, status, value_code: value || null, source: 'derived', note: '自動: ' + why,
+        time_context: src ? src.time_context : { elapsed_bucket: null }, entered_seq: src ? src.entered_seq : 0, entered_at: src ? src.entered_at : t0 });
+      o.derived = true; out.push(o);
+    };
+    for (const r of DERIVE) {
+      const src = out.find(o => o.feature_id === r.from && o.status === 'present' && (!r.values || r.values.includes(o.value_code)));
+      if (src) push(r.to, 'present', null, src, r.why);
+    }
+    // 妊娠: 文脈の妊娠時期 → 妊娠状態。男性・妊娠可能性なしなら「妊娠状態 なし」
+    if (ctx) {
+      if (ctx.preg_stage) push('pregnancy_status', 'present', ctx.preg_stage, null, '妊娠時期の設定');
+      else if (ctx.sex === 'male' || ctx.pregnancy === 'no') push('pregnancy_status', 'absent', null, null, ctx.sex === 'male' ? '男性' : '妊娠可能性なし');
+    }
   }
   function sevRank(s) { return s === 'severe' ? 3 : s === 'moderate' ? 2 : s === 'mild' ? 1 : 0; }
   // a is newer than b ?

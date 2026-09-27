@@ -1,0 +1,442 @@
+{
+ "_doc": "拡張パック生成時の項目定義の上書き。docs/feature_dedup_candidates.md の承認結果（2026-09-27）を反映。features: ラベル・値・型の上書きと新規項目 / add_values: 既存項目への値追加 / add_relations: 疾患ごとの関係追加（ドラフト値） / drop_relations: 二重計上を避けるため生成しない関係",
+ "features": {
+  "bedridden_psych": {
+   "label": "長期臥床・精神神経疾患（施設入所含む）"
+  },
+  "autoimmune_hx": {
+   "label": "膠原病・血管炎の既往"
+  },
+  "thrombophilia_hx": {
+   "label": "凝固異常・血栓症の既往（APS/プロテインC・S欠乏/骨髄増殖性腫瘍/エストロゲン製剤）",
+   "base": 0.03
+  },
+  "hemolysis_labs": {
+   "label": "溶血所見（ハプトグロビン低下/網赤血球増加/間接Bil優位）"
+  },
+  "hair_nail_pigment": {
+   "label": "脱毛・爪萎縮"
+  },
+  "endoscopy": {
+   "label": "消化管内視鏡所見（上部/下部）",
+   "values": [
+    [
+     "normal",
+     "異常なし"
+    ],
+    [
+     "peptic_ulcer",
+     "胃・十二指腸潰瘍"
+    ],
+    [
+     "erosive_gastritis",
+     "急性胃粘膜病変(AGML)/びらん性胃炎"
+    ],
+    [
+     "varices",
+     "食道胃静脈瘤"
+    ],
+    [
+     "mallory_weiss",
+     "Mallory-Weiss裂創"
+    ],
+    [
+     "esophagitis",
+     "食道炎（逆流性/感染性）"
+    ],
+    [
+     "eoe",
+     "縦走溝/白斑/輪状溝（好酸球性食道炎）"
+    ],
+    [
+     "achalasia",
+     "食道拡張・残渣貯留"
+    ],
+    [
+     "candida_ulcer",
+     "白苔/打ち抜き様潰瘍（感染性）"
+    ],
+    [
+     "anisakis",
+     "胃壁に刺入する虫体"
+    ],
+    [
+     "foreign_body",
+     "異物"
+    ],
+    [
+     "atrophic_body",
+     "胃体部優位萎縮"
+    ],
+    [
+     "smt",
+     "粘膜下腫瘍"
+    ],
+    [
+     "tumor",
+     "腫瘍/狭窄"
+    ],
+    [
+     "uc_continuous",
+     "直腸から連続するびまん性炎症"
+    ],
+    [
+     "crohn_longitudinal",
+     "縦走潰瘍/敷石像/非連続病変"
+    ],
+    [
+     "ischemic_left",
+     "左側結腸に限局する浮腫・縦走潰瘍"
+    ],
+    [
+     "pseudomembrane",
+     "偽膜"
+    ],
+    [
+     "punched_out_ulcer",
+     "回盲部/大腸の打ち抜き潰瘍"
+    ],
+    [
+     "colitis",
+     "大腸炎所見"
+    ],
+    [
+     "diverticular_bleed",
+     "憩室出血源"
+    ],
+    [
+     "rectal_ulcer",
+     "下部直腸潰瘍"
+    ],
+    [
+     "hemorrhagic_diffuse",
+     "びまん出血性粘膜"
+    ],
+    [
+     "angioectasia",
+     "血管拡張症"
+    ]
+   ]
+  },
+  "cxr": {
+   "values": [
+    [
+     "normal",
+     "異常なし"
+    ],
+    [
+     "infiltrate",
+     "浸潤影"
+    ],
+    [
+     "effusion",
+     "胸水"
+    ],
+    [
+     "pneumothorax",
+     "気胸"
+    ],
+    [
+     "pneumomediastinum",
+     "縦隔気腫"
+    ],
+    [
+     "mediastinal_wide",
+     "縦隔拡大"
+    ],
+    [
+     "free_air",
+     "横隔膜下free air"
+    ]
+   ]
+  },
+  "sx_sequence": {
+   "label": "症状の出現順序",
+   "values": [
+    [
+     "pain_then_diarrhea_then_blood",
+     "腹痛→下痢→血便"
+    ]
+   ]
+  },
+  "drug_hx_metabolic": {
+   "values": [
+    [
+     "vitamin_d",
+     "活性型ビタミンD/サプリ"
+    ],
+    [
+     "thiazide",
+     "サイアザイド"
+    ],
+    [
+     "lithium",
+     "リチウム"
+    ],
+    [
+     "calcium_carbonate",
+     "炭酸カルシウム"
+    ],
+    [
+     "raas_inhibitor",
+     "RAS阻害薬/K保持性利尿薬"
+    ],
+    [
+     "diuretic",
+     "ループ利尿薬"
+    ],
+    [
+     "laxative",
+     "下剤（乱用含む）"
+    ],
+    [
+     "sglt2",
+     "SGLT2阻害薬"
+    ]
+   ]
+  },
+  "drug_hx_colitis": {
+   "values": [
+    [
+     "chemo",
+     "抗腫瘍薬"
+    ],
+    [
+     "arb_olmesartan",
+     "オルメサルタン"
+    ],
+    [
+     "kampo_sanshishi",
+     "山梔子含有漢方"
+    ],
+    [
+     "ppi_lansoprazole",
+     "ランソプラゾール"
+    ],
+    [
+     "laxative_prep",
+     "大腸検査前処置下剤"
+    ],
+    [
+     "ocp",
+     "経口避妊薬"
+    ],
+    [
+     "gold",
+     "金製剤"
+    ]
+   ]
+  },
+  "ingestion_event": {
+   "values": [
+    [
+     "foreign_body",
+     "異物誤飲(魚骨/義歯/PTP/電池)"
+    ],
+    [
+     "caustic",
+     "腐食性物質(酸/アルカリ)服用"
+    ],
+    [
+     "endoscopy_recent",
+     "最近の内視鏡処置/アブレーション"
+    ]
+   ]
+  },
+  "ck": {
+   "label": "CK",
+   "type": "lab",
+   "values": [
+    [
+     "normal",
+     "正常"
+    ],
+    [
+     "elevated",
+     "上昇"
+    ]
+   ]
+  },
+  "ldh": {
+   "label": "LD（LDH）",
+   "type": "lab",
+   "values": [
+    [
+     "normal",
+     "正常"
+    ],
+    [
+     "elevated",
+     "上昇"
+    ]
+   ]
+  },
+  "sil2r": {
+   "label": "可溶性IL-2受容体（sIL-2R）",
+   "type": "lab",
+   "values": [
+    [
+     "normal",
+     "正常"
+    ],
+    [
+     "elevated",
+     "上昇"
+    ]
+   ]
+  },
+  "ici_use": {
+   "label": "免疫チェックポイント阻害薬の使用（現在/過去1年）",
+   "type": "history",
+   "base": 0.02
+  }
+ },
+ "add_values": {
+  "ct": [
+   [
+    "liver_mass",
+    "肝腫瘤"
+   ],
+   [
+    "fatty_liver",
+    "脂肪肝"
+   ],
+   [
+    "cirrhotic_liver",
+    "肝硬変像"
+   ],
+   [
+    "biliary_dilation",
+    "胆管拡張/狭窄（肝内外）"
+   ],
+   [
+    "gb_wall_thick",
+    "胆嚢壁肥厚/胆嚢腫瘤"
+   ],
+   [
+    "pancreatic_mass",
+    "膵腫瘤/膵管拡張"
+   ],
+   [
+    "pancreatic_cyst",
+    "膵嚢胞性病変"
+   ],
+   [
+    "diffuse_pancreas_swelling",
+    "びまん性膵腫大"
+   ],
+   [
+    "chronic_pancreatitis",
+    "膵石灰化/膵管不整拡張"
+   ],
+   [
+    "pvt",
+    "門脈/腸間膜静脈血栓"
+   ],
+   [
+    "ascites",
+    "腹水"
+   ],
+   [
+    "gastric_wall_thick",
+    "胃壁肥厚"
+   ],
+   [
+    "splenic_infarct",
+    "脾梗塞"
+   ],
+   [
+    "splenic_rupture",
+    "脾破裂/脾損傷"
+   ],
+   [
+    "hepatosplenomegaly",
+    "肝脾腫"
+   ],
+   [
+    "renal_infarct",
+    "腎梗塞"
+   ],
+   [
+    "retro_mass",
+    "腹腔内/後腹膜腫瘤"
+   ],
+   [
+    "pneumatosis",
+    "腸管気腫"
+   ],
+   [
+    "psoas_abscess",
+    "腸腰筋膿瘍"
+   ],
+   [
+    "wall_hematoma",
+    "腹壁血腫"
+   ],
+   [
+    "intussusception",
+    "腸重積像"
+   ],
+   [
+    "wall_thick",
+    "腸管壁肥厚"
+   ],
+   [
+    "bowel_mass",
+    "腸管腫瘤/狭窄"
+   ],
+   [
+    "internal_hernia",
+    "内ヘルニア（closed loop/beak）"
+   ]
+  ]
+ },
+ "add_relations": [
+  {
+   "d": "drug_colitis_other",
+   "f": "ici_use",
+   "values": null,
+   "sens": 0.5,
+   "spec": 0.98,
+   "_why": "ICI 大腸炎（旧: 腸炎を起こす薬剤の値）"
+  },
+  {
+   "d": "drug_induced_liver_injury",
+   "f": "ici_use",
+   "values": null,
+   "sens": 0.1,
+   "spec": 0.98,
+   "_why": "ICI 肝炎（旧: 新規薬剤・健康食品・漢方・ICIの使用）"
+  },
+  {
+   "d": "sigmoid_volvulus",
+   "f": "constipation_hx",
+   "values": null,
+   "sens": 0.5,
+   "spec": 0.85,
+   "_why": "長期臥床項目から慢性便秘を分離した分"
+  }
+ ],
+ "drop_relations": [
+  {
+   "d": "mesenteric_ischemia",
+   "f": "ecg",
+   "_why": "心電図の心房細動は既往項目に自動導出。既往項目と二重計上しない（コア側も削除済み）"
+  },
+  {
+   "d": "renal_infarction",
+   "f": "ecg",
+   "_why": "心電図の心房細動は既往項目に自動導出。既往項目と二重計上しない"
+  },
+  {
+   "d": "acs",
+   "f": "diabetes",
+   "_why": "冠危険因子に糖尿病を含む（糖尿病→冠危険因子を自動導出）"
+  },
+  {
+   "d": "nafld_nash",
+   "f": "cv_risk",
+   "_why": "糖尿病と二重計上。脂肪肝は糖尿病のほうを残す"
+  }
+ ]
+}

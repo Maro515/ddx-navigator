@@ -66,6 +66,7 @@
     sex: [{ code: 'female', label: '女性' }, { code: 'male', label: '男性' }],
     setting: [{ code: 'emergency', label: '救急外来' }, { code: 'outpatient', label: '一般外来' }, { code: 'night', label: '当直' }],
     pregnancy: [{ code: 'no', label: '妊娠可能性なし' }, { code: 'possible', label: '可能性あり' }, { code: 'confirmed', label: '妊娠中' }, { code: 'unknown', label: '未確認' }],
+    preg_stage: [{ code: 'first_tri', label: '妊娠初期（〜13週）' }, { code: 'late', label: '妊娠中期〜後期' }, { code: 'postpartum', label: '産褥（産後6週以内）' }, { code: 'infertility_tx', label: '不妊治療中' }],
     trauma: [{ code: 'no', label: '外傷なし' }, { code: 'yes', label: '外傷あり' }]
   };
   KB.ageIndex = { 'lt18': 0, '18-29': 1, '30-39': 2, '40-49': 3, '50-59': 4, '60-69': 5, '70-79': 6, '80+': 7 };
@@ -338,7 +339,7 @@
   R('mesenteric_ischemia', 'af_vascular', null, 0.60, 0.88, { key: true }); R('mesenteric_ischemia', 'pain_disproportion', null, 0.70, 0.92, { key: true });
   R('mesenteric_ischemia', 'abd_pain', ['diffuse', 'umb'], 0.80, 0.55); R('mesenteric_ischemia', 'pain_onset_char', ['sudden', 'rapid'], 0.60, 0.75);
   R('mesenteric_ischemia', 'lactate', ['gt4'], 0.55, 0.92, { key: true }); R('mesenteric_ischemia', 'lactate', ['2_4', 'gt4'], 0.80, 0.80);
-  R('mesenteric_ischemia', 'acidosis', ['metabolic'], 0.50, 0.90); R('mesenteric_ischemia', 'ecg', ['af'], 0.40, 0.93); R('mesenteric_ischemia', 'ct', ['ischemia'], 0.90, 0.96, { key: true });
+  R('mesenteric_ischemia', 'acidosis', ['metabolic'], 0.50, 0.90); /* 心電図の心房細動は af_vascular へ自動導出（二重計上を避ける） */ R('mesenteric_ischemia', 'ct', ['ischemia'], 0.90, 0.96, { key: true });
   R('mesenteric_ischemia', 'gi_bleed', null, 0.25, 0.92); R('mesenteric_ischemia', 'wbc', ['gt15'], 0.60, 0.80); R('mesenteric_ischemia', 'vomiting', null, 0.50, 0.55); R('mesenteric_ischemia', 'diarrhea', null, 0.35, 0.65);
   R('mesenteric_ischemia', 'rebound_guarding', null, 0.30, 0.75);
   // 腹部大動脈瘤破裂
@@ -352,7 +353,7 @@
   R('aortic_dissection', 'ct', ['aortic'], 0.98, 0.99, { key: true }); R('aortic_dissection', 'syncope', null, 0.15, 0.96); R('aortic_dissection', 'abd_pain', ['epi', 'flank_l', 'flank_r', 'diffuse'], 0.80, 0.50);
   // 急性冠症候群
   R('acs', 'abd_pain', ['epi'], 0.70, 0.60); R('acs', 'chest_sx', null, 0.65, 0.92, { key: true }); R('acs', 'nausea', null, 0.50, 0.45); R('acs', 'vomiting', null, 0.40, 0.55);
-  R('acs', 'diabetes', null, 0.30, 0.88); R('acs', 'cv_risk', null, 0.85, 0.45); R('acs', 'troponin', ['pos'], 0.92, 0.95, { key: true }); R('acs', 'ecg', ['ischemic'], 0.60, 0.96, { key: true });
+  /* 糖尿病は cv_risk へ自動導出（cv_risk が糖尿病を含むため） */ R('acs', 'cv_risk', null, 0.85, 0.45); R('acs', 'troponin', ['pos'], 0.92, 0.95, { key: true }); R('acs', 'ecg', ['ischemic'], 0.60, 0.96, { key: true });
   R('acs', 'skin_pallor_cold', null, 0.40, 0.93); R('acs', 'tender_epi', null, 0.15, 0.65); R('acs', 'rebound_guarding', null, 0.02, 0.75);
   // 異所性妊娠
   R('ectopic_pregnancy', 'lmp_delayed', null, 0.70, 0.88); R('ectopic_pregnancy', 'vaginal_bleeding', null, 0.60, 0.92); R('ectopic_pregnancy', 'abd_pain', ['rlq', 'llq', 'supra'], 0.85, 0.55);

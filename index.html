@@ -225,6 +225,7 @@ svg.body .rl{font-size:11px}
     sex: [{ code: 'female', label: '女性' }, { code: 'male', label: '男性' }],
     setting: [{ code: 'emergency', label: '救急外来' }, { code: 'outpatient', label: '一般外来' }, { code: 'night', label: '当直' }],
     pregnancy: [{ code: 'no', label: '妊娠可能性なし' }, { code: 'possible', label: '可能性あり' }, { code: 'confirmed', label: '妊娠中' }, { code: 'unknown', label: '未確認' }],
+    preg_stage: [{ code: 'first_tri', label: '妊娠初期（〜13週）' }, { code: 'late', label: '妊娠中期〜後期' }, { code: 'postpartum', label: '産褥（産後6週以内）' }, { code: 'infertility_tx', label: '不妊治療中' }],
     trauma: [{ code: 'no', label: '外傷なし' }, { code: 'yes', label: '外傷あり' }]
   };
   KB.ageIndex = { 'lt18': 0, '18-29': 1, '30-39': 2, '40-49': 3, '50-59': 4, '60-69': 5, '70-79': 6, '80+': 7 };
@@ -497,7 +498,7 @@ svg.body .rl{font-size:11px}
   R('mesenteric_ischemia', 'af_vascular', null, 0.60, 0.88, { key: true }); R('mesenteric_ischemia', 'pain_disproportion', null, 0.70, 0.92, { key: true });
   R('mesenteric_ischemia', 'abd_pain', ['diffuse', 'umb'], 0.80, 0.55); R('mesenteric_ischemia', 'pain_onset_char', ['sudden', 'rapid'], 0.60, 0.75);
   R('mesenteric_ischemia', 'lactate', ['gt4'], 0.55, 0.92, { key: true }); R('mesenteric_ischemia', 'lactate', ['2_4', 'gt4'], 0.80, 0.80);
-  R('mesenteric_ischemia', 'acidosis', ['metabolic'], 0.50, 0.90); R('mesenteric_ischemia', 'ecg', ['af'], 0.40, 0.93); R('mesenteric_ischemia', 'ct', ['ischemia'], 0.90, 0.96, { key: true });
+  R('mesenteric_ischemia', 'acidosis', ['metabolic'], 0.50, 0.90); /* 心電図の心房細動は af_vascular へ自動導出（二重計上を避ける） */ R('mesenteric_ischemia', 'ct', ['ischemia'], 0.90, 0.96, { key: true });
   R('mesenteric_ischemia', 'gi_bleed', null, 0.25, 0.92); R('mesenteric_ischemia', 'wbc', ['gt15'], 0.60, 0.80); R('mesenteric_ischemia', 'vomiting', null, 0.50, 0.55); R('mesenteric_ischemia', 'diarrhea', null, 0.35, 0.65);
   R('mesenteric_ischemia', 'rebound_guarding', null, 0.30, 0.75);
   // 腹部大動脈瘤破裂
@@ -511,7 +512,7 @@ svg.body .rl{font-size:11px}
   R('aortic_dissection', 'ct', ['aortic'], 0.98, 0.99, { key: true }); R('aortic_dissection', 'syncope', null, 0.15, 0.96); R('aortic_dissection', 'abd_pain', ['epi', 'flank_l', 'flank_r', 'diffuse'], 0.80, 0.50);
   // 急性冠症候群
   R('acs', 'abd_pain', ['epi'], 0.70, 0.60); R('acs', 'chest_sx', null, 0.65, 0.92, { key: true }); R('acs', 'nausea', null, 0.50, 0.45); R('acs', 'vomiting', null, 0.40, 0.55);
-  R('acs', 'diabetes', null, 0.30, 0.88); R('acs', 'cv_risk', null, 0.85, 0.45); R('acs', 'troponin', ['pos'], 0.92, 0.95, { key: true }); R('acs', 'ecg', ['ischemic'], 0.60, 0.96, { key: true });
+  /* 糖尿病は cv_risk へ自動導出（cv_risk が糖尿病を含むため） */ R('acs', 'cv_risk', null, 0.85, 0.45); R('acs', 'troponin', ['pos'], 0.92, 0.95, { key: true }); R('acs', 'ecg', ['ischemic'], 0.60, 0.96, { key: true });
   R('acs', 'skin_pallor_cold', null, 0.40, 0.93); R('acs', 'tender_epi', null, 0.15, 0.65); R('acs', 'rebound_guarding', null, 0.02, 0.75);
   // 異所性妊娠
   R('ectopic_pregnancy', 'lmp_delayed', null, 0.70, 0.88); R('ectopic_pregnancy', 'vaginal_bleeding', null, 0.60, 0.92); R('ectopic_pregnancy', 'abd_pain', ['rlq', 'llq', 'supra'], 0.85, 0.55);
@@ -664,41 +665,36 @@ svg.body .rl{font-size:11px}
 (function (g) {
   const KB = g.DDX.KB;
   const P = KB.packs;
-  KB.addFeature({ id: 'ck_ldh', label: "CK/LDH", type: 'lab', cat: 'lab', anchor: 'collection', values: [['normal', "正常"], ['elevated', "上昇"]], acq: { cost: 1, inv: 1, delay: 2, stage: 'lab' }, base: 0.1, mgmt: 1, ext: true });
-  KB.addFeature({ id: 'bedridden_psych', label: "長期臥床・慢性便秘・精神神経疾患", type: 'history', cat: 'hx', anchor: 'history', values: null, acq: { cost: 0, inv: 0, delay: 0, stage: 'bedside' }, base: 0.1, mgmt: 1, ext: true });
+  KB.addFeature({ id: 'bedridden_psych', label: "長期臥床・精神神経疾患（施設入所含む）", type: 'history', cat: 'hx', anchor: 'history', values: null, acq: { cost: 0, inv: 0, delay: 0, stage: 'bedside' }, base: 0.1, mgmt: 1, ext: true });
   KB.addFeature({ id: 'abd_mass', label: "腹部腫瘤触知", type: 'exam', cat: 'exam', anchor: 'observation', values: [['upper', "上腹部"], ['lower_pelvic', "下腹部/骨盤"], ['umbilical', "臍部"], ['diffuse', "びまん性"]], multi: true, acq: { cost: 0, inv: 0, delay: 0, stage: 'bedside' }, base: 0.1, mgmt: 1, ext: true });
   KB.addFeature({ id: 'fhx_polyposis', label: "ポリポーシス/大腸癌の家族歴・既往", type: 'history', cat: 'hx', anchor: 'history', values: null, acq: { cost: 0, inv: 0, delay: 0, stage: 'bedside' }, base: 0.1, mgmt: 1, ext: true });
-  KB.addFeature({ id: 'ct_wall_mass', label: "CT 腸管壁肥厚・腫瘤・重積像", type: 'imaging', cat: 'img', anchor: 'imaging', values: [['wall_thick', "腸管壁肥厚"], ['mass', "腫瘤"], ['intussusception', "腸重積像(target)"], ['internal_hernia', "内ヘルニア(cluster/beak)"]], multi: true, acq: { cost: 2, inv: 1, delay: 2, stage: 'imaging' }, base: 0.1, mgmt: 1, ext: true });
   KB.addFeature({ id: 'groin_bulge', label: "鼠径部/大腿部/腹壁の膨隆・腫瘤", type: 'exam', cat: 'exam', anchor: 'observation', values: null, acq: { cost: 0, inv: 0, delay: 0, stage: 'bedside' }, base: 0.1, mgmt: 1, ext: true });
-  KB.addFeature({ id: 'painless_bleed', label: "無痛性の血便", type: 'symptom', cat: 'cc', anchor: 'onset', values: null, acq: { cost: 0, inv: 0, delay: 0, stage: 'bedside' }, base: 0.1, mgmt: 1, ext: true });
-  KB.addFeature({ id: 'endoscopy', label: "下部消化管内視鏡所見", type: 'imaging', cat: 'img', anchor: 'imaging', values: [['normal', "異常なし"], ['uc_continuous', "直腸から連続するびまん性炎症"], ['crohn_longitudinal', "縦走潰瘍/敷石像/非連続"], ['ischemic_left', "左側結腸限局の浮腫・縦走潰瘍"], ['pseudomembrane', "偽膜"], ['punched_out_ulcer', "回盲部/大腸の打ち抜き潰瘍"], ['tumor', "腫瘍/狭窄"], ['diverticular_bleed', "憩室内出血源"], ['rectal_ulcer', "下部直腸潰瘍"], ['hemorrhagic_diffuse', "びまん出血性粘膜"], ['peptic_ulcer', "胃・十二指腸潰瘍/AGML"], ['varices', "食道胃静脈瘤"], ['mallory_weiss', "Mallory-Weiss裂創"], ['esophagitis', "逆流性/感染性食道炎"], ['colitis', "大腸炎所見"], ['angioectasia', "血管拡張症"], ['ulcer', "胃・十二指腸潰瘍"], ['erosive_gastritis', "急性胃粘膜病変/びらん性胃炎"], ['smt', "粘膜下腫瘍"], ['anisakis', "胃壁に刺入する虫体"], ['candida_ulcer', "白苔/打ち抜き様潰瘍(感染性)"], ['eoe', "縦走溝/白斑/輪状溝"], ['achalasia', "食道拡張・残渣貯留"], ['foreign_body', "異物"], ['atrophic_body', "胃体部優位萎縮"]], multi: true, acq: { cost: 2, inv: 1, delay: 2, stage: 'imaging' }, base: 0.1, mgmt: 1, ext: true });
+  KB.addFeature({ id: 'endoscopy', label: "消化管内視鏡所見（上部/下部）", type: 'imaging', cat: 'img', anchor: 'imaging', values: [['normal', "異常なし"], ['peptic_ulcer', "胃・十二指腸潰瘍"], ['erosive_gastritis', "急性胃粘膜病変(AGML)/びらん性胃炎"], ['varices', "食道胃静脈瘤"], ['mallory_weiss', "Mallory-Weiss裂創"], ['esophagitis', "食道炎（逆流性/感染性）"], ['eoe', "縦走溝/白斑/輪状溝（好酸球性食道炎）"], ['achalasia', "食道拡張・残渣貯留"], ['candida_ulcer', "白苔/打ち抜き様潰瘍（感染性）"], ['anisakis', "胃壁に刺入する虫体"], ['foreign_body', "異物"], ['atrophic_body', "胃体部優位萎縮"], ['smt', "粘膜下腫瘍"], ['tumor', "腫瘍/狭窄"], ['uc_continuous', "直腸から連続するびまん性炎症"], ['crohn_longitudinal', "縦走潰瘍/敷石像/非連続病変"], ['ischemic_left', "左側結腸に限局する浮腫・縦走潰瘍"], ['pseudomembrane', "偽膜"], ['punched_out_ulcer', "回盲部/大腸の打ち抜き潰瘍"], ['colitis', "大腸炎所見"], ['diverticular_bleed', "憩室出血源"], ['rectal_ulcer', "下部直腸潰瘍"], ['hemorrhagic_diffuse', "びまん出血性粘膜"], ['angioectasia', "血管拡張症"]], multi: true, acq: { cost: 2, inv: 1, delay: 2, stage: 'imaging' }, base: 0.1, mgmt: 1, ext: true });
   KB.addFeature({ id: 'fobt', label: "便潜血", type: 'lab', cat: 'lab', anchor: 'collection', values: [['neg', "陰性"], ['pos', "陽性"]], acq: { cost: 1, inv: 1, delay: 2, stage: 'lab' }, base: 0.1, mgmt: 1, ext: true });
-  KB.addFeature({ id: 'drug_hx_colitis', label: "腸炎を起こす薬剤の使用", type: 'history', cat: 'hx', anchor: 'history', values: [['ici', "免疫チェックポイント阻害薬"], ['chemo', "抗腫瘍薬"], ['arb_olmesartan', "オルメサルタン"], ['kampo_sanshishi', "山梔子含有漢方"], ['ppi_lansoprazole', "ランソプラゾール"], ['laxative_prep', "大腸検査前処置下剤"], ['ocp', "経口避妊薬"], ['gold', "金製剤"]], multi: true, acq: { cost: 0, inv: 0, delay: 0, stage: 'bedside' }, base: 0.1, mgmt: 1, ext: true });
-  KB.addFeature({ id: 'sx_sequence', label: "症状の出現順序", type: 'symptom', cat: 'cc', anchor: 'onset', values: [['pain_then_diarrhea_then_blood', "腹痛→下痢→血便"], ['vomit_then_pain', "嘔吐→腹痛"], ['pain_then_vomit', "腹痛→嘔吐"]], multi: true, acq: { cost: 0, inv: 0, delay: 0, stage: 'bedside' }, base: 0.1, mgmt: 1, ext: true });
+  KB.addFeature({ id: 'drug_hx_colitis', label: "腸炎を起こす薬剤の使用", type: 'history', cat: 'hx', anchor: 'history', values: [['chemo', "抗腫瘍薬"], ['arb_olmesartan', "オルメサルタン"], ['kampo_sanshishi', "山梔子含有漢方"], ['ppi_lansoprazole', "ランソプラゾール"], ['laxative_prep', "大腸検査前処置下剤"], ['ocp', "経口避妊薬"], ['gold', "金製剤"]], multi: true, acq: { cost: 0, inv: 0, delay: 0, stage: 'bedside' }, base: 0.1, mgmt: 1, ext: true });
+  KB.addFeature({ id: 'sx_sequence', label: "症状の出現順序", type: 'symptom', cat: 'cc', anchor: 'onset', values: [['pain_then_diarrhea_then_blood', "腹痛→下痢→血便"]], multi: true, acq: { cost: 0, inv: 0, delay: 0, stage: 'bedside' }, base: 0.1, mgmt: 1, ext: true });
   KB.addFeature({ id: 'constipation_hx', label: "便秘・下剤/浣腸使用", type: 'history', cat: 'hx', anchor: 'history', values: null, acq: { cost: 0, inv: 0, delay: 0, stage: 'bedside' }, base: 0.1, mgmt: 1, ext: true });
-  KB.addFeature({ id: 'thrombophilia_hx', label: "血栓傾向（肝硬変/悪性腫瘍/妊娠/OCP/凝固異常/腹部術後）", type: 'history', cat: 'hx', anchor: 'history', values: null, acq: { cost: 0, inv: 0, delay: 0, stage: 'bedside' }, base: 0.1, mgmt: 1, ext: true });
+  KB.addFeature({ id: 'thrombophilia_hx', label: "凝固異常・血栓症の既往（APS/プロテインC・S欠乏/骨髄増殖性腫瘍/エストロゲン製剤）", type: 'history', cat: 'hx', anchor: 'history', values: null, acq: { cost: 0, inv: 0, delay: 0, stage: 'bedside' }, base: 0.03, mgmt: 1, ext: true });
   KB.addFeature({ id: 'nocturnal_sx', label: "夜間睡眠中の腹痛・下痢（覚醒）", type: 'symptom', cat: 'cc', anchor: 'onset', values: null, acq: { cost: 0, inv: 0, delay: 0, stage: 'bedside' }, base: 0.1, mgmt: 1, ext: true });
-  KB.addFeature({ id: 'extraintestinal', label: "腸管外症状（結節性紅斑/関節炎/ぶどう膜炎/口内アフタ）", type: 'exam', cat: 'exam', anchor: 'observation', values: null, acq: { cost: 0, inv: 0, delay: 0, stage: 'bedside' }, base: 0.1, mgmt: 1, ext: true });
   KB.addFeature({ id: 'fecal_calprotectin', label: "便中カルプロテクチン", type: 'lab', cat: 'lab', anchor: 'collection', values: [['normal', "正常"], ['high', "上昇"]], acq: { cost: 1, inv: 1, delay: 2, stage: 'lab' }, base: 0.1, mgmt: 1, ext: true });
   KB.addFeature({ id: 'perianal_disease', label: "肛門病変（痔瘻/肛門周囲膿瘍/裂肛の既往）", type: 'exam', cat: 'exam', anchor: 'observation', values: null, acq: { cost: 0, inv: 0, delay: 0, stage: 'bedside' }, base: 0.1, mgmt: 1, ext: true });
   KB.addFeature({ id: 'oral_aphthae_behcet', label: "反復性口腔アフタ/眼・皮膚・陰部病変", type: 'history', cat: 'hx', anchor: 'history', values: null, acq: { cost: 0, inv: 0, delay: 0, stage: 'bedside' }, base: 0.1, mgmt: 1, ext: true });
   KB.addFeature({ id: 'stool_caliber_change', label: "便柱狭小・残便感・排便習慣の変化（数週〜）", type: 'symptom', cat: 'cc', anchor: 'onset', values: null, acq: { cost: 0, inv: 0, delay: 0, stage: 'bedside' }, base: 0.1, mgmt: 1, ext: true });
   KB.addFeature({ id: 'lymphadenopathy', label: "体表リンパ節腫大", type: 'exam', cat: 'exam', anchor: 'observation', values: null, acq: { cost: 0, inv: 0, delay: 0, stage: 'bedside' }, base: 0.1, mgmt: 1, ext: true });
-  KB.addFeature({ id: 'ldh_sil2r', label: "LDH/sIL-2R", type: 'lab', cat: 'lab', anchor: 'collection', values: [['normal', "正常"], ['high', "上昇"]], acq: { cost: 1, inv: 1, delay: 2, stage: 'lab' }, base: 0.1, mgmt: 1, ext: true });
   KB.addFeature({ id: 'flushing', label: "発作性皮膚紅潮・喘鳴", type: 'symptom', cat: 'cc', anchor: 'onset', values: null, acq: { cost: 0, inv: 0, delay: 0, stage: 'bedside' }, base: 0.1, mgmt: 1, ext: true });
   KB.addFeature({ id: 'allergy_hx', label: "アレルギー疾患既往（喘息/鼻炎/アトピー/蕁麻疹）", type: 'history', cat: 'hx', anchor: 'history', values: null, acq: { cost: 0, inv: 0, delay: 0, stage: 'bedside' }, base: 0.1, mgmt: 1, ext: true });
   KB.addFeature({ id: 'amyloid_background', label: "アミロイド基礎疾患（RA/透析/骨髄腫/FAP）", type: 'history', cat: 'hx', anchor: 'history', values: null, acq: { cost: 0, inv: 0, delay: 0, stage: 'bedside' }, base: 0.1, mgmt: 1, ext: true });
-  KB.addFeature({ id: 'hair_nail_pigment', label: "脱毛・爪萎縮・皮膚色素沈着", type: 'exam', cat: 'exam', anchor: 'observation', values: null, acq: { cost: 0, inv: 0, delay: 0, stage: 'bedside' }, base: 0.1, mgmt: 1, ext: true });
+  KB.addFeature({ id: 'hair_nail_pigment', label: "脱毛・爪萎縮", type: 'exam', cat: 'exam', anchor: 'observation', values: null, acq: { cost: 0, inv: 0, delay: 0, stage: 'bedside' }, base: 0.1, mgmt: 1, ext: true });
   KB.addFeature({ id: 'anal_sx', label: "肛門症状", type: 'symptom', cat: 'cc', anchor: 'onset', values: [['bleed_on_defecation', "排便時出血（付着する鮮血）"], ['pain_on_defecation', "排便時痛/肛門痛"], ['prolapse', "脱出・腫瘤"], ['discharge', "膿排出・下着汚染"]], multi: true, acq: { cost: 0, inv: 0, delay: 0, stage: 'bedside' }, base: 0.1, mgmt: 1, ext: true });
   KB.addFeature({ id: 'arthralgia', label: "関節痛・筋痛", type: 'symptom', cat: 'cc', anchor: 'onset', values: null, acq: { cost: 0, inv: 0, delay: 0, stage: 'bedside' }, base: 0.1, mgmt: 1, ext: true });
-  KB.addFeature({ id: 'autoimmune_hx', label: "膠原病・血管炎・肝炎ウイルス・喘息の既往", type: 'history', cat: 'hx', anchor: 'history', values: null, acq: { cost: 0, inv: 0, delay: 0, stage: 'bedside' }, base: 0.1, mgmt: 1, ext: true });
+  KB.addFeature({ id: 'autoimmune_hx', label: "膠原病・血管炎の既往", type: 'history', cat: 'hx', anchor: 'history', values: null, acq: { cost: 0, inv: 0, delay: 0, stage: 'bedside' }, base: 0.1, mgmt: 1, ext: true });
   KB.addFeature({ id: 'polyuria_thirst', label: "口渇・多飲・多尿", type: 'symptom', cat: 'cc', anchor: 'onset', values: null, acq: { cost: 0, inv: 0, delay: 0, stage: 'bedside' }, base: 0.1, mgmt: 1, ext: true });
-  KB.addFeature({ id: 'drug_hx_metabolic', label: "電解質異常を起こす薬剤", type: 'history', cat: 'hx', anchor: 'history', values: [['vitamin_d', "活性型ビタミンD/サプリ"], ['thiazide', "サイアザイド"], ['lithium', "リチウム"], ['calcium_carbonate', "炭酸カルシウム"], ['raas_inhibitor', "RAS阻害薬/K保持性利尿薬"], ['diuretic', "ループ利尿薬/下剤"], ['sglt2', "SGLT2阻害薬"], ['nsaid', "NSAIDs"]], multi: true, acq: { cost: 0, inv: 0, delay: 0, stage: 'bedside' }, base: 0.1, mgmt: 1, ext: true });
+  KB.addFeature({ id: 'drug_hx_metabolic', label: "電解質異常を起こす薬剤", type: 'history', cat: 'hx', anchor: 'history', values: [['vitamin_d', "活性型ビタミンD/サプリ"], ['thiazide', "サイアザイド"], ['lithium', "リチウム"], ['calcium_carbonate', "炭酸カルシウム"], ['raas_inhibitor', "RAS阻害薬/K保持性利尿薬"], ['diuretic', "ループ利尿薬"], ['laxative', "下剤（乱用含む）"], ['sglt2', "SGLT2阻害薬"]], multi: true, acq: { cost: 0, inv: 0, delay: 0, stage: 'bedside' }, base: 0.1, mgmt: 1, ext: true });
   KB.addFeature({ id: 'steroid_hx', label: "ステロイド長期使用/中断・減量", type: 'history', cat: 'hx', anchor: 'history', values: null, acq: { cost: 0, inv: 0, delay: 0, stage: 'bedside' }, base: 0.1, mgmt: 1, ext: true });
   KB.addFeature({ id: 'heat_exposure', label: "暑熱環境・労作の曝露", type: 'history', cat: 'hx', anchor: 'history', values: null, acq: { cost: 0, inv: 0, delay: 0, stage: 'bedside' }, base: 0.1, mgmt: 1, ext: true });
   KB.addFeature({ id: 'allergen_exposure', label: "直前のアレルゲン曝露（食物/薬剤/虫刺/運動）", type: 'history', cat: 'hx', anchor: 'history', values: null, acq: { cost: 0, inv: 0, delay: 0, stage: 'bedside' }, base: 0.1, mgmt: 1, ext: true });
   KB.addFeature({ id: 'urticaria_angioedema', label: "蕁麻疹・血管性浮腫・粘膜腫脹", type: 'exam', cat: 'exam', anchor: 'observation', values: null, acq: { cost: 0, inv: 0, delay: 0, stage: 'bedside' }, base: 0.1, mgmt: 1, ext: true });
-  KB.addFeature({ id: 'cxr', label: "胸部X線", type: 'imaging', cat: 'img', anchor: 'imaging', values: [['normal', "異常なし"], ['infiltrate_effusion', "浸潤影"], ['infiltrate_effusion', "胸水"], ['pneumomediastinum', "気胸"], ['free_air', "横隔膜下free air"], ['pneumomediastinum', "縦隔気腫/縦隔拡大"], ['mediastinal_wide', "上縦隔拡大"]], multi: true, acq: { cost: 2, inv: 1, delay: 2, stage: 'imaging' }, base: 0.1, mgmt: 1, ext: true });
+  KB.addFeature({ id: 'cxr', label: "胸部X線", type: 'imaging', cat: 'img', anchor: 'imaging', values: [['normal', "異常なし"], ['infiltrate', "浸潤影"], ['effusion', "胸水"], ['pneumothorax', "気胸"], ['pneumomediastinum', "縦隔気腫"], ['mediastinal_wide', "縦隔拡大"], ['free_air', "横隔膜下free air"]], multi: true, acq: { cost: 2, inv: 1, delay: 2, stage: 'imaging' }, base: 0.1, mgmt: 1, ext: true });
   KB.addFeature({ id: 'subcutaneous_emphysema', label: "頸部・胸部皮下気腫", type: 'exam', cat: 'exam', anchor: 'observation', values: null, acq: { cost: 0, inv: 0, delay: 0, stage: 'bedside' }, base: 0.1, mgmt: 1, ext: true });
   KB.addFeature({ id: 'menstrual_relation', label: "月経との関係", type: 'history', cat: 'hx', anchor: 'history', values: [['with_menses', "月経中/直前"], ['midcycle', "排卵期（月経中期）"], ['premenstrual', "月経前に増悪"]], acq: { cost: 0, inv: 0, delay: 0, stage: 'bedside' }, base: 0.1, mgmt: 1, ext: true });
   KB.addFeature({ id: 'vaginal_discharge', label: "帯下増加（膿性）", type: 'symptom', cat: 'cc', anchor: 'onset', values: null, acq: { cost: 0, inv: 0, delay: 0, stage: 'bedside' }, base: 0.1, mgmt: 1, ext: true });
@@ -721,9 +717,8 @@ svg.body .rl{font-size:11px}
   KB.addFeature({ id: 'splenomegaly', label: "脾腫", type: 'exam', cat: 'exam', anchor: 'observation', values: null, acq: { cost: 0, inv: 0, delay: 0, stage: 'bedside' }, base: 0.1, mgmt: 1, ext: true });
   KB.addFeature({ id: 'paracentesis', label: "腹水穿刺所見", type: 'lab', cat: 'lab', anchor: 'collection', values: [['saag_high', "SAAG≥1.1(漏出性/門脈圧亢進)"], ['neutrophil_high', "好中球≥250/μL"], ['bloody', "血性"], ['amylase_high', "アミラーゼ高値"], ['cytology_pos', "細胞診陽性"]], acq: { cost: 1, inv: 1, delay: 2, stage: 'lab' }, base: 0.1, mgmt: 1, ext: true });
   KB.addFeature({ id: 'leg_edema', label: "下腿浮腫", type: 'exam', cat: 'exam', anchor: 'observation', values: null, acq: { cost: 0, inv: 0, delay: 0, stage: 'bedside' }, base: 0.1, mgmt: 1, ext: true });
-  KB.addFeature({ id: 'ct_other', label: "腹部CTその他所見", type: 'imaging', cat: 'img', anchor: 'imaging', values: [['liver_mass', "肝腫瘤"], ['splenic_lesion', "脾梗塞/脾腫/脾破裂"], ['renal_infarct', "腎梗塞"], ['ascites', "腹水"], ['mass', "腹腔内/後腹膜腫瘤"], ['pneumatosis', "腸管気腫"], ['psoas_abscess', "腸腰筋膿瘍/腹腔内膿瘍"], ['wall_hematoma', "腹壁血腫"], ['pvt', "門脈血栓"], ['intussusception', "腸重積"], ['hepatosplenomegaly', "肝脾腫"]], multi: true, acq: { cost: 2, inv: 1, delay: 2, stage: 'imaging' }, base: 0.1, mgmt: 1, ext: true });
   KB.addFeature({ id: 'diarrhea_pattern', label: "下痢の性状・パターン", type: 'symptom', cat: 'cc', anchor: 'onset', values: [['nocturnal_fasting', "夜間/絶食時も持続(分泌性)"], ['steatorrhea', "脂肪便(油っぽく浮く)"], ['chronic_4w', "4週以上持続/反復"], ['large_volume', "大量(小腸型)"], ['small_frequent', "少量頻回(大腸型)"]], multi: true, acq: { cost: 0, inv: 0, delay: 0, stage: 'bedside' }, base: 0.1, mgmt: 1, ext: true });
-  KB.addFeature({ id: 'hemolysis_labs', label: "溶血所見（LDH↑/ハプトグロビン↓/網赤血球↑）", type: 'lab', cat: 'lab', anchor: 'collection', values: [['positive', "溶血あり"]], multi: true, acq: { cost: 1, inv: 1, delay: 2, stage: 'lab' }, base: 0.1, mgmt: 1, ext: true });
+  KB.addFeature({ id: 'hemolysis_labs', label: "溶血所見（ハプトグロビン低下/網赤血球増加/間接Bil優位）", type: 'lab', cat: 'lab', anchor: 'collection', values: [['positive', "溶血あり"]], multi: true, acq: { cost: 1, inv: 1, delay: 2, stage: 'lab' }, base: 0.1, mgmt: 1, ext: true });
   KB.addFeature({ id: 'urine_stool_color', label: "尿・便の色調", type: 'symptom', cat: 'cc', anchor: 'onset', values: [['dark_urine', "褐色尿(ビリルビン尿)"], ['red_urine', "赤色〜暗赤色尿"], ['pale_stool', "白色便"]], multi: true, acq: { cost: 0, inv: 0, delay: 0, stage: 'bedside' }, base: 0.1, mgmt: 1, ext: true });
   KB.addFeature({ id: 'endocrine_lab', label: "内分泌検査", type: 'lab', cat: 'lab', anchor: 'collection', values: [['tsh_low', "TSH低下(甲状腺機能亢進)"], ['tsh_high', "TSH上昇(甲状腺機能低下)"], ['cortisol_low', "コルチゾール低値"]], multi: true, acq: { cost: 1, inv: 1, delay: 2, stage: 'lab' }, base: 0.1, mgmt: 1, ext: true });
   KB.addFeature({ id: 'neuro_sx', label: "神経症状", type: 'symptom', cat: 'cc', anchor: 'onset', values: [['headache', "頭痛/項部硬直"], ['focal_deficit', "局所神経脱落症状"], ['paresthesia_weakness', "四肢しびれ/筋力低下"], ['confusion_ataxia', "錯乱/失調/眼球運動障害"], ['vertigo', "めまい"], ['eye_pain_visual', "眼痛/視力障害"]], multi: true, acq: { cost: 0, inv: 0, delay: 0, stage: 'bedside' }, base: 0.1, mgmt: 1, ext: true });
@@ -734,12 +729,10 @@ svg.body .rl{font-size:11px}
   KB.addFeature({ id: 'pain_fasting_nocturnal', label: "空腹時・夜間に増悪し摂食で軽快", type: 'symptom', cat: 'cc', anchor: 'onset', values: null, acq: { cost: 0, inv: 0, delay: 0, stage: 'bedside' }, base: 0.1, mgmt: 1, ext: true });
   KB.addFeature({ id: 'obesity', label: "肥満(BMI高値/内臓脂肪型)", type: 'history', cat: 'hx', anchor: 'history', values: null, acq: { cost: 0, inv: 0, delay: 0, stage: 'bedside' }, base: 0.1, mgmt: 1, ext: true });
   KB.addFeature({ id: 'forceful_vomiting_prior', label: "激しい嘔吐/嘔吐直後の発症", type: 'history', cat: 'hx', anchor: 'history', values: null, acq: { cost: 0, inv: 0, delay: 0, stage: 'bedside' }, base: 0.1, mgmt: 1, ext: true });
-  KB.addFeature({ id: 'ingestion_event', label: "誤飲・処置歴", type: 'history', cat: 'hx', anchor: 'history', values: [['none', "なし"], ['foreign_body', "異物誤飲(魚骨/義歯/PTP/電池)"], ['caustic', "腐食性物質(酸/アルカリ)服用"], ['endoscopy_recent', "最近の内視鏡処置/アブレーション"]], acq: { cost: 0, inv: 0, delay: 0, stage: 'bedside' }, base: 0.1, mgmt: 1, ext: true });
-  KB.addFeature({ id: 'hb_imaging', label: "肝胆膵/上腹部の画像所見(US/CT/MRI)", type: 'imaging', cat: 'img', anchor: 'imaging', values: [['normal', "異常なし"], ['liver_mass', "肝腫瘤"], ['fatty_liver', "脂肪肝"], ['cirrhotic_liver', "肝硬変像/脾腫"], ['biliary_dilation', "胆管拡張/狭窄(肝内外)"], ['gb_wall_thick', "胆嚢壁肥厚/胆嚢腫瘤"], ['pancreatic_mass', "膵腫瘤/膵管拡張"], ['pancreatic_cyst', "膵嚢胞性病変"], ['diffuse_pancreas_swelling', "びまん性膵腫大"], ['chronic_pancreatitis', "膵石灰化/膵管不整拡張"], ['portal_thrombosis', "門脈血栓"], ['ascites', "腹水"], ['gastric_wall_thick', "胃壁肥厚"]], multi: true, acq: { cost: 2, inv: 1, delay: 2, stage: 'imaging' }, base: 0.1, mgmt: 1, ext: true });
+  KB.addFeature({ id: 'ingestion_event', label: "誤飲・処置歴", type: 'history', cat: 'hx', anchor: 'history', values: [['foreign_body', "異物誤飲(魚骨/義歯/PTP/電池)"], ['caustic', "腐食性物質(酸/アルカリ)服用"], ['endoscopy_recent', "最近の内視鏡処置/アブレーション"]], acq: { cost: 0, inv: 0, delay: 0, stage: 'bedside' }, base: 0.1, mgmt: 1, ext: true });
   KB.addFeature({ id: 'raw_fish_intake', label: "生魚(サバ/イカ/アジ等)摂取 数時間〜数日以内", type: 'history', cat: 'hx', anchor: 'history', values: null, acq: { cost: 0, inv: 0, delay: 0, stage: 'bedside' }, base: 0.1, mgmt: 1, ext: true });
   KB.addFeature({ id: 'pain_relief_leaning_forward', label: "前屈・坐位で軽減、仰臥位で増悪", type: 'symptom', cat: 'cc', anchor: 'onset', values: null, acq: { cost: 0, inv: 0, delay: 0, stage: 'bedside' }, base: 0.1, mgmt: 1, ext: true });
   KB.addFeature({ id: 'pancreatitis_hx', label: "膵炎の既往(急性/慢性)・高TG血症", type: 'history', cat: 'hx', anchor: 'history', values: null, acq: { cost: 0, inv: 0, delay: 0, stage: 'bedside' }, base: 0.1, mgmt: 1, ext: true });
-  KB.addFeature({ id: 'steatorrhea', label: "脂肪便・悪臭のある放屁", type: 'symptom', cat: 'cc', anchor: 'onset', values: null, acq: { cost: 0, inv: 0, delay: 0, stage: 'bedside' }, base: 0.1, mgmt: 1, ext: true });
   KB.addFeature({ id: 'igg4', label: "血清IgG4", type: 'lab', cat: 'lab', anchor: 'collection', values: [['normal', "正常"], ['elevated', "上昇(≥135mg/dL)"]], acq: { cost: 1, inv: 1, delay: 2, stage: 'lab' }, base: 0.1, mgmt: 1, ext: true });
   KB.addFeature({ id: 'diabetes_new_worsening', label: "糖尿病の新規発症/急激な悪化", type: 'history', cat: 'hx', anchor: 'history', values: null, acq: { cost: 0, inv: 0, delay: 0, stage: 'bedside' }, base: 0.1, mgmt: 1, ext: true });
   KB.addFeature({ id: 'fatigue', label: "全身倦怠感", type: 'symptom', cat: 'cc', anchor: 'onset', values: null, acq: { cost: 0, inv: 0, delay: 0, stage: 'bedside' }, base: 0.1, mgmt: 1, ext: true });
@@ -747,8 +740,35 @@ svg.body .rl{font-size:11px}
   KB.addFeature({ id: 'ast_alt_pattern', label: "AST/ALTパターン", type: 'lab', cat: 'lab', anchor: 'collection', values: [['alt_dominant', "ALT>AST"], ['ast_dominant', "AST>ALT(アルコール性等)"], ['gt1000', "1000 IU/L超の高度上昇"]], acq: { cost: 1, inv: 1, delay: 2, stage: 'lab' }, base: 0.1, mgmt: 1, ext: true });
   KB.addFeature({ id: 'hepatitis_serology', label: "肝炎ウイルスマーカー", type: 'lab', cat: 'lab', anchor: 'collection', values: [['neg', "陰性"], ['hav_igm_pos', "IgM-HA抗体陽性"], ['hbs_ag_igm_hbc_pos', "HBs抗原/IgM-HBc抗体陽性"], ['hcv_pos', "HCV抗体/RNA陽性"], ['hev_pos', "IgA/IgM-HEV抗体陽性"], ['ebv_cmv_pos', "EBV/CMV急性感染抗体陽性"]], multi: true, acq: { cost: 1, inv: 1, delay: 2, stage: 'lab' }, base: 0.1, mgmt: 1, ext: true });
   KB.addFeature({ id: 'autoantibodies', label: "自己抗体", type: 'lab', cat: 'lab', anchor: 'collection', values: [['neg', "陰性"], ['ana_asma_pos', "抗核抗体/抗平滑筋抗体陽性(+IgG高値)"], ['ama_pos', "抗ミトコンドリア抗体陽性(+IgM高値)"]], multi: true, acq: { cost: 1, inv: 1, delay: 2, stage: 'lab' }, base: 0.1, mgmt: 1, ext: true });
-  KB.addFeature({ id: 'hepatotoxic_drug_supplement', label: "新規薬剤・健康食品・漢方・ICIの使用(数週〜数カ月)", type: 'history', cat: 'hx', anchor: 'history', values: null, acq: { cost: 0, inv: 0, delay: 0, stage: 'bedside' }, base: 0.1, mgmt: 1, ext: true });
   KB.addFeature({ id: 'ammonia', label: "血中アンモニア", type: 'lab', cat: 'lab', anchor: 'collection', values: [['normal', "正常"], ['elevated', "上昇"]], acq: { cost: 1, inv: 1, delay: 2, stage: 'lab' }, base: 0.1, mgmt: 1, ext: true });
+  KB.addFeature({ id: 'ck', label: "CK", type: 'lab', cat: 'lab', anchor: 'collection', values: [['normal', "正常"], ['elevated', "上昇"]], acq: { cost: 1, inv: 1, delay: 2, stage: 'lab' }, base: 0.1, mgmt: 1, ext: true });
+  KB.addFeature({ id: 'ldh', label: "LD（LDH）", type: 'lab', cat: 'lab', anchor: 'collection', values: [['normal', "正常"], ['elevated', "上昇"]], acq: { cost: 1, inv: 1, delay: 2, stage: 'lab' }, base: 0.1, mgmt: 1, ext: true });
+  KB.addFeature({ id: 'sil2r', label: "可溶性IL-2受容体（sIL-2R）", type: 'lab', cat: 'lab', anchor: 'collection', values: [['normal', "正常"], ['elevated', "上昇"]], acq: { cost: 1, inv: 1, delay: 2, stage: 'lab' }, base: 0.1, mgmt: 1, ext: true });
+  KB.addFeature({ id: 'ici_use', label: "免疫チェックポイント阻害薬の使用（現在/過去1年）", type: 'history', cat: 'hx', anchor: 'history', values: null, acq: { cost: 0, inv: 0, delay: 0, stage: 'bedside' }, base: 0.02, mgmt: 1, ext: true });
+  KB.addValue('ct', 'liver_mass', "肝腫瘤");
+  KB.addValue('ct', 'fatty_liver', "脂肪肝");
+  KB.addValue('ct', 'cirrhotic_liver', "肝硬変像");
+  KB.addValue('ct', 'biliary_dilation', "胆管拡張/狭窄（肝内外）");
+  KB.addValue('ct', 'gb_wall_thick', "胆嚢壁肥厚/胆嚢腫瘤");
+  KB.addValue('ct', 'pancreatic_mass', "膵腫瘤/膵管拡張");
+  KB.addValue('ct', 'pancreatic_cyst', "膵嚢胞性病変");
+  KB.addValue('ct', 'diffuse_pancreas_swelling', "びまん性膵腫大");
+  KB.addValue('ct', 'chronic_pancreatitis', "膵石灰化/膵管不整拡張");
+  KB.addValue('ct', 'pvt', "門脈/腸間膜静脈血栓");
+  KB.addValue('ct', 'ascites', "腹水");
+  KB.addValue('ct', 'gastric_wall_thick', "胃壁肥厚");
+  KB.addValue('ct', 'splenic_infarct', "脾梗塞");
+  KB.addValue('ct', 'splenic_rupture', "脾破裂/脾損傷");
+  KB.addValue('ct', 'hepatosplenomegaly', "肝脾腫");
+  KB.addValue('ct', 'renal_infarct', "腎梗塞");
+  KB.addValue('ct', 'retro_mass', "腹腔内/後腹膜腫瘤");
+  KB.addValue('ct', 'pneumatosis', "腸管気腫");
+  KB.addValue('ct', 'psoas_abscess', "腸腰筋膿瘍");
+  KB.addValue('ct', 'wall_hematoma', "腹壁血腫");
+  KB.addValue('ct', 'intussusception', "腸重積像");
+  KB.addValue('ct', 'wall_thick', "腸管壁肥厚");
+  KB.addValue('ct', 'bowel_mass', "腸管腫瘤/狭窄");
+  KB.addValue('ct', 'internal_hernia', "内ヘルニア（closed loop/beak）");
   KB.addRelation('appendicitis', 'abd_pain', ["rlq"], 0.80, 0.85);
   KB.addRelation('appendicitis', 'abd_pain', ["epi", "umb"], 0.50, 0.85);
   KB.addRelation('appendicitis', 'pain_char', ["migrating_rlq"], 0.50, 0.85);
@@ -783,7 +803,8 @@ svg.body .rl{font-size:11px}
   KB.addRelation('sbo', 'renal', ["elevated"], 0.50, 0.85);
   KB.addRelation('sbo', 'xray', ["air_fluid", "dilated_loops"], 0.80, 0.85);
   KB.addRelation('sbo', 'ct', ["sbo"], 0.80, 0.85);
-  KB.addRelation('sbo', 'ck_ldh', ["elevated"], 0.20, 0.85);
+  KB.addRelation('sbo', 'ck', ["elevated"], 0.20, 0.85);
+  KB.addRelation('sbo', 'ldh', ["elevated"], 0.20, 0.85);
   KB.addRelation('sbo', 'weight_loss', null, 0.20, 0.94);
   KB.addRelation('sbo', 'abd_pain', ["umb", "diffuse"], 0.80, 0.85);
   KB.addRelation('sbo', 'hernia_hx', null, 0.50, 0.95);
@@ -810,12 +831,11 @@ svg.body .rl{font-size:11px}
   KB.addRelation('intussusception_adult', 'weight_loss', null, 0.20, 0.94);
   KB.addRelation('intussusception_adult', 'similar_episodes', null, 0.50, 0.85);
   KB.addRelation('intussusception_adult', 'us', ["normal"], 0.20, 0.85);
-  KB.addRelation('intussusception_adult', 'ct_wall_mass', ["intussusception"], 0.80, 0.85);
+  KB.addRelation('intussusception_adult', 'ct', ["intussusception"], 0.80, 0.85);
   KB.addRelation('intussusception_adult', 'vomiting', null, 0.50, 0.60);
   KB.addRelation('intussusception_adult', 'gi_bleed', ["hematochezia"], 0.20, 0.85);
   KB.addRelation('intussusception_adult', 'bowel_sounds', ["hyper"], 0.50, 0.85);
-  KB.addRelation('intussusception_adult', 'ct_other', ["intussusception"], 0.80, 0.85);
-  KB.addDisease('internal_hernia', "内ヘルニア（傍十二指腸窩・大網・腸間膜裂孔）", { urgency: 'emergent', mnm: true, prior: 0.002, onset: {"minutes": 0.1, "hours": 0.8, "days": 0.6, "weeks": 0.05, "months": 0.05, "unknown": 0.7}, requires: {}, mult: [], clear: ["distension", "ct", "ct_wall_mass"], category: "腹壁・ヘルニア", note: "手術歴なし/胃バイパス後の急速なclosed-loop閉塞、外ヘルニアを触れない、造影CTで嚢状集簇像", ext: true });
+  KB.addDisease('internal_hernia', "内ヘルニア（傍十二指腸窩・大網・腸間膜裂孔）", { urgency: 'emergent', mnm: true, prior: 0.002, onset: {"minutes": 0.1, "hours": 0.8, "days": 0.6, "weeks": 0.05, "months": 0.05, "unknown": 0.7}, requires: {}, mult: [], clear: ["distension", "ct"], category: "腹壁・ヘルニア", note: "手術歴なし/胃バイパス後の急速なclosed-loop閉塞、外ヘルニアを触れない、造影CTで嚢状集簇像", ext: true });
   KB.addRelation('internal_hernia', 'abd_pain', ["diffuse", "umb"], 0.80, 0.85);
   KB.addRelation('internal_hernia', 'vomiting', ["bilious"], 0.80, 0.85);
   KB.addRelation('internal_hernia', 'distension', null, 0.80, 0.85, { key: true });
@@ -824,7 +844,7 @@ svg.body .rl{font-size:11px}
   KB.addRelation('internal_hernia', 'rebound_guarding', null, 0.50, 0.80);
   KB.addRelation('internal_hernia', 'bowel_sounds', ["hyper"], 0.50, 0.85);
   KB.addRelation('internal_hernia', 'ct', ["sbo"], 0.80, 0.85, { key: true });
-  KB.addRelation('internal_hernia', 'ct_wall_mass', ["internal_hernia"], 0.80, 0.85, { key: true });
+  KB.addRelation('internal_hernia', 'ct', ["internal_hernia"], 0.80, 0.85, { key: true });
   KB.addRelation('internal_hernia', 'hernia_irreducible', null, 0.05, 0.90);
   KB.addRelation('incarcerated_hernia', 'hernia_irreducible', null, 0.80, 0.95);
   KB.addRelation('incarcerated_hernia', 'groin_bulge', null, 0.80, 0.90);
@@ -864,7 +884,6 @@ svg.body .rl{font-size:11px}
   KB.addRelation('diverticulitis', 'gi_bleed', null, 0.05, 0.90);
   KB.addDisease('diverticular_bleeding', "大腸憩室出血", { urgency: 'urgent', mnm: false, prior: 0.03, onset: {"minutes": 0.6, "hours": 0.9, "days": 0.3, "weeks": 0.05, "months": 0.05, "unknown": 0.7}, requires: {}, mult: [], clear: [], category: "下部消化管", note: "高齢者の突然・無痛性の大量鮮血便+凝血塊、抗血栓薬", ext: true });
   KB.addRelation('diverticular_bleeding', 'gi_bleed', ["hematochezia"], 0.80, 0.85);
-  KB.addRelation('diverticular_bleeding', 'painless_bleed', null, 0.80, 0.90);
   KB.addRelation('diverticular_bleeding', 'abd_pain', ["diffuse"], 0.05, 0.55);
   KB.addRelation('diverticular_bleeding', 'anticoag', null, 0.50, 0.90);
   KB.addRelation('diverticular_bleeding', 'nsaid_aspirin', null, 0.50, 0.80);
@@ -960,7 +979,7 @@ svg.body .rl{font-size:11px}
   KB.addRelation('drug_colitis_other', 'diarrhea', ["watery", "bloody", "mucous"], 0.80, 0.85);
   KB.addRelation('drug_colitis_other', 'abd_pain', ["diffuse", "rlq"], 0.50, 0.85);
   KB.addRelation('drug_colitis_other', 'weight_loss', null, 0.50, 0.94);
-  KB.addRelation('drug_colitis_other', 'drug_hx_colitis', ["ici", "chemo", "arb_olmesartan", "kampo_sanshishi", "ppi_lansoprazole", "laxative_prep", "ocp"], 0.80, 0.85);
+  KB.addRelation('drug_colitis_other', 'drug_hx_colitis', ["chemo", "arb_olmesartan", "kampo_sanshishi", "ppi_lansoprazole", "laxative_prep", "ocp"], 0.80, 0.85);
   KB.addRelation('drug_colitis_other', 'stool_test', ["neg"], 0.80, 0.85);
   KB.addRelation('drug_colitis_other', 'ct', ["colitis"], 0.50, 0.85);
   KB.addDisease('cmv_colitis', "腸管CMV感染症（CMV腸炎）", { urgency: 'urgent', mnm: false, prior: 0.002, onset: {"minutes": 0.05, "hours": 0.05, "days": 0.5, "weeks": 0.9, "months": 0.4, "unknown": 0.7}, requires: {}, mult: [], clear: [], category: "下部消化管", note: "免疫抑制背景の遷延する下痢・血便、抗原血症陰性でも除外不可、内視鏡生検必須", ext: true });
@@ -1011,8 +1030,8 @@ svg.body .rl{font-size:11px}
   KB.addRelation('mesenteric_ischemia', 'acidosis', ["metabolic"], 0.50, 0.85);
   KB.addRelation('mesenteric_ischemia', 'ddimer', ["elevated"], 0.80, 0.85);
   KB.addRelation('mesenteric_ischemia', 'wbc', ["gt15"], 0.50, 0.85);
-  KB.addRelation('mesenteric_ischemia', 'ck_ldh', ["elevated"], 0.50, 0.85);
-  KB.addRelation('mesenteric_ischemia', 'ecg', ["af"], 0.50, 0.85);
+  KB.addRelation('mesenteric_ischemia', 'ck', ["elevated"], 0.50, 0.85);
+  KB.addRelation('mesenteric_ischemia', 'ldh', ["elevated"], 0.50, 0.85);
   KB.addRelation('mesenteric_ischemia', 'ct', ["ischemia"], 0.80, 0.85);
   KB.addRelation('mesenteric_ischemia', 'xray', ["normal", "dilated_loops"], 0.50, 0.85);
   KB.addRelation('mesenteric_ischemia', 'pain_onset_char', ["sudden"], 0.80, 0.85);
@@ -1027,7 +1046,10 @@ svg.body .rl{font-size:11px}
   KB.addRelation('smv_thrombosis', 'diarrhea', ["watery", "bloody"], 0.50, 0.85);
   KB.addRelation('smv_thrombosis', 'gi_bleed', ["hematochezia"], 0.50, 0.85);
   KB.addRelation('smv_thrombosis', 'distension', null, 0.50, 0.85);
-  KB.addRelation('smv_thrombosis', 'thrombophilia_hx', null, 0.80, 0.90);
+  KB.addRelation('smv_thrombosis', 'thrombophilia_hx', null, 0.30, 0.97);
+  KB.addRelation('smv_thrombosis', 'cirrhosis_hx', null, 0.25, 0.90);
+  KB.addRelation('smv_thrombosis', 'cancer_hx', null, 0.20, 0.90);
+  KB.addRelation('smv_thrombosis', 'prior_abd_surgery', null, 0.20, 0.85);
   KB.addRelation('smv_thrombosis', 'pain_disproportion', null, 0.50, 0.95);
   KB.addRelation('smv_thrombosis', 'ddimer', ["elevated"], 0.50, 0.85);
   KB.addRelation('smv_thrombosis', 'lactate', ["2_4", "gt4"], 0.20, 0.85);
@@ -1040,7 +1062,10 @@ svg.body .rl{font-size:11px}
   KB.addRelation('ibd_flare', 'ibd_hx', null, 0.80, 0.95);
   KB.addRelation('ibd_flare', 'fever_sub', null, 0.50, 0.70);
   KB.addRelation('ibd_flare', 'weight_loss', null, 0.50, 0.94);
-  KB.addRelation('ibd_flare', 'extraintestinal', null, 0.20, 0.90);
+  KB.addRelation('ibd_flare', 'skin_finding', ["erythema_nodosum"], 0.20, 0.90);
+  KB.addRelation('ibd_flare', 'arthralgia', null, 0.20, 0.90);
+  KB.addRelation('ibd_flare', 'oral_aphthae_behcet', null, 0.20, 0.90);
+  KB.addRelation('ibd_flare', 'neuro_sx', ["eye_pain_visual"], 0.20, 0.90);
   KB.addRelation('ibd_flare', 'hb', ["low"], 0.50, 0.85);
   KB.addRelation('ibd_flare', 'crp', ["1_5", "5_10"], 0.50, 0.85);
   KB.addRelation('ibd_flare', 'endoscopy', ["uc_continuous", "crohn_longitudinal"], 0.80, 0.85);
@@ -1058,7 +1083,6 @@ svg.body .rl{font-size:11px}
   KB.addRelation('ibd_flare', 'cv_risk', null, 0.20, 0.65);
   KB.addRelation('ibd_flare', 'diarrhea', ["bloody", "mucous"], 0.80, 0.85);
   KB.addRelation('ibd_flare', 'abd_pain', ["rlq", "llq", "diffuse"], 0.50, 0.85);
-  KB.addRelation('ibd_flare', 'skin_finding', ["erythema_nodosum"], 0.20, 0.85);
   KB.addRelation('ibd_flare', 'endoscopy', ["colitis"], 0.80, 0.85);
   KB.addDisease('intestinal_behcet', "腸管ベーチェット病/単純性潰瘍", { urgency: 'urgent', mnm: false, prior: 0.002, onset: {"minutes": 0.05, "hours": 0.1, "days": 0.5, "weeks": 0.8, "months": 0.7, "unknown": 0.7}, requires: {}, mult: [], clear: [], category: "下部消化管", note: "若年の右下腹部痛+反復性口内炎、回盲部打ち抜き潰瘍（CMV・腸結核・Crohn・NSAIDsと鑑別）", ext: true });
   KB.addRelation('intestinal_behcet', 'abd_pain', ["rlq"], 0.80, 0.85);
@@ -1127,7 +1151,7 @@ svg.body .rl{font-size:11px}
   KB.addRelation('colorectal_cancer', 'ibd_hx', null, 0.20, 0.95);
   KB.addRelation('colorectal_cancer', 'rebound_guarding', null, 0.20, 0.80);
   KB.addRelation('colorectal_cancer', 'ct', ["sbo"], 0.50, 0.85);
-  KB.addRelation('colorectal_cancer', 'ct_wall_mass', ["mass", "wall_thick"], 0.80, 0.85);
+  KB.addRelation('colorectal_cancer', 'ct', ["bowel_mass", "wall_thick"], 0.80, 0.85);
   KB.addRelation('colorectal_cancer', 'endoscopy', ["tumor"], 0.80, 0.85);
   KB.addRelation('colorectal_cancer', 'obstipation', null, 0.50, 0.88);
   KB.addRelation('colorectal_cancer', 'abd_mass', ["lower_pelvic", "upper"], 0.20, 0.85);
@@ -1143,7 +1167,7 @@ svg.body .rl{font-size:11px}
   KB.addRelation('small_bowel_tumor', 'abd_mass', null, 0.20, 0.90);
   KB.addRelation('small_bowel_tumor', 'weight_loss', null, 0.50, 0.94);
   KB.addRelation('small_bowel_tumor', 'ct', ["sbo"], 0.50, 0.85);
-  KB.addRelation('small_bowel_tumor', 'ct_wall_mass', ["mass", "intussusception"], 0.80, 0.85);
+  KB.addRelation('small_bowel_tumor', 'ct', ["bowel_mass", "intussusception"], 0.80, 0.85);
   KB.addDisease('gi_lymphoma_gist_small_bowel_tumor', "消化管悪性リンパ腫（小腸・大腸）", { urgency: 'urgent', mnm: false, prior: 0.002, onset: {"minutes": 0.05, "hours": 0.2, "days": 0.5, "weeks": 0.8, "months": 0.8, "unknown": 0.7}, requires: {}, mult: [{"when": {"sex": "male"}, "x": 1.5}], clear: [], category: "下部消化管", note: "回盲部腫瘤・高度壁肥厚だが閉塞しにくい、B症状、LDH/sIL-2R高値", ext: true });
   KB.addRelation('gi_lymphoma_gist_small_bowel_tumor', 'abd_pain', ["rlq", "umb", "diffuse"], 0.80, 0.85);
   KB.addRelation('gi_lymphoma_gist_small_bowel_tumor', 'abd_mass', null, 0.50, 0.90);
@@ -1153,14 +1177,15 @@ svg.body .rl{font-size:11px}
   KB.addRelation('gi_lymphoma_gist_small_bowel_tumor', 'vomiting', ["bilious"], 0.50, 0.85);
   KB.addRelation('gi_lymphoma_gist_small_bowel_tumor', 'rebound_guarding', null, 0.20, 0.80);
   KB.addRelation('gi_lymphoma_gist_small_bowel_tumor', 'lymphadenopathy', null, 0.50, 0.90);
-  KB.addRelation('gi_lymphoma_gist_small_bowel_tumor', 'ldh_sil2r', ["high"], 0.50, 0.85);
+  KB.addRelation('gi_lymphoma_gist_small_bowel_tumor', 'ldh', ["elevated"], 0.50, 0.85);
+  KB.addRelation('gi_lymphoma_gist_small_bowel_tumor', 'sil2r', ["elevated"], 0.50, 0.85);
   KB.addRelation('gi_lymphoma_gist_small_bowel_tumor', 'hb', ["low"], 0.50, 0.85);
-  KB.addRelation('gi_lymphoma_gist_small_bowel_tumor', 'ct_wall_mass', ["wall_thick", "mass", "intussusception"], 0.80, 0.85);
+  KB.addRelation('gi_lymphoma_gist_small_bowel_tumor', 'ct', ["wall_thick", "bowel_mass", "intussusception"], 0.80, 0.85);
   KB.addRelation('gi_lymphoma_gist_small_bowel_tumor', 'immunosupp', null, 0.20, 0.95);
   KB.addRelation('gi_lymphoma_gist_small_bowel_tumor', 'abd_mass', ["upper", "lower_pelvic"], 0.50, 0.85);
   KB.addRelation('gi_lymphoma_gist_small_bowel_tumor', 'abd_pain', ["umb", "diffuse"], 0.50, 0.85);
   KB.addRelation('gi_lymphoma_gist_small_bowel_tumor', 'diarrhea_pattern', ["chronic_4w"], 0.20, 0.85);
-  KB.addRelation('gi_lymphoma_gist_small_bowel_tumor', 'ct_other', ["mass"], 0.80, 0.85);
+  KB.addRelation('gi_lymphoma_gist_small_bowel_tumor', 'ct', ["retro_mass"], 0.80, 0.85);
   KB.addDisease('gi_net_carcinoid', "消化管神経内分泌腫瘍（小腸/虫垂/直腸NET）・カルチノイド症候群", { urgency: 'routine', mnm: false, prior: 0.002, onset: {"minutes": 0.3, "hours": 0.3, "days": 0.3, "weeks": 0.7, "months": 0.9, "unknown": 0.7}, requires: {}, mult: [{"when": {"sex": "male"}, "x": 1.5}], clear: [], category: "下部消化管", note: "間欠的腹痛+分泌性下痢+紅潮発作；多くは無症状で偶発発見", ext: true });
   KB.addRelation('gi_net_carcinoid', 'abd_pain', ["rlq", "umb"], 0.50, 0.85);
   KB.addRelation('gi_net_carcinoid', 'diarrhea', ["watery"], 0.50, 0.85);
@@ -1168,7 +1193,7 @@ svg.body .rl{font-size:11px}
   KB.addRelation('gi_net_carcinoid', 'gi_bleed', ["hematochezia"], 0.20, 0.85);
   KB.addRelation('gi_net_carcinoid', 'vomiting', ["bilious"], 0.20, 0.85);
   KB.addRelation('gi_net_carcinoid', 'ct', ["appendicitis"], 0.20, 0.85);
-  KB.addRelation('gi_net_carcinoid', 'ct_wall_mass', ["mass"], 0.50, 0.85);
+  KB.addRelation('gi_net_carcinoid', 'ct', ["bowel_mass"], 0.50, 0.85);
   KB.addDisease('ceas', "非特異性多発性小腸潰瘍症（CEAS）", { urgency: 'routine', mnm: false, prior: 0.002, onset: {"minutes": 0.05, "hours": 0.05, "days": 0.1, "weeks": 0.4, "months": 1.0, "unknown": 0.7}, requires: {}, mult: [{"when": {"sex": "female"}, "x": 1.5}], clear: [], category: "下部消化管", note: "若年女性の慢性鉄欠乏性貧血+低蛋白+便潜血陽性で炎症反応陰性、同胞発症", ext: true });
   KB.addRelation('ceas', 'hb', ["low"], 0.80, 0.85);
   KB.addRelation('ceas', 'chronic_liver_labs', ["alb_low"], 0.80, 0.85);
@@ -1191,7 +1216,7 @@ svg.body .rl{font-size:11px}
   KB.addRelation('eosinophilic_gastroenteritis', 'gi_bleed', ["hematochezia"], 0.20, 0.85);
   KB.addRelation('eosinophilic_gastroenteritis', 'eosinophilia', ["elevated"], 0.50, 0.85);
   KB.addRelation('eosinophilic_gastroenteritis', 'us', ["free_fluid"], 0.20, 0.85);
-  KB.addRelation('eosinophilic_gastroenteritis', 'ct_wall_mass', ["wall_thick"], 0.50, 0.85);
+  KB.addRelation('eosinophilic_gastroenteritis', 'ct', ["wall_thick"], 0.50, 0.85);
   KB.addRelation('eosinophilic_gastroenteritis', 'endoscopy', ["normal"], 0.50, 0.85);
   KB.addRelation('eosinophilic_gastroenteritis', 'abd_pain', ["epi", "diffuse"], 0.80, 0.85);
   KB.addRelation('eosinophilic_gastroenteritis', 'vomiting', null, 0.50, 0.60);
@@ -1217,13 +1242,13 @@ svg.body .rl{font-size:11px}
   KB.addRelation('protein_losing_enteropathy', 'weight_loss', null, 0.50, 0.94);
   KB.addRelation('protein_losing_enteropathy', 'urinalysis', ["normal"], 0.80, 0.85);
   KB.addRelation('protein_losing_enteropathy', 'hair_nail_pigment', null, 0.20, 0.90);
+  KB.addRelation('protein_losing_enteropathy', 'skin_finding', ["pigmentation"], 0.20, 0.85);
   KB.addRelation('protein_losing_enteropathy', 'us', ["free_fluid"], 0.50, 0.85);
   KB.addRelation('protein_losing_enteropathy', 'leg_edema', null, 0.80, 0.90);
   KB.addRelation('protein_losing_enteropathy', 'ascites_exam', null, 0.50, 0.90);
   KB.addRelation('protein_losing_enteropathy', 'diarrhea_pattern', ["chronic_4w"], 0.80, 0.85);
   KB.addDisease('acute_hemorrhagic_rectal_ulcer', "急性出血性直腸潰瘍", { urgency: 'urgent', mnm: false, prior: 0.008, onset: {"minutes": 0.6, "hours": 0.9, "days": 0.3, "weeks": 0.05, "months": 0.05, "unknown": 0.7}, requires: {}, mult: [], clear: [], category: "下部消化管", note: "臥床中の高齢入院患者に突然の無痛性大量鮮血便、直腸下部潰瘍、再発24-59%", ext: true });
   KB.addRelation('acute_hemorrhagic_rectal_ulcer', 'gi_bleed', ["hematochezia"], 0.80, 0.85);
-  KB.addRelation('acute_hemorrhagic_rectal_ulcer', 'painless_bleed', null, 0.80, 0.90);
   KB.addRelation('acute_hemorrhagic_rectal_ulcer', 'bedridden_psych', null, 0.80, 0.90);
   KB.addRelation('acute_hemorrhagic_rectal_ulcer', 'hospitalized_recent', null, 0.80, 0.90);
   KB.addRelation('acute_hemorrhagic_rectal_ulcer', 'anticoag', null, 0.50, 0.90);
@@ -1293,7 +1318,7 @@ svg.body .rl{font-size:11px}
   KB.addRelation('iga_vasculitis', 'arthralgia', null, 0.50, 0.90);
   KB.addRelation('iga_vasculitis', 'urinalysis', ["hematuria"], 0.50, 0.85);
   KB.addRelation('iga_vasculitis', 'fever_sub', null, 0.20, 0.70);
-  KB.addRelation('iga_vasculitis', 'ct_wall_mass', ["wall_thick", "intussusception"], 0.50, 0.85);
+  KB.addRelation('iga_vasculitis', 'ct', ["wall_thick", "intussusception"], 0.50, 0.85);
   KB.addRelation('iga_vasculitis', 'abd_pain', ["diffuse", "umb"], 0.80, 0.85);
   KB.addRelation('iga_vasculitis', 'gi_bleed', ["melena", "hematochezia"], 0.50, 0.85);
   KB.addRelation('iga_vasculitis', 'vomiting', ["hematemesis"], 0.20, 0.85);
@@ -1309,6 +1334,8 @@ svg.body .rl{font-size:11px}
   KB.addRelation('pan_mesenteric_vasculitis', 'arthralgia', null, 0.50, 0.90);
   KB.addRelation('pan_mesenteric_vasculitis', 'sbp', ["gt140"], 0.50, 0.85);
   KB.addRelation('pan_mesenteric_vasculitis', 'autoimmune_hx', null, 0.50, 0.90);
+  KB.addRelation('pan_mesenteric_vasculitis', 'allergy_hx', null, 0.20, 0.90);
+  KB.addRelation('pan_mesenteric_vasculitis', 'hepatitis_serology', ["hbs_ag_igm_hbc_pos"], 0.20, 0.95);
   KB.addRelation('pan_mesenteric_vasculitis', 'urinalysis', ["hematuria"], 0.50, 0.85);
   KB.addRelation('pan_mesenteric_vasculitis', 'crp', ["5_10", "gt10"], 0.80, 0.85, { key: true });
   KB.addRelation('pan_mesenteric_vasculitis', 'eosinophilia', ["elevated"], 0.20, 0.85);
@@ -1358,7 +1385,8 @@ svg.body .rl{font-size:11px}
   KB.addRelation('uremia_aki', 'electrolyte', ["hyperk"], 0.50, 0.85);
   KB.addRelation('uremia_aki', 'acidosis', ["metabolic"], 0.50, 0.85);
   KB.addRelation('uremia_aki', 'dehydration_signs', null, 0.50, 0.80);
-  KB.addRelation('uremia_aki', 'drug_hx_metabolic', ["nsaid", "raas_inhibitor", "diuretic"], 0.50, 0.85);
+  KB.addRelation('uremia_aki', 'nsaid_aspirin', null, 0.50, 0.80);
+  KB.addRelation('uremia_aki', 'drug_hx_metabolic', ["raas_inhibitor", "diuretic", "laxative"], 0.50, 0.85);
   KB.addRelation('uremia_aki', 'us', ["hydro"], 0.20, 0.85);
   KB.addRelation('uremia_aki', 'hb', ["low"], 0.50, 0.85);
   KB.addRelation('uremia_aki', 'urinalysis', ["hematuria", "both"], 0.20, 0.85);
@@ -1368,11 +1396,13 @@ svg.body .rl{font-size:11px}
   KB.addRelation('hyperkalemia', 'nausea', null, 0.50, 0.55);
   KB.addRelation('hyperkalemia', 'renal', ["elevated"], 0.80, 0.85, { key: true });
   KB.addRelation('hyperkalemia', 'diabetes', null, 0.50, 0.88);
-  KB.addRelation('hyperkalemia', 'drug_hx_metabolic', ["raas_inhibitor", "nsaid"], 0.80, 0.85);
+  KB.addRelation('hyperkalemia', 'nsaid_aspirin', null, 0.80, 0.80);
+  KB.addRelation('hyperkalemia', 'drug_hx_metabolic', ["raas_inhibitor"], 0.80, 0.85);
   KB.addRelation('hyperkalemia', 'ecg', ["normal"], 0.50, 0.85);
   KB.addRelation('hyperkalemia', 'hr', ["lt60"], 0.20, 0.85);
   KB.addRelation('hyperkalemia', 'acidosis', ["metabolic"], 0.50, 0.85);
-  KB.addRelation('hyperkalemia', 'ck_ldh', ["elevated"], 0.20, 0.85);
+  KB.addRelation('hyperkalemia', 'ck', ["elevated"], 0.20, 0.85);
+  KB.addRelation('hyperkalemia', 'ldh', ["elevated"], 0.20, 0.85);
   KB.addDisease('hypokalemia_ileus', "低カリウム血症（麻痺性イレウス/脱力）", { urgency: 'urgent', mnm: false, prior: 0.03, onset: {"minutes": 0.05, "hours": 0.4, "days": 0.9, "weeks": 0.5, "months": 0.2, "unknown": 0.7}, requires: {}, mult: [], clear: [], category: "全身・代謝", note: "下痢/嘔吐/利尿薬の後の脱力+腹部膨満（腸音低下）、機械的閉塞所見なし", ext: true });
   KB.addRelation('hypokalemia_ileus', 'electrolyte', ["hypok"], 0.80, 0.85);
   KB.addRelation('hypokalemia_ileus', 'distension', null, 0.50, 0.85);
@@ -1382,11 +1412,12 @@ svg.body .rl{font-size:11px}
   KB.addRelation('hypokalemia_ileus', 'neuro_sx', ["paresthesia_weakness"], 0.80, 0.85);
   KB.addRelation('hypokalemia_ileus', 'diarrhea', ["watery"], 0.50, 0.85);
   KB.addRelation('hypokalemia_ileus', 'vomiting', ["nonbilious"], 0.50, 0.85);
-  KB.addRelation('hypokalemia_ileus', 'drug_hx_metabolic', ["diuretic"], 0.80, 0.85);
+  KB.addRelation('hypokalemia_ileus', 'drug_hx_metabolic', ["diuretic", "laxative"], 0.80, 0.85);
   KB.addRelation('hypokalemia_ileus', 'sbp', ["gt140"], 0.20, 0.85);
   KB.addRelation('hypokalemia_ileus', 'ecg', ["normal"], 0.20, 0.85);
   KB.addRelation('hypokalemia_ileus', 'xray', ["dilated_loops"], 0.20, 0.85);
-  KB.addRelation('hypokalemia_ileus', 'ck_ldh', ["elevated"], 0.20, 0.85);
+  KB.addRelation('hypokalemia_ileus', 'ck', ["elevated"], 0.20, 0.85);
+  KB.addRelation('hypokalemia_ileus', 'ldh', ["elevated"], 0.20, 0.85);
   KB.addDisease('hyponatremia', "低ナトリウム血症", { urgency: 'urgent', mnm: false, prior: 0.03, onset: {"minutes": 0.05, "hours": 0.3, "days": 0.8, "weeks": 0.6, "months": 0.3, "unknown": 0.7}, requires: {}, mult: [], clear: [], category: "全身・代謝", note: "高齢者の嘔気・食欲低下・傾眠、脱水/浮腫と飲水習慣・利尿薬", ext: true });
   KB.addRelation('hyponatremia', 'electrolyte', ["hypona"], 0.80, 0.85);
   KB.addRelation('hyponatremia', 'nausea', null, 0.80, 0.55);
@@ -1396,7 +1427,7 @@ svg.body .rl{font-size:11px}
   KB.addRelation('hyponatremia', 'diarrhea', ["watery"], 0.50, 0.85);
   KB.addRelation('hyponatremia', 'vomiting', ["nonbilious"], 0.50, 0.85);
   KB.addRelation('hyponatremia', 'dehydration_signs', null, 0.50, 0.80);
-  KB.addRelation('hyponatremia', 'drug_hx_metabolic', ["thiazide", "diuretic"], 0.50, 0.85);
+  KB.addRelation('hyponatremia', 'drug_hx_metabolic', ["thiazide", "diuretic", "laxative"], 0.50, 0.85);
   KB.addDisease('adrenal_insufficiency', "急性副腎不全（副腎クリーゼ）", { urgency: 'emergent', mnm: true, prior: 0.002, onset: {"minutes": 0.1, "hours": 0.8, "days": 0.8, "weeks": 0.1, "months": 0.05, "unknown": 0.7}, requires: {}, mult: [], clear: ["electrolyte", "dehydration_signs", "endocrine_lab"], category: "全身・代謝", note: "ステロイド中断/ストレス下の嘔吐・腹痛+低Na高K+低血圧・低血糖、ACTH/コルチゾール測定", ext: true });
   KB.addRelation('adrenal_insufficiency', 'abd_pain', ["diffuse", "epi"], 0.50, 0.85);
   KB.addRelation('adrenal_insufficiency', 'nausea', null, 0.80, 0.55);
@@ -1429,7 +1460,8 @@ svg.body .rl{font-size:11px}
   KB.addRelation('heat_stroke', 'dehydration_signs', null, 0.80, 0.80, { key: true });
   KB.addRelation('heat_stroke', 'hr', ["100_120", "gt120"], 0.80, 0.85);
   KB.addRelation('heat_stroke', 'renal', ["elevated"], 0.50, 0.85);
-  KB.addRelation('heat_stroke', 'ck_ldh', ["elevated"], 0.50, 0.85);
+  KB.addRelation('heat_stroke', 'ck', ["elevated"], 0.50, 0.85);
+  KB.addRelation('heat_stroke', 'ldh', ["elevated"], 0.50, 0.85);
   KB.addRelation('heat_stroke', 'liver_enz', ["elevated"], 0.50, 0.85);
   KB.addRelation('heat_stroke', 'sick_contact_food', null, 0.05, 0.85);
   KB.addDisease('anaphylaxis', "アナフィラキシー（消化器症状型）", { urgency: 'emergent', mnm: true, prior: 0.008, onset: {"minutes": 1.0, "hours": 0.5, "days": 0.05, "weeks": 0.05, "months": 0.05, "unknown": 0.7}, requires: {}, mult: [], clear: ["urticaria_angioedema", "skin_finding"], category: "全身・代謝", note: "曝露後数分〜2時間の急速な疝痛・嘔吐・下痢+皮膚/呼吸/循環症状；二相性反応1-48h", ext: true });
@@ -1453,7 +1485,8 @@ svg.body .rl{font-size:11px}
   KB.addRelation('anaphylaxis', 'skin_finding', null, 0.80, 0.90, { key: true });
   KB.addRelation('anaphylaxis', 'sbp', ["lt90"], 0.50, 0.85);
   KB.addDisease('rhabdomyolysis', "横紋筋融解症", { urgency: 'urgent', mnm: false, prior: 0.008, onset: {"minutes": 0.05, "hours": 0.6, "days": 0.9, "weeks": 0.1, "months": 0.05, "unknown": 0.7}, requires: {}, mult: [], clear: [], category: "全身・代謝", note: "筋痛+赤褐色尿+著明CK上昇；嘔気・腹痛は随伴", ext: true });
-  KB.addRelation('rhabdomyolysis', 'ck_ldh', ["elevated"], 0.80, 0.85);
+  KB.addRelation('rhabdomyolysis', 'ck', ["elevated"], 0.80, 0.85);
+  KB.addRelation('rhabdomyolysis', 'ldh', ["elevated"], 0.80, 0.85);
   KB.addRelation('rhabdomyolysis', 'arthralgia', null, 0.80, 0.90);
   KB.addRelation('rhabdomyolysis', 'nausea', null, 0.50, 0.55);
   KB.addRelation('rhabdomyolysis', 'abd_pain', ["diffuse"], 0.20, 0.85);
@@ -1475,8 +1508,8 @@ svg.body .rl{font-size:11px}
   KB.addRelation('acs', 'ecg', ["ischemic"], 0.80, 0.85);
   KB.addRelation('acs', 'troponin', ["pos"], 0.80, 0.85);
   KB.addRelation('acs', 'tender_epi', null, 0.05, 0.70);
-  KB.addRelation('acs', 'ck_ldh', ["elevated"], 0.50, 0.85);
-  KB.addRelation('acs', 'diabetes', null, 0.50, 0.88);
+  KB.addRelation('acs', 'ck', ["elevated"], 0.50, 0.85);
+  KB.addRelation('acs', 'ldh', ["elevated"], 0.50, 0.85);
   KB.addDisease('pneumonia_pleurisy', "下葉肺炎・胸膜炎", { urgency: 'urgent', mnm: false, prior: 0.03, onset: {"minutes": 0.05, "hours": 0.5, "days": 0.9, "weeks": 0.2, "months": 0.05, "unknown": 0.7}, requires: {}, mult: [], clear: [], category: "胸部・その他", note: "発熱・頻呼吸・呼吸器症状を伴う上腹部痛で腹部所見乏しい、胸部X線", ext: true });
   KB.addRelation('pneumonia_pleurisy', 'abd_pain', ["ruq", "luq", "epi"], 0.50, 0.85);
   KB.addRelation('pneumonia_pleurisy', 'chest_sx', null, 0.80, 0.94);
@@ -1486,9 +1519,8 @@ svg.body .rl{font-size:11px}
   KB.addRelation('pneumonia_pleurisy', 'rebound_guarding', null, 0.05, 0.80);
   KB.addRelation('pneumonia_pleurisy', 'wbc', ["10_15", "gt15"], 0.80, 0.85);
   KB.addRelation('pneumonia_pleurisy', 'crp', ["5_10", "gt10"], 0.80, 0.85);
-  KB.addRelation('pneumonia_pleurisy', 'cxr', ["infiltrate_effusion", "infiltrate_effusion"], 0.80, 0.85);
+  KB.addRelation('pneumonia_pleurisy', 'cxr', ["infiltrate", "effusion"], 0.80, 0.85);
   KB.addRelation('pneumonia_pleurisy', 'ct', ["normal"], 0.50, 0.85);
-  KB.addRelation('pneumonia_pleurisy', 'cxr', ["infiltrate_effusion"], 0.80, 0.85);
   KB.addDisease('pneumothorax', "気胸（緊張性含む）", { urgency: 'emergent', mnm: true, prior: 0.008, onset: {"minutes": 0.9, "hours": 0.7, "days": 0.1, "weeks": 0.05, "months": 0.05, "unknown": 0.7}, requires: {}, mult: [{"when": {"sex": "male"}, "x": 1.5}], clear: ["cxr"], category: "胸部・その他", note: "突然の胸痛+呼吸困難+片側呼吸音減弱；緊張性は閉塞性ショック", ext: true });
   KB.addRelation('pneumothorax', 'chest_sx', null, 0.80, 0.94);
   KB.addRelation('pneumothorax', 'pain_onset_char', ["sudden"], 0.80, 0.85);
@@ -1497,7 +1529,7 @@ svg.body .rl{font-size:11px}
   KB.addRelation('pneumothorax', 'rr', ["gt24"], 0.50, 0.85);
   KB.addRelation('pneumothorax', 'sbp', ["lt90"], 0.20, 0.85);
   KB.addRelation('pneumothorax', 'hr', ["gt120"], 0.20, 0.85);
-  KB.addRelation('pneumothorax', 'cxr', ["pneumomediastinum"], 0.80, 0.85, { key: true });
+  KB.addRelation('pneumothorax', 'cxr', ["pneumothorax"], 0.80, 0.85, { key: true });
   KB.addRelation('pneumothorax', 'rebound_guarding', null, 0.05, 0.80);
   KB.addDisease('esophageal_perforation', "特発性食道破裂（Boerhaave）・縦隔気腫", { urgency: 'emergent', mnm: true, prior: 0.002, onset: {"minutes": 0.9, "hours": 0.8, "days": 0.1, "weeks": 0.05, "months": 0.05, "unknown": 0.7}, requires: {}, mult: [{"when": {"sex": "male"}, "x": 1.5}], clear: ["cxr", "ct"], category: "胸部・その他", note: "激しい嘔吐→突然の激烈な胸痛/上腹部痛+皮下気腫、X線縦隔気腫・左胸水", ext: true });
   KB.addRelation('esophageal_perforation', 'vomiting', ["nonbilious", "hematemesis"], 0.80, 0.85);
@@ -1509,9 +1541,10 @@ svg.body .rl{font-size:11px}
   KB.addRelation('esophageal_perforation', 'rebound_guarding', null, 0.50, 0.80);
   KB.addRelation('esophageal_perforation', 'rigidity', null, 0.20, 0.95);
   KB.addRelation('esophageal_perforation', 'hr', ["100_120", "gt120"], 0.50, 0.85);
-  KB.addRelation('esophageal_perforation', 'cxr', ["pneumomediastinum", "infiltrate_effusion"], 0.80, 0.85, { key: true });
+  KB.addRelation('esophageal_perforation', 'cxr', ["pneumomediastinum", "mediastinal_wide", "effusion"], 0.80, 0.85, { key: true });
   KB.addRelation('esophageal_perforation', 'ct', ["free_air"], 0.80, 0.85, { key: true });
   KB.addRelation('esophageal_perforation', 'vomiting', null, 0.80, 0.60);
+  KB.addRelation('esophageal_perforation', 'cxr', ["pneumomediastinum", "pneumothorax", "infiltrate", "effusion"], 0.80, 0.85, { key: true });
   KB.addRelation('esophageal_perforation', 'sbp', ["lt90"], 0.50, 0.85);
   KB.addRelation('esophageal_perforation', 'forceful_vomiting_prior', null, 0.80, 0.90);
   KB.addRelation('esophageal_perforation', 'dysphagia', null, 0.20, 0.90);
@@ -1519,7 +1552,7 @@ svg.body .rl{font-size:11px}
   KB.addRelation('esophageal_perforation', 'rr', ["21_24", "gt24"], 0.50, 0.85);
   KB.addRelation('esophageal_perforation', 'temp', ["38_39", "ge39"], 0.50, 0.85);
   KB.addRelation('esophageal_perforation', 'ingestion_event', ["foreign_body", "caustic", "endoscopy_recent"], 0.50, 0.85);
-  KB.addRelation('esophageal_perforation', 'cxr', ["pneumomediastinum", "infiltrate_effusion", "mediastinal_wide"], 0.80, 0.85, { key: true });
+  KB.addRelation('esophageal_perforation', 'cxr', ["pneumomediastinum", "effusion", "pneumothorax", "mediastinal_wide"], 0.80, 0.85, { key: true });
   KB.addRelation('esophageal_perforation', 'ecg', ["normal"], 0.50, 0.85);
   KB.addDisease('herpes_zoster', "帯状疱疹（胸腹部皮節）", { urgency: 'routine', mnm: false, prior: 0.03, onset: {"minutes": 0.05, "hours": 0.2, "days": 0.9, "weeks": 0.4, "months": 0.05, "unknown": 0.7}, requires: {}, mult: [], clear: [], category: "胸部・その他", note: "正中を越えない片側帯状の表在痛+皮膚知覚過敏、腹部圧痛・炎症反応なし、後に水疱", ext: true });
   KB.addRelation('herpes_zoster', 'abd_pain', ["flank_r", "flank_l", "ruq", "luq"], 0.80, 0.85);
@@ -1616,7 +1649,7 @@ svg.body .rl{font-size:11px}
   KB.addRelation('urinary_retention', 'urinalysis', ["hematuria"], 0.20, 0.85);
   KB.addRelation('urinary_retention', 'renal', ["elevated"], 0.20, 0.85);
   KB.addRelation('urinary_retention', 'us', ["hydro"], 0.50, 0.85);
-  KB.addRelation('urinary_retention', 'drug_hx_metabolic', ["nsaid"], 0.20, 0.85);
+  KB.addRelation('urinary_retention', 'nsaid_aspirin', null, 0.20, 0.80);
   KB.addRelation('urinary_retention', 'abd_mass', ["lower_pelvic"], 0.80, 0.85);
   KB.addRelation('urinary_retention', 'opioid_use', null, 0.50, 0.90);
   KB.addRelation('cholecystitis', 'abd_pain', ["ruq"], 0.80, 0.85);
@@ -1669,7 +1702,8 @@ svg.body .rl{font-size:11px}
   KB.addRelation('biliary_colic', 'liver_enz', ["elevated"], 0.50, 0.85);
   KB.addRelation('biliary_colic', 'lipase', ["lt3x", "ge3x"], 0.20, 0.85);
   KB.addRelation('biliary_colic', 'us', ["gb", "cbd_dilated"], 0.80, 0.85);
-  KB.addRelation('biliary_colic', 'hb_imaging', ["biliary_dilation"], 0.50, 0.85);
+  KB.addRelation('biliary_colic', 'ct', ["biliary_dilation"], 0.50, 0.85);
+  KB.addRelation('biliary_colic', 'us', ["cbd_dilated"], 0.50, 0.85);
   KB.addRelation('cholangitis', 'temp', ["38_39", "ge39"], 0.80, 0.85);
   KB.addRelation('cholangitis', 'jaundice_sub', null, 0.80, 0.95);
   KB.addRelation('cholangitis', 'abd_pain', ["ruq"], 0.50, 0.85);
@@ -1694,7 +1728,7 @@ svg.body .rl{font-size:11px}
   KB.addRelation('cholangitis', 'chronic_liver_labs', ["plt_low"], 0.20, 0.85);
   KB.addRelation('cholangitis', 'us', ["cbd_dilated", "gb"], 0.50, 0.85);
   KB.addRelation('cholangitis', 'ct', ["cholecystitis"], 0.80, 0.85);
-  KB.addRelation('cholangitis', 'hb_imaging', ["biliary_dilation"], 0.80, 0.85);
+  KB.addRelation('cholangitis', 'ct', ["biliary_dilation"], 0.80, 0.85);
   KB.addRelation('pancreatitis', 'abd_pain', ["epi", "luq"], 0.80, 0.85);
   KB.addRelation('pancreatitis', 'pain_char', ["radiate_back", "constant"], 0.80, 0.85);
   KB.addRelation('pancreatitis', 'alcohol_heavy', null, 0.50, 0.90);
@@ -1735,7 +1769,7 @@ svg.body .rl{font-size:11px}
   KB.addRelation('pud_gastritis', 'vomiting', ["hematemesis", "coffee_ground"], 0.50, 0.85);
   KB.addRelation('pud_gastritis', 'gi_bleed', ["melena"], 0.50, 0.85);
   KB.addRelation('pud_gastritis', 'alcohol_heavy', null, 0.50, 0.90);
-  KB.addRelation('pud_gastritis', 'endoscopy', ["peptic_ulcer"], 0.80, 0.85);
+  KB.addRelation('pud_gastritis', 'endoscopy', ["peptic_ulcer", "erosive_gastritis"], 0.80, 0.85);
   KB.addRelation('pud_gastritis', 'pain_fasting_nocturnal', null, 0.50, 0.90);
   KB.addRelation('pud_gastritis', 'pain_char', ["constant"], 0.50, 0.85);
   KB.addRelation('pud_gastritis', 'pain_onset_char', ["gradual"], 0.50, 0.85);
@@ -1747,7 +1781,6 @@ svg.body .rl{font-size:11px}
   KB.addRelation('pud_gastritis', 'jaundice_sub', null, 0.05, 0.90);
   KB.addRelation('pud_gastritis', 'lipase', ["normal"], 0.80, 0.85);
   KB.addRelation('pud_gastritis', 'liver_enz', ["normal"], 0.80, 0.85);
-  KB.addRelation('pud_gastritis', 'endoscopy', ["ulcer", "erosive_gastritis"], 0.80, 0.85);
   KB.addRelation('perforation', 'pain_onset_char', ["sudden"], 0.80, 0.85);
   KB.addRelation('perforation', 'abd_pain', ["epi", "diffuse"], 0.80, 0.85);
   KB.addRelation('perforation', 'rigidity', null, 0.80, 0.95);
@@ -1891,8 +1924,8 @@ svg.body .rl{font-size:11px}
   KB.addRelation('gastric_cancer', 'ascites_exam', null, 0.20, 0.90);
   KB.addRelation('gastric_cancer', 'jaundice_sub', null, 0.20, 0.95);
   KB.addRelation('gastric_cancer', 'obstipation', null, 0.20, 0.88);
-  KB.addRelation('gastric_cancer', 'endoscopy', ["tumor", "ulcer"], 0.80, 0.85);
-  KB.addRelation('gastric_cancer', 'hb_imaging', ["gastric_wall_thick"], 0.20, 0.85);
+  KB.addRelation('gastric_cancer', 'endoscopy', ["tumor", "peptic_ulcer"], 0.80, 0.85);
+  KB.addRelation('gastric_cancer', 'ct', ["gastric_wall_thick"], 0.20, 0.85);
   KB.addDisease('esophageal_cancer', "食道癌", { urgency: 'routine', mnm: false, prior: 0.008, onset: {"minutes": 0.05, "hours": 0.05, "days": 0.05, "weeks": 1.0, "months": 1.0, "unknown": 0.7}, requires: {}, mult: [{"when": {"sex": "male"}, "x": 1.5}], clear: [], category: "上部消化管", note: "進行性嚥下障害+体重減少", ext: true });
   KB.addRelation('esophageal_cancer', 'dysphagia', null, 0.80, 0.90);
   KB.addRelation('esophageal_cancer', 'weight_loss', null, 0.80, 0.94);
@@ -1942,7 +1975,7 @@ svg.body .rl{font-size:11px}
   KB.addRelation('gastric_outlet_obstruction', 'diabetes', null, 0.50, 0.88);
   KB.addRelation('gastric_outlet_obstruction', 'pud_hx', null, 0.50, 0.94);
   KB.addRelation('gastric_outlet_obstruction', 'xray', ["dilated_loops"], 0.50, 0.85);
-  KB.addRelation('gastric_outlet_obstruction', 'endoscopy', ["tumor", "peptic_ulcer"], 0.50, 0.85);
+  KB.addRelation('gastric_outlet_obstruction', 'endoscopy', ["tumor", "peptic_ulcer", "erosive_gastritis"], 0.50, 0.85);
   KB.addDisease('gastroparesis', "胃不全麻痺（糖尿病性など）", { urgency: 'routine', mnm: false, prior: 0.008, onset: {"minutes": 0.05, "hours": 0.05, "days": 0.05, "weeks": 1.0, "months": 1.0, "unknown": 0.7}, requires: {}, mult: [{"when": {"sex": "female"}, "x": 1.5}], clear: [], category: "上部消化管", note: "閉塞のない慢性嘔吐+長期糖尿病/膠原病/術後", ext: true });
   KB.addRelation('gastroparesis', 'early_satiety_bloating', null, 0.80, 0.90);
   KB.addRelation('gastroparesis', 'vomiting', ["nonbilious"], 0.80, 0.85);
@@ -1986,7 +2019,7 @@ svg.body .rl{font-size:11px}
   KB.addRelation('alcoholic_hepatitis', 'bili', ["elevated"], 0.50, 0.85);
   KB.addRelation('alcoholic_hepatitis', 'renal', ["elevated"], 0.20, 0.85);
   KB.addRelation('alcoholic_hepatitis', 'chronic_liver_labs', ["pt_prolonged"], 0.50, 0.85);
-  KB.addRelation('alcoholic_hepatitis', 'hb_imaging', ["fatty_liver", "cirrhotic_liver"], 0.80, 0.85);
+  KB.addRelation('alcoholic_hepatitis', 'ct', ["fatty_liver", "cirrhotic_liver"], 0.80, 0.85);
   KB.addRelation('alcoholic_hepatitis', 'hepatitis_serology', ["neg"], 0.50, 0.85);
   KB.addDisease('acute_liver_failure', "急性肝不全/劇症肝炎", { urgency: 'emergent', mnm: true, prior: 0.002, onset: {"minutes": 0.05, "hours": 0.05, "days": 1.0, "weeks": 1.0, "months": 0.05, "unknown": 0.7}, requires: {}, mult: [], clear: ["liver_enz", "chronic_liver_labs", "ast_alt_pattern", "bili"], category: "肝胆膵", note: "肝障害+凝固異常+意識障害", ext: true });
   KB.addRelation('acute_liver_failure', 'consciousness', ["altered"], 0.80, 0.85);
@@ -2007,7 +2040,6 @@ svg.body .rl{font-size:11px}
   KB.addRelation('acute_liver_failure', 'ammonia', ["elevated"], 0.50, 0.85);
   KB.addRelation('acute_liver_failure', 'glucose', ["normal"], 0.20, 0.85);
   KB.addRelation('acute_liver_failure', 'hepatitis_serology', ["hav_igm_pos", "hbs_ag_igm_hbc_pos", "hev_pos", "neg"], 0.50, 0.85);
-  KB.addRelation('acute_liver_failure', 'hepatotoxic_drug_supplement', null, 0.50, 0.90);
   KB.addRelation('acute_liver_failure', 'autoantibodies', ["ana_asma_pos"], 0.20, 0.85);
   KB.addRelation('acute_liver_failure', 'cirrhosis_hx', null, 0.05, 0.90);
   KB.addRelation('acute_liver_failure', 'abd_pain', ["ruq"], 0.20, 0.85);
@@ -2018,7 +2050,6 @@ svg.body .rl{font-size:11px}
   KB.addRelation('drug_induced_liver_injury', 'eosinophilia', ["elevated"], 0.20, 0.85);
   KB.addRelation('drug_induced_liver_injury', 'jaundice_sub', null, 0.50, 0.95);
   KB.addRelation('drug_induced_liver_injury', 'pruritus', null, 0.20, 0.90);
-  KB.addRelation('drug_induced_liver_injury', 'hepatotoxic_drug_supplement', null, 0.80, 0.90);
   KB.addRelation('drug_induced_liver_injury', 'anorexia', null, 0.50, 0.55);
   KB.addRelation('drug_induced_liver_injury', 'fatigue', null, 0.50, 0.90);
   KB.addRelation('drug_induced_liver_injury', 'fever_sub', null, 0.20, 0.70);
@@ -2057,7 +2088,7 @@ svg.body .rl{font-size:11px}
   KB.addRelation('decompensated_cirrhosis', 'bili', ["elevated"], 0.50, 0.85);
   KB.addRelation('decompensated_cirrhosis', 'ammonia', ["elevated"], 0.50, 0.85);
   KB.addRelation('decompensated_cirrhosis', 'renal', ["elevated"], 0.20, 0.85);
-  KB.addRelation('decompensated_cirrhosis', 'hb_imaging', ["cirrhotic_liver", "ascites"], 0.80, 0.85);
+  KB.addRelation('decompensated_cirrhosis', 'ct', ["cirrhotic_liver", "ascites"], 0.80, 0.85);
   KB.addDisease('spontaneous_bacterial_peritonitis', "特発性細菌性腹膜炎", { urgency: 'emergent', mnm: true, prior: 0.008, onset: {"minutes": 0.05, "hours": 1.0, "days": 1.0, "weeks": 0.05, "months": 0.05, "unknown": 0.7}, requires: {}, mult: [], clear: ["ascites_exam", "paracentesis", "distension", "us"], category: "肝胆膵", note: "肝硬変腹水+発熱/腹痛、腹水好中球≥250、非特異的症状", ext: true });
   KB.addRelation('spontaneous_bacterial_peritonitis', 'cirrhosis_hx', null, 0.80, 0.90);
   KB.addRelation('spontaneous_bacterial_peritonitis', 'ascites_exam', null, 0.80, 0.90, { key: true });
@@ -2075,14 +2106,14 @@ svg.body .rl{font-size:11px}
   KB.addRelation('spontaneous_bacterial_peritonitis', 'sbp', ["lt90", "90_100"], 0.20, 0.85);
   KB.addRelation('spontaneous_bacterial_peritonitis', 'us', ["free_fluid"], 0.80, 0.85, { key: true });
   KB.addRelation('spontaneous_bacterial_peritonitis', 'ct', ["normal", "free_air"], 0.50, 0.85);
-  KB.addDisease('hcc_rupture', "肝細胞癌破裂（腹腔内出血）", { urgency: 'emergent', mnm: true, prior: 0.002, onset: {"minutes": 1.0, "hours": 1.0, "days": 0.05, "weeks": 0.05, "months": 0.05, "unknown": 0.7}, requires: {}, mult: [{"when": {"sex": "male"}, "x": 1.5}], clear: ["hb", "paracentesis", "ct_other"], category: "肝胆膵", note: "肝癌患者の突然の腹痛+ショック+血性腹水", ext: true });
+  KB.addDisease('hcc_rupture', "肝細胞癌破裂（腹腔内出血）", { urgency: 'emergent', mnm: true, prior: 0.002, onset: {"minutes": 1.0, "hours": 1.0, "days": 0.05, "weeks": 0.05, "months": 0.05, "unknown": 0.7}, requires: {}, mult: [{"when": {"sex": "male"}, "x": 1.5}], clear: ["hb", "paracentesis", "ct"], category: "肝胆膵", note: "肝癌患者の突然の腹痛+ショック+血性腹水", ext: true });
   KB.addRelation('hcc_rupture', 'pain_onset_char', ["sudden"], 0.80, 0.85);
   KB.addRelation('hcc_rupture', 'abd_pain', ["ruq", "diffuse"], 0.80, 0.85);
   KB.addRelation('hcc_rupture', 'sbp', ["lt90"], 0.80, 0.85);
   KB.addRelation('hcc_rupture', 'cirrhosis_hx', null, 0.80, 0.90);
   KB.addRelation('hcc_rupture', 'hb', ["low"], 0.80, 0.85, { key: true });
   KB.addRelation('hcc_rupture', 'paracentesis', ["bloody"], 0.80, 0.85, { key: true });
-  KB.addRelation('hcc_rupture', 'ct_other', ["liver_mass", "ascites"], 0.80, 0.85, { key: true });
+  KB.addRelation('hcc_rupture', 'ct', ["liver_mass", "ascites"], 0.80, 0.85, { key: true });
   KB.addDisease('liver_abscess', "肝膿瘍（細菌性/アメーバ性）", { urgency: 'urgent', mnm: false, prior: 0.002, onset: {"minutes": 0.05, "hours": 0.05, "days": 1.0, "weeks": 1.0, "months": 0.05, "unknown": 0.7}, requires: {}, mult: [{"when": {"sex": "male"}, "x": 1.5}], clear: [], category: "肝胆膵", note: "発熱+右季肋部痛/叩打痛+炎症反応、画像で膿瘍", ext: true });
   KB.addRelation('liver_abscess', 'temp', ["38_39", "ge39"], 0.80, 0.85);
   KB.addRelation('liver_abscess', 'abd_pain', ["ruq"], 0.80, 0.85);
@@ -2099,7 +2130,7 @@ svg.body .rl{font-size:11px}
   KB.addRelation('liver_abscess', 'crp', ["5_10", "gt10"], 0.80, 0.85);
   KB.addRelation('liver_abscess', 'liver_enz', ["elevated"], 0.50, 0.85);
   KB.addRelation('liver_abscess', 'bili', ["elevated"], 0.20, 0.85);
-  KB.addRelation('liver_abscess', 'hb_imaging', ["liver_mass"], 0.80, 0.85);
+  KB.addRelation('liver_abscess', 'ct', ["liver_mass"], 0.80, 0.85);
   KB.addDisease('budd_chiari', "Budd-Chiari症候群/肝静脈閉塞", { urgency: 'urgent', mnm: false, prior: 0.002, onset: {"minutes": 0.05, "hours": 0.05, "days": 1.0, "weeks": 1.0, "months": 1.0, "unknown": 0.7}, requires: {}, mult: [], clear: [], category: "血管", note: "若年の腹水+有痛性肝腫大+血栓傾向（骨髄増殖性疾患、APS、OC）", ext: true });
   KB.addRelation('budd_chiari', 'hepatomegaly', null, 0.80, 0.90);
   KB.addRelation('budd_chiari', 'ascites_exam', null, 0.80, 0.90);
@@ -2110,7 +2141,7 @@ svg.body .rl{font-size:11px}
   KB.addRelation('portal_vein_thrombosis', 'cirrhosis_hx', null, 0.80, 0.90);
   KB.addRelation('portal_vein_thrombosis', 'abd_pain', ["diffuse", "umb"], 0.50, 0.85);
   KB.addRelation('portal_vein_thrombosis', 'ascites_exam', null, 0.50, 0.90);
-  KB.addRelation('portal_vein_thrombosis', 'ct_other', ["pvt"], 0.80, 0.85);
+  KB.addRelation('portal_vein_thrombosis', 'ct', ["pvt"], 0.80, 0.85);
   KB.addRelation('portal_vein_thrombosis', 'splenomegaly', null, 0.50, 0.90);
   KB.addDisease('pancreatic_cancer', "膵癌", { urgency: 'routine', mnm: false, prior: 0.008, onset: {"minutes": 0.05, "hours": 0.05, "days": 0.05, "weeks": 1.0, "months": 1.0, "unknown": 0.7}, requires: {}, mult: [], clear: [], category: "肝胆膵", note: "黄疸患者で最多(20%)、無痛性黄疸+体重減少+背部痛", ext: true });
   KB.addRelation('pancreatic_cancer', 'jaundice_sub', null, 0.80, 0.95);
@@ -2132,7 +2163,7 @@ svg.body .rl{font-size:11px}
   KB.addRelation('pancreatic_cancer', 'fatigue', null, 0.20, 0.90);
   KB.addRelation('pancreatic_cancer', 'fever_sub', null, 0.05, 0.70);
   KB.addRelation('pancreatic_cancer', 'lipase', ["lt3x", "normal"], 0.50, 0.85);
-  KB.addRelation('pancreatic_cancer', 'hb_imaging', ["pancreatic_mass", "biliary_dilation"], 0.80, 0.85);
+  KB.addRelation('pancreatic_cancer', 'ct', ["pancreatic_mass", "biliary_dilation"], 0.80, 0.85);
   KB.addRelation('pancreatic_cancer', 'ascites_exam', null, 0.20, 0.90);
   KB.addDisease('extrahepatic_cholangiocarcinoma', "胆管癌/胆嚢癌/乳頭部癌", { urgency: 'routine', mnm: false, prior: 0.008, onset: {"minutes": 0.05, "hours": 0.05, "days": 0.05, "weeks": 1.0, "months": 1.0, "unknown": 0.7}, requires: {}, mult: [], clear: [], category: "肝胆膵", note: "胆管拡張を伴う無痛性閉塞性黄疸、結石なし", ext: true });
   KB.addRelation('extrahepatic_cholangiocarcinoma', 'jaundice_sub', null, 0.80, 0.95);
@@ -2149,7 +2180,7 @@ svg.body .rl{font-size:11px}
   KB.addRelation('extrahepatic_cholangiocarcinoma', 'fever_sub', null, 0.20, 0.70);
   KB.addRelation('extrahepatic_cholangiocarcinoma', 'liver_enz', ["elevated"], 0.50, 0.85);
   KB.addRelation('extrahepatic_cholangiocarcinoma', 'crp', ["lt1", "1_5"], 0.50, 0.85);
-  KB.addRelation('extrahepatic_cholangiocarcinoma', 'hb_imaging', ["biliary_dilation"], 0.80, 0.85);
+  KB.addRelation('extrahepatic_cholangiocarcinoma', 'ct', ["biliary_dilation"], 0.80, 0.85);
   KB.addRelation('extrahepatic_cholangiocarcinoma', 'prior_abd_surgery', null, 0.20, 0.75);
   KB.addDisease('chronic_pancreatitis', "慢性膵炎/膵外分泌不全", { urgency: 'routine', mnm: false, prior: 0.008, onset: {"minutes": 0.05, "hours": 0.05, "days": 0.05, "weeks": 1.0, "months": 1.0, "unknown": 0.7}, requires: {}, mult: [{"when": {"sex": "male"}, "x": 1.5}], clear: [], category: "肝胆膵", note: "飲酒歴+慢性上腹部痛+脂肪便/糖尿病+膵石灰化", ext: true });
   KB.addRelation('chronic_pancreatitis', 'alcohol_heavy', null, 0.80, 0.90);
@@ -2163,12 +2194,11 @@ svg.body .rl{font-size:11px}
   KB.addRelation('chronic_pancreatitis', 'pain_relief_leaning_forward', null, 0.50, 0.90);
   KB.addRelation('chronic_pancreatitis', 'similar_episodes', null, 0.80, 0.85);
   KB.addRelation('chronic_pancreatitis', 'pancreatitis_hx', null, 0.80, 0.90);
-  KB.addRelation('chronic_pancreatitis', 'steatorrhea', null, 0.50, 0.90);
   KB.addRelation('chronic_pancreatitis', 'weight_loss', null, 0.50, 0.94);
   KB.addRelation('chronic_pancreatitis', 'lipase', ["lt3x", "normal"], 0.50, 0.85);
   KB.addRelation('chronic_pancreatitis', 'fever_sub', null, 0.20, 0.70);
   KB.addRelation('chronic_pancreatitis', 'jaundice_sub', null, 0.20, 0.95);
-  KB.addRelation('chronic_pancreatitis', 'hb_imaging', ["chronic_pancreatitis", "pancreatic_cyst"], 0.80, 0.85);
+  KB.addRelation('chronic_pancreatitis', 'ct', ["chronic_pancreatitis", "pancreatic_cyst"], 0.80, 0.85);
   KB.addDisease('autoimmune_pancreatitis', "自己免疫性膵炎/IgG4関連硬化性胆管炎", { urgency: 'routine', mnm: false, prior: 0.002, onset: {"minutes": 0.05, "hours": 0.05, "days": 0.05, "weeks": 1.0, "months": 1.0, "unknown": 0.7}, requires: {}, mult: [{"when": {"sex": "male"}, "x": 1.5}], clear: [], category: "肝胆膵", note: "膵癌・PSCに似るがステロイドが有効、IgG4", ext: true });
   KB.addRelation('autoimmune_pancreatitis', 'jaundice_sub', null, 0.80, 0.95);
   KB.addRelation('autoimmune_pancreatitis', 'alp_ggt', ["elevated"], 0.80, 0.85);
@@ -2177,7 +2207,8 @@ svg.body .rl{font-size:11px}
   KB.addRelation('autoimmune_pancreatitis', 'igg4', ["elevated"], 0.80, 0.85);
   KB.addRelation('autoimmune_pancreatitis', 'bili', ["elevated"], 0.80, 0.85);
   KB.addRelation('autoimmune_pancreatitis', 'lipase', ["normal", "lt3x"], 0.50, 0.85);
-  KB.addRelation('autoimmune_pancreatitis', 'hb_imaging', ["diffuse_pancreas_swelling", "biliary_dilation"], 0.80, 0.85);
+  KB.addRelation('autoimmune_pancreatitis', 'ct', ["diffuse_pancreas_swelling", "biliary_dilation"], 0.80, 0.85);
+  KB.addRelation('autoimmune_pancreatitis', 'us', ["cbd_dilated"], 0.80, 0.85);
   KB.addRelation('autoimmune_pancreatitis', 'weight_loss', null, 0.20, 0.94);
   KB.addDisease('pbc', "原発性胆汁性胆管炎/原発性硬化性胆管炎", { urgency: 'routine', mnm: false, prior: 0.002, onset: {"minutes": 0.05, "hours": 0.05, "days": 0.05, "weeks": 0.05, "months": 1.0, "unknown": 0.7}, requires: {}, mult: [], clear: [], category: "肝胆膵", note: "閉塞のない慢性胆汁うっ滞、AMA(PBC)/IBD合併(PSC)", ext: true });
   KB.addRelation('pbc', 'alp_ggt', ["elevated"], 0.80, 0.85);
@@ -2198,6 +2229,7 @@ svg.body .rl{font-size:11px}
   KB.addRelation('hemolytic_anemia', 'liver_enz', ["normal"], 0.80, 0.85);
   KB.addRelation('hemolytic_anemia', 'hb', ["low"], 0.80, 0.85);
   KB.addRelation('hemolytic_anemia', 'hemolysis_labs', ["positive"], 0.80, 0.85);
+  KB.addRelation('hemolytic_anemia', 'ldh', ["elevated"], 0.80, 0.85);
   KB.addRelation('hemolytic_anemia', 'urine_stool_color', ["red_urine"], 0.20, 0.85);
   KB.addRelation('hemolytic_anemia', 'splenomegaly', null, 0.50, 0.90);
   KB.addRelation('hemolytic_anemia', 'gallstone_hx', null, 0.20, 0.92);
@@ -2335,6 +2367,7 @@ svg.body .rl{font-size:11px}
   KB.addRelation('ehec_hus', 'hb', ["low"], 0.50, 0.85);
   KB.addRelation('ehec_hus', 'renal', ["elevated"], 0.50, 0.85);
   KB.addRelation('ehec_hus', 'hemolysis_labs', ["positive"], 0.50, 0.85);
+  KB.addRelation('ehec_hus', 'ldh', ["elevated"], 0.50, 0.85);
   KB.addRelation('ehec_hus', 'consciousness', ["altered"], 0.20, 0.85);
   KB.addRelation('ehec_hus', 'stool_test', ["culture_pos"], 0.80, 0.85, { key: true });
   KB.addDisease('toxin_food_poisoning', "毒素型食中毒（黄色ブドウ球菌/セレウス/ウェルシュ菌）", { urgency: 'routine', mnm: false, prior: 0.03, onset: {"minutes": 0.05, "hours": 1.0, "days": 1.0, "weeks": 0.05, "months": 0.05, "unknown": 0.7}, requires: {}, mult: [], clear: [], category: "下部消化管", note: "短時間で集団発症する嘔吐/水様下痢、発熱なし、自然軽快。24時間以内に保健所届出", ext: true });
@@ -2375,7 +2408,7 @@ svg.body .rl{font-size:11px}
   KB.addRelation('pneumatosis_intestinalis', 'abd_pain', ["diffuse"], 0.50, 0.85);
   KB.addRelation('pneumatosis_intestinalis', 'distension', null, 0.50, 0.85);
   KB.addRelation('pneumatosis_intestinalis', 'immunosupp', null, 0.50, 0.95);
-  KB.addRelation('pneumatosis_intestinalis', 'ct_other', ["pneumatosis"], 0.80, 0.85);
+  KB.addRelation('pneumatosis_intestinalis', 'ct', ["pneumatosis"], 0.80, 0.85);
   KB.addRelation('pneumatosis_intestinalis', 'crp', ["lt1"], 0.50, 0.85);
   KB.addDisease('psoas_intraabdominal_abscess', "腸腰筋膿瘍/腹腔内・横隔膜下膿瘍", { urgency: 'urgent', mnm: false, prior: 0.002, onset: {"minutes": 0.05, "hours": 0.05, "days": 1.0, "weeks": 1.0, "months": 0.05, "unknown": 0.7}, requires: {}, mult: [], clear: [], category: "下部消化管", note: "発熱+側腹/腰部痛+Psoas sign、造影CT", ext: true });
   KB.addRelation('psoas_intraabdominal_abscess', 'temp', ["38_39", "ge39"], 0.80, 0.85);
@@ -2476,18 +2509,17 @@ svg.body .rl{font-size:11px}
   KB.addRelation('renal_infarction', 'pain_onset_char', ["sudden"], 0.80, 0.85);
   KB.addRelation('renal_infarction', 'abd_pain', ["flank_r", "flank_l"], 0.80, 0.85);
   KB.addRelation('renal_infarction', 'af_vascular', null, 0.80, 0.90);
-  KB.addRelation('renal_infarction', 'ecg', ["af"], 0.50, 0.85);
   KB.addRelation('renal_infarction', 'urinalysis', ["hematuria"], 0.50, 0.85);
   KB.addRelation('renal_infarction', 'pain_worse_moving', null, 0.05, 0.70);
-  KB.addRelation('renal_infarction', 'ct_other', ["renal_infarct"], 0.80, 0.85);
-  KB.addDisease('splenic_infarct_rupture', "脾梗塞/脾破裂・脾動脈瘤破裂", { urgency: 'emergent', mnm: true, prior: 0.002, onset: {"minutes": 1.0, "hours": 1.0, "days": 0.05, "weeks": 0.05, "months": 0.05, "unknown": 0.7}, requires: {}, mult: [], clear: ["ct_other"], category: "血管", note: "左上腹部痛+肩放散、脾腫の背景、ショックなら破裂", ext: true });
+  KB.addRelation('renal_infarction', 'ct', ["renal_infarct"], 0.80, 0.85);
+  KB.addDisease('splenic_infarct_rupture', "脾梗塞/脾破裂・脾動脈瘤破裂", { urgency: 'emergent', mnm: true, prior: 0.002, onset: {"minutes": 1.0, "hours": 1.0, "days": 0.05, "weeks": 0.05, "months": 0.05, "unknown": 0.7}, requires: {}, mult: [], clear: ["ct"], category: "血管", note: "左上腹部痛+肩放散、脾腫の背景、ショックなら破裂", ext: true });
   KB.addRelation('splenic_infarct_rupture', 'abd_pain', ["luq"], 0.80, 0.85);
   KB.addRelation('splenic_infarct_rupture', 'pain_onset_char', ["sudden"], 0.80, 0.85);
   KB.addRelation('splenic_infarct_rupture', 'pain_char', ["radiate_shoulder"], 0.50, 0.85);
   KB.addRelation('splenic_infarct_rupture', 'splenomegaly', null, 0.50, 0.90);
   KB.addRelation('splenic_infarct_rupture', 'af_vascular', null, 0.50, 0.90);
   KB.addRelation('splenic_infarct_rupture', 'sbp', ["lt90"], 0.50, 0.85);
-  KB.addRelation('splenic_infarct_rupture', 'ct_other', ["splenic_lesion"], 0.80, 0.85, { key: true });
+  KB.addRelation('splenic_infarct_rupture', 'ct', ["splenic_infarct", "splenic_rupture"], 0.80, 0.85, { key: true });
   KB.addDisease('visceral_aneurysm_rupture', "腹部内臓動脈瘤/腸骨動脈瘤破裂（膵仮性動脈瘤含む）", { urgency: 'emergent', mnm: true, prior: 0.002, onset: {"minutes": 1.0, "hours": 1.0, "days": 0.05, "weeks": 0.05, "months": 0.05, "unknown": 0.7}, requires: {}, mult: [], clear: ["hb", "ct"], category: "血管", note: "AAA以外の腹腔内出血源、造影CT", ext: true });
   KB.addRelation('visceral_aneurysm_rupture', 'pain_onset_char', ["sudden"], 0.80, 0.85);
   KB.addRelation('visceral_aneurysm_rupture', 'abd_pain', ["epi", "diffuse", "llq", "rlq"], 0.80, 0.85);
@@ -2533,6 +2565,7 @@ svg.body .rl{font-size:11px}
   KB.addRelation('sickle_cell_crisis', 'similar_episodes', null, 0.80, 0.85);
   KB.addRelation('sickle_cell_crisis', 'hb', ["low"], 0.80, 0.85);
   KB.addRelation('sickle_cell_crisis', 'hemolysis_labs', ["positive"], 0.80, 0.85);
+  KB.addRelation('sickle_cell_crisis', 'ldh', ["elevated"], 0.80, 0.85);
   KB.addRelation('sickle_cell_crisis', 'splenomegaly', null, 0.20, 0.90);
   KB.addRelation('sickle_cell_crisis', 'jaundice_sub', null, 0.50, 0.95);
   KB.addDisease('sle_vasculitis_serositis', "SLE/膠原病（漿膜炎・腸間膜血管炎・強皮症）", { urgency: 'urgent', mnm: false, prior: 0.002, onset: {"minutes": 0.05, "hours": 0.05, "days": 1.0, "weeks": 1.0, "months": 1.0, "unknown": 0.7}, requires: {}, mult: [{"when": {"sex": "female"}, "x": 1.5}], clear: [], category: "全身・代謝", note: "膠原病既往+腹痛/腹水、自己抗体、ステロイド反応", ext: true });
@@ -2562,7 +2595,7 @@ svg.body .rl{font-size:11px}
   KB.addRelation('neuroendocrine_tumor_hormonal', 'abd_pain', ["diffuse", "epi"], 0.50, 0.85);
   KB.addRelation('neuroendocrine_tumor_hormonal', 'skin_finding', null, 0.50, 0.90);
   KB.addRelation('neuroendocrine_tumor_hormonal', 'electrolyte', ["hypok"], 0.50, 0.85);
-  KB.addRelation('neuroendocrine_tumor_hormonal', 'ct_other', ["mass", "liver_mass"], 0.50, 0.85);
+  KB.addRelation('neuroendocrine_tumor_hormonal', 'ct', ["retro_mass", "liver_mass"], 0.50, 0.85);
   KB.addRelation('neuroendocrine_tumor_hormonal', 'vomiting', ["hematemesis"], 0.20, 0.85);
   KB.addDisease('opioid_withdrawal', "麻薬（オピオイド）離脱症候群", { urgency: 'routine', mnm: false, prior: 0.002, onset: {"minutes": 0.05, "hours": 1.0, "days": 1.0, "weeks": 0.05, "months": 0.05, "unknown": 0.7}, requires: {}, mult: [], clear: [], category: "全身・代謝", note: "オピオイド中断後の腹痛・下痢・嘔吐+自律神経症状", ext: true });
   KB.addRelation('opioid_withdrawal', 'opioid_use', null, 0.80, 0.90);
@@ -2595,7 +2628,7 @@ svg.body .rl{font-size:11px}
   KB.addRelation('hematologic_malignancy_hsm', 'weight_loss', null, 0.50, 0.94);
   KB.addRelation('hematologic_malignancy_hsm', 'ascites_exam', null, 0.20, 0.90);
   KB.addRelation('hematologic_malignancy_hsm', 'electrolyte', ["hyperca"], 0.20, 0.85);
-  KB.addRelation('hematologic_malignancy_hsm', 'ct_other', ["hepatosplenomegaly", "mass"], 0.80, 0.85);
+  KB.addRelation('hematologic_malignancy_hsm', 'ct', ["hepatosplenomegaly", "retro_mass"], 0.80, 0.85);
   KB.addDisease('gvhd_vod', "移植片対宿主病/肝中心静脈閉塞症（造血幹細胞移植後）", { urgency: 'urgent', mnm: false, prior: 0.002, onset: {"minutes": 0.05, "hours": 0.05, "days": 1.0, "weeks": 1.0, "months": 0.05, "unknown": 0.7}, requires: {}, mult: [], clear: [], category: "全身・代謝", note: "移植後の下痢+皮疹+黄疸、有痛性肝腫大", ext: true });
   KB.addRelation('gvhd_vod', 'immunosupp', null, 0.80, 0.95);
   KB.addRelation('gvhd_vod', 'diarrhea', ["watery", "bloody"], 0.80, 0.85);
@@ -2634,7 +2667,7 @@ svg.body .rl{font-size:11px}
   KB.addRelation('heart_failure_congestive_hepatopathy', 'ascites_exam', null, 0.50, 0.90);
   KB.addRelation('heart_failure_congestive_hepatopathy', 'nausea', null, 0.50, 0.55);
   KB.addRelation('heart_failure_congestive_hepatopathy', 'liver_enz', ["elevated"], 0.50, 0.85);
-  KB.addRelation('heart_failure_congestive_hepatopathy', 'cxr', ["infiltrate_effusion"], 0.80, 0.85);
+  KB.addRelation('heart_failure_congestive_hepatopathy', 'cxr', ["infiltrate", "effusion"], 0.80, 0.85);
   KB.addRelation('heart_failure_congestive_hepatopathy', 'paracentesis', ["saag_high"], 0.50, 0.85);
   KB.addDisease('intracranial_vomiting', "頭蓋内疾患による嘔吐（くも膜下出血/脳出血/小脳梗塞/髄膜炎/脳腫瘍）", { urgency: 'emergent', mnm: true, prior: 0.008, onset: {"minutes": 1.0, "hours": 1.0, "days": 1.0, "weeks": 0.05, "months": 1.0, "unknown": 0.7}, requires: {}, mult: [], clear: [], category: "胸部・その他", note: "腹部所見のない嘔吐+頭痛/神経症状、頭部CT/MRI・髄液", ext: true });
   KB.addRelation('intracranial_vomiting', 'vomiting', ["nonbilious"], 0.80, 0.85);
@@ -2684,7 +2717,7 @@ svg.body .rl{font-size:11px}
   KB.addRelation('rectus_sheath_hematoma', 'abd_mass', ["lower_pelvic"], 0.80, 0.85);
   KB.addRelation('rectus_sheath_hematoma', 'carnett_sign', null, 0.80, 0.90);
   KB.addRelation('rectus_sheath_hematoma', 'hb', ["low"], 0.50, 0.85);
-  KB.addRelation('rectus_sheath_hematoma', 'ct_other', ["wall_hematoma"], 0.80, 0.85);
+  KB.addRelation('rectus_sheath_hematoma', 'ct', ["wall_hematoma"], 0.80, 0.85);
   KB.addDisease('insect_spider_bite', "虫刺症・クモ咬傷（全身反応）", { urgency: 'urgent', mnm: false, prior: 0.002, onset: {"minutes": 1.0, "hours": 1.0, "days": 0.05, "weeks": 0.05, "months": 0.05, "unknown": 0.7}, requires: {}, mult: [], clear: [], category: "腹壁・ヘルニア", note: "刺咬歴+腹筋硬直で画像正常", ext: true });
   KB.addRelation('insect_spider_bite', 'abd_pain', ["diffuse"], 0.80, 0.85);
   KB.addRelation('insect_spider_bite', 'rigidity', null, 0.50, 0.95);
@@ -2697,7 +2730,7 @@ svg.body .rl{font-size:11px}
   KB.addRelation('tension_pneumothorax_esophageal', 'sbp', ["lt90"], 0.80, 0.85);
   KB.addRelation('tension_pneumothorax_esophageal', 'vomiting', ["hematemesis"], 0.20, 0.85);
   KB.addRelation('tension_pneumothorax_esophageal', 'dysphagia', null, 0.20, 0.90);
-  KB.addRelation('tension_pneumothorax_esophageal', 'cxr', ["pneumomediastinum"], 0.80, 0.85, { key: true });
+  KB.addRelation('tension_pneumothorax_esophageal', 'cxr', ["pneumomediastinum", "pneumothorax"], 0.80, 0.85, { key: true });
   KB.addDisease('spinal_infection_cauda', "化膿性脊椎炎・硬膜外膿瘍/馬尾症候群・脊髄梗塞", { urgency: 'emergent', mnm: true, prior: 0.002, onset: {"minutes": 1.0, "hours": 1.0, "days": 1.0, "weeks": 1.0, "months": 0.05, "unknown": 0.7}, requires: {}, mult: [], clear: [], category: "胸部・その他", note: "背部痛のred flags(発熱・神経症状・癌/ステロイド/HIV既往)、MRI", ext: true });
   KB.addRelation('spinal_infection_cauda', 'abd_pain', ["flank_r", "flank_l"], 0.80, 0.85);
   KB.addRelation('spinal_infection_cauda', 'temp', ["38_39", "ge39"], 0.50, 0.85);
@@ -2800,14 +2833,14 @@ svg.body .rl{font-size:11px}
   KB.addRelation('gastrinoma_zes', 'hb', ["low"], 0.50, 0.85);
   KB.addRelation('gastrinoma_zes', 'weight_loss', null, 0.20, 0.94);
   KB.addRelation('gastrinoma_zes', 'nsaid_aspirin', null, 0.05, 0.80);
-  KB.addRelation('gastrinoma_zes', 'endoscopy', ["ulcer", "smt"], 0.80, 0.85);
+  KB.addRelation('gastrinoma_zes', 'endoscopy', ["peptic_ulcer", "smt"], 0.80, 0.85);
   KB.addDisease('gastric_malt_lymphoma', "胃MALTリンパ腫", { urgency: 'routine', mnm: false, prior: 0.002, onset: {"minutes": 0.05, "hours": 0.05, "days": 0.2, "weeks": 0.7, "months": 1.0, "unknown": 0.7}, requires: {}, mult: [], clear: [], category: "上部消化管", note: "H. pylori慢性胃炎背景、多彩・多発な内視鏡像; 症状のみでは潰瘍/胃癌と区別不能", ext: true });
   KB.addRelation('gastric_malt_lymphoma', 'abd_pain', ["epi"], 0.50, 0.85);
   KB.addRelation('gastric_malt_lymphoma', 'nausea', null, 0.20, 0.55);
   KB.addRelation('gastric_malt_lymphoma', 'gi_bleed', ["melena"], 0.20, 0.85);
   KB.addRelation('gastric_malt_lymphoma', 'fever_sub', null, 0.20, 0.70);
   KB.addRelation('gastric_malt_lymphoma', 'weight_loss', null, 0.20, 0.94);
-  KB.addRelation('gastric_malt_lymphoma', 'endoscopy', ["tumor", "ulcer"], 0.80, 0.85);
+  KB.addRelation('gastric_malt_lymphoma', 'endoscopy', ["tumor", "peptic_ulcer"], 0.80, 0.85);
   KB.addDisease('gastric_smt_gist', "胃粘膜下腫瘍(GIST等)", { urgency: 'routine', mnm: false, prior: 0.002, onset: {"minutes": 0.1, "hours": 0.3, "days": 0.3, "weeks": 0.6, "months": 1.0, "unknown": 0.7}, requires: {}, mult: [], clear: [], category: "上部消化管", note: "多くは無症候の偶発所見; 有症状は出血・通過障害・腫瘤", ext: true });
   KB.addRelation('gastric_smt_gist', 'gi_bleed', ["melena"], 0.50, 0.85);
   KB.addRelation('gastric_smt_gist', 'vomiting', ["hematemesis"], 0.20, 0.85);
@@ -2834,7 +2867,8 @@ svg.body .rl{font-size:11px}
   KB.addRelation('hepatolithiasis', 'alp_ggt', ["elevated"], 0.50, 0.85);
   KB.addRelation('hepatolithiasis', 'bili', ["elevated"], 0.20, 0.85);
   KB.addRelation('hepatolithiasis', 'wbc', ["10_15", "gt15"], 0.50, 0.85);
-  KB.addRelation('hepatolithiasis', 'hb_imaging', ["biliary_dilation"], 0.80, 0.85);
+  KB.addRelation('hepatolithiasis', 'ct', ["biliary_dilation"], 0.80, 0.85);
+  KB.addRelation('hepatolithiasis', 'us', ["cbd_dilated"], 0.80, 0.85);
   KB.addDisease('pancreatic_pseudocyst_won', "膵仮性嚢胞/被包化壊死(WON)・感染性嚢胞", { urgency: 'urgent', mnm: false, prior: 0.002, onset: {"minutes": 0.05, "hours": 0.3, "days": 0.8, "weeks": 1.0, "months": 0.5, "unknown": 0.7}, requires: {}, mult: [], clear: [], category: "肝胆膵", note: "膵炎後数週の腹痛・発熱・膨満; 画像で嚢胞; 腫瘍性嚢胞(IPMN/MCN/SCN)は通常無症状", ext: true });
   KB.addRelation('pancreatic_pseudocyst_won', 'pancreatitis_hx', null, 0.80, 0.90);
   KB.addRelation('pancreatic_pseudocyst_won', 'abd_pain', ["epi"], 0.80, 0.85);
@@ -2844,14 +2878,14 @@ svg.body .rl{font-size:11px}
   KB.addRelation('pancreatic_pseudocyst_won', 'vomiting', ["nonbilious"], 0.50, 0.85);
   KB.addRelation('pancreatic_pseudocyst_won', 'wbc', ["10_15", "gt15"], 0.50, 0.85);
   KB.addRelation('pancreatic_pseudocyst_won', 'lipase', ["lt3x", "ge3x"], 0.50, 0.85);
-  KB.addRelation('pancreatic_pseudocyst_won', 'hb_imaging', ["pancreatic_cyst"], 0.80, 0.85);
+  KB.addRelation('pancreatic_pseudocyst_won', 'ct', ["pancreatic_cyst"], 0.80, 0.85);
   KB.addDisease('ipmn_mcn', "膵管内乳頭粘液性腫瘍(IPMN)/粘液性嚢胞腫瘍(MCN)", { urgency: 'routine', mnm: false, prior: 0.002, onset: {"minutes": 0.05, "hours": 0.2, "days": 0.4, "weeks": 0.6, "months": 1.0, "unknown": 0.7}, requires: {}, mult: [], clear: [], category: "肝胆膵", note: "多くは偶発発見; 有症状は膵炎様上腹部痛; 併存膵癌・消化器癌の合併に注意", ext: true });
   KB.addRelation('ipmn_mcn', 'abd_pain', ["epi"], 0.50, 0.85);
   KB.addRelation('ipmn_mcn', 'pain_char', ["radiate_back"], 0.20, 0.85);
   KB.addRelation('ipmn_mcn', 'lipase', ["lt3x", "ge3x"], 0.20, 0.85);
   KB.addRelation('ipmn_mcn', 'diabetes_new_worsening', null, 0.20, 0.90);
   KB.addRelation('ipmn_mcn', 'jaundice_sub', null, 0.20, 0.95);
-  KB.addRelation('ipmn_mcn', 'hb_imaging', ["pancreatic_cyst"], 0.80, 0.85);
+  KB.addRelation('ipmn_mcn', 'ct', ["pancreatic_cyst"], 0.80, 0.85);
   KB.addDisease('pancreaticobiliary_maljunction', "膵・胆管合流異常/先天性胆道拡張症", { urgency: 'routine', mnm: false, prior: 0.002, onset: {"minutes": 0.1, "hours": 0.5, "days": 0.7, "weeks": 0.5, "months": 0.5, "unknown": 0.7}, requires: {}, mult: [{"when": {"sex": "female"}, "x": 1.5}], clear: [], category: "肝胆膵", note: "若年女性の反復する腹痛・嘔吐・黄疸(+膵炎)で総胆管拡張; 成人では胆嚢癌/胆管癌合併", ext: true });
   KB.addRelation('pancreaticobiliary_maljunction', 'abd_pain', ["ruq", "epi"], 0.80, 0.85);
   KB.addRelation('pancreaticobiliary_maljunction', 'vomiting', ["nonbilious", "bilious"], 0.50, 0.85);
@@ -2861,7 +2895,8 @@ svg.body .rl{font-size:11px}
   KB.addRelation('pancreaticobiliary_maljunction', 'lipase', ["lt3x", "ge3x"], 0.50, 0.85);
   KB.addRelation('pancreaticobiliary_maljunction', 'abd_mass', null, 0.20, 0.90);
   KB.addRelation('pancreaticobiliary_maljunction', 'us', ["cbd_dilated"], 0.80, 0.85);
-  KB.addRelation('pancreaticobiliary_maljunction', 'hb_imaging', ["biliary_dilation", "gb_wall_thick"], 0.80, 0.85);
+  KB.addRelation('pancreaticobiliary_maljunction', 'ct', ["biliary_dilation", "gb_wall_thick"], 0.80, 0.85);
+  KB.addRelation('pancreaticobiliary_maljunction', 'us', ["cbd_dilated", "gb"], 0.80, 0.85);
   KB.addDisease('gallbladder_cancer', "胆嚢癌", { urgency: 'routine', mnm: false, prior: 0.002, onset: {"minutes": 0.05, "hours": 0.1, "days": 0.3, "weeks": 0.8, "months": 1.0, "unknown": 0.7}, requires: {}, mult: [{"when": {"sex": "female"}, "x": 1.5}], clear: [], category: "肝胆膵", note: "高齢女性の胆石様症状+体重減少; USで広基性隆起/不整壁肥厚; 慢性胆嚢炎・胆嚢ポリープとの鑑別", ext: true });
   KB.addRelation('gallbladder_cancer', 'abd_pain', ["ruq"], 0.50, 0.85);
   KB.addRelation('gallbladder_cancer', 'jaundice_sub', null, 0.50, 0.95);
@@ -2869,7 +2904,7 @@ svg.body .rl{font-size:11px}
   KB.addRelation('gallbladder_cancer', 'gallstone_hx', null, 0.50, 0.92);
   KB.addRelation('gallbladder_cancer', 'abd_mass', null, 0.20, 0.90);
   KB.addRelation('gallbladder_cancer', 'us', ["gb"], 0.80, 0.85);
-  KB.addRelation('gallbladder_cancer', 'hb_imaging', ["gb_wall_thick"], 0.80, 0.85);
+  KB.addRelation('gallbladder_cancer', 'ct', ["gb_wall_thick"], 0.80, 0.85);
   KB.addDisease('gallbladder_polyp', "胆嚢ポリープ・胆嚢腺筋腫症", { urgency: 'routine', mnm: false, prior: 0.002, onset: {"minutes": 0.05, "hours": 0.05, "days": 0.05, "weeks": 0.3, "months": 1.0, "unknown": 0.7}, requires: {}, mult: [], clear: [], category: "肝胆膵", note: "腹部症状の原因ではない; 10mm以上広基性は胆嚢癌を鑑別", ext: true });
   KB.addRelation('gallbladder_polyp', 'us', ["gb"], 0.80, 0.85);
   KB.addRelation('gallbladder_polyp', 'abd_pain', ["ruq", "epi"], 0.20, 0.85);
@@ -2886,7 +2921,7 @@ svg.body .rl{font-size:11px}
   KB.addRelation('hcc', 'chronic_liver_labs', ["plt_low"], 0.50, 0.85);
   KB.addRelation('hcc', 'hb', ["low"], 0.20, 0.85);
   KB.addRelation('hcc', 'us', ["free_fluid"], 0.20, 0.85);
-  KB.addRelation('hcc', 'hb_imaging', ["liver_mass", "cirrhotic_liver"], 0.80, 0.85);
+  KB.addRelation('hcc', 'ct', ["liver_mass", "cirrhotic_liver"], 0.80, 0.85);
   KB.addDisease('intrahepatic_cholangiocarcinoma', "肝内胆管癌・その他原発性肝癌", { urgency: 'routine', mnm: false, prior: 0.002, onset: {"minutes": 0.05, "hours": 0.05, "days": 0.2, "weeks": 0.7, "months": 1.0, "unknown": 0.7}, requires: {}, mult: [{"when": {"sex": "male"}, "x": 1.5}], clear: [], category: "肝胆膵", note: "早期無症状、進行してから上腹部痛・体重減少で発見; 転移性肝癌との鑑別に他臓器検索", ext: true });
   KB.addRelation('intrahepatic_cholangiocarcinoma', 'abd_pain', ["ruq", "epi"], 0.50, 0.85);
   KB.addRelation('intrahepatic_cholangiocarcinoma', 'weight_loss', null, 0.50, 0.94);
@@ -2898,7 +2933,8 @@ svg.body .rl{font-size:11px}
   KB.addRelation('intrahepatic_cholangiocarcinoma', 'alp_ggt', ["elevated"], 0.50, 0.85);
   KB.addRelation('intrahepatic_cholangiocarcinoma', 'abd_mass', null, 0.20, 0.90);
   KB.addRelation('intrahepatic_cholangiocarcinoma', 'ascites_exam', null, 0.20, 0.90);
-  KB.addRelation('intrahepatic_cholangiocarcinoma', 'hb_imaging', ["liver_mass", "biliary_dilation"], 0.80, 0.85);
+  KB.addRelation('intrahepatic_cholangiocarcinoma', 'ct', ["liver_mass", "biliary_dilation"], 0.80, 0.85);
+  KB.addRelation('intrahepatic_cholangiocarcinoma', 'us', ["cbd_dilated"], 0.80, 0.85);
   KB.addDisease('liver_metastases', "転移性肝癌", { urgency: 'routine', mnm: false, prior: 0.008, onset: {"minutes": 0.05, "hours": 0.05, "days": 0.2, "weeks": 0.7, "months": 1.0, "unknown": 0.7}, requires: {}, mult: [], clear: [], category: "肝胆膵", note: "悪性腫瘍既往+肝機能異常/多発肝腫瘤; 原発性肝癌(慢性肝疾患+AFP)と区別", ext: true });
   KB.addRelation('liver_metastases', 'cancer_hx', null, 0.80, 0.90);
   KB.addRelation('liver_metastases', 'abd_pain', ["ruq"], 0.50, 0.85);
@@ -2908,14 +2944,14 @@ svg.body .rl{font-size:11px}
   KB.addRelation('liver_metastases', 'hepatomegaly', null, 0.50, 0.90);
   KB.addRelation('liver_metastases', 'liver_enz', ["elevated"], 0.50, 0.85);
   KB.addRelation('liver_metastases', 'alp_ggt', ["elevated"], 0.50, 0.85);
-  KB.addRelation('liver_metastases', 'hb_imaging', ["liver_mass"], 0.80, 0.85);
+  KB.addRelation('liver_metastases', 'ct', ["liver_mass"], 0.80, 0.85);
   KB.addDisease('benign_liver_tumor', "肝良性腫瘍(肝血管腫/肝腺腫; 出血・破裂含む)", { urgency: 'routine', mnm: false, prior: 0.002, onset: {"minutes": 0.3, "hours": 0.5, "days": 0.3, "weeks": 0.4, "months": 0.8, "unknown": 0.7}, requires: {}, mult: [{"when": {"sex": "female"}, "x": 1.5}], clear: [], category: "肝胆膵", note: "検診偶発所見; 若年女性(経口避妊薬)の突然の右上腹部痛+貧血は腺腫破裂を考える", ext: true });
   KB.addRelation('benign_liver_tumor', 'abd_pain', ["ruq", "epi"], 0.20, 0.85);
   KB.addRelation('benign_liver_tumor', 'pain_onset_char', ["sudden"], 0.20, 0.85);
   KB.addRelation('benign_liver_tumor', 'hb', ["low"], 0.20, 0.85);
   KB.addRelation('benign_liver_tumor', 'lmp_delayed', null, 0.20, 0.90);
   KB.addRelation('benign_liver_tumor', 'jaundice_sub', null, 0.20, 0.95);
-  KB.addRelation('benign_liver_tumor', 'hb_imaging', ["liver_mass"], 0.80, 0.85);
+  KB.addRelation('benign_liver_tumor', 'ct', ["liver_mass"], 0.80, 0.85);
   KB.addDisease('acute_viral_hepatitis', "急性ウイルス性肝炎(A/B/E, EBV/CMV)", { urgency: 'urgent', mnm: false, prior: 0.008, onset: {"minutes": 0.05, "hours": 0.2, "days": 1.0, "weeks": 0.8, "months": 0.2, "unknown": 0.7}, requires: {}, mult: [], clear: [], category: "肝胆膵", note: "発熱・倦怠感・食思不振の前駆→黄疸、AST/ALT>1000、胆管拡張なし; 生食・渡航・性的接触歴; EBVは咽頭炎+リンパ節腫脹", ext: true });
   KB.addRelation('acute_viral_hepatitis', 'fever_sub', null, 0.80, 0.70);
   KB.addRelation('acute_viral_hepatitis', 'fatigue', null, 0.80, 0.90);
@@ -2957,21 +2993,20 @@ svg.body .rl{font-size:11px}
   KB.addRelation('autoimmune_hepatitis', 'alp_ggt', ["normal"], 0.50, 0.85);
   KB.addRelation('autoimmune_hepatitis', 'autoantibodies', ["ana_asma_pos"], 0.80, 0.85);
   KB.addRelation('autoimmune_hepatitis', 'hepatitis_serology', ["neg"], 0.80, 0.85);
-  KB.addRelation('autoimmune_hepatitis', 'hepatotoxic_drug_supplement', null, 0.05, 0.90);
+  KB.addRelation('autoimmune_hepatitis', 'new_medication', null, 0.05, 0.90);
   KB.addRelation('autoimmune_hepatitis', 'skin_finding', ["spider_angioma_palmar"], 0.20, 0.85);
   KB.addRelation('autoimmune_hepatitis', 'chronic_liver_labs', ["pt_prolonged"], 0.20, 0.85);
   KB.addDisease('nafld_nash', "脂肪肝(NAFLD/MASLD)・NASH", { urgency: 'routine', mnm: false, prior: 0.03, onset: {"minutes": 0.05, "hours": 0.05, "days": 0.05, "weeks": 0.3, "months": 1.0, "unknown": 0.7}, requires: {}, mult: [], clear: [], category: "肝胆膵", note: "肥満・メタボ背景の無症状ALT上昇+画像脂肪肝、飲酒歴なし; 腹部症状の原因としては低い", ext: true });
   KB.addRelation('nafld_nash', 'obesity', null, 0.80, 0.90);
-  KB.addRelation('nafld_nash', 'cv_risk', null, 0.80, 0.65);
   KB.addRelation('nafld_nash', 'diabetes', null, 0.50, 0.88);
   KB.addRelation('nafld_nash', 'alcohol_heavy', null, 0.05, 0.90);
   KB.addRelation('nafld_nash', 'abd_pain', ["ruq", "epi"], 0.20, 0.85);
   KB.addRelation('nafld_nash', 'liver_enz', ["elevated"], 0.80, 0.85);
   KB.addRelation('nafld_nash', 'ast_alt_pattern', ["alt_dominant"], 0.50, 0.85);
   KB.addRelation('nafld_nash', 'chronic_liver_labs', ["plt_low"], 0.20, 0.85);
-  KB.addRelation('nafld_nash', 'hb_imaging', ["fatty_liver"], 0.80, 0.85);
+  KB.addRelation('nafld_nash', 'ct', ["fatty_liver"], 0.80, 0.85);
   KB.addRelation('nafld_nash', 'hepatitis_serology', ["neg"], 0.80, 0.85);
-  KB.addDisease('acute_portal_vein_thrombosis', "急性期門脈血栓症", { urgency: 'emergent', mnm: true, prior: 0.002, onset: {"minutes": 0.2, "hours": 0.8, "days": 1.0, "weeks": 0.3, "months": 0.05, "unknown": 0.7}, requires: {}, mult: [], clear: ["distension", "hb_imaging"], category: "肝胆膵", note: "肝硬変患者の強い腹痛+発熱+急速な腹満; 造影CTで門脈血栓; 腸間膜虚血に準じた緊急性", ext: true });
+  KB.addDisease('acute_portal_vein_thrombosis', "急性期門脈血栓症", { urgency: 'emergent', mnm: true, prior: 0.002, onset: {"minutes": 0.2, "hours": 0.8, "days": 1.0, "weeks": 0.3, "months": 0.05, "unknown": 0.7}, requires: {}, mult: [], clear: ["distension", "ct", "us"], category: "肝胆膵", note: "肝硬変患者の強い腹痛+発熱+急速な腹満; 造影CTで門脈血栓; 腸間膜虚血に準じた緊急性", ext: true });
   KB.addRelation('acute_portal_vein_thrombosis', 'abd_pain', ["diffuse", "epi"], 0.80, 0.85);
   KB.addRelation('acute_portal_vein_thrombosis', 'fever_sub', null, 0.50, 0.70);
   KB.addRelation('acute_portal_vein_thrombosis', 'distension', null, 0.80, 0.85, { key: true });
@@ -2980,7 +3015,8 @@ svg.body .rl{font-size:11px}
   KB.addRelation('acute_portal_vein_thrombosis', 'gi_bleed', ["melena", "hematochezia"], 0.20, 0.85);
   KB.addRelation('acute_portal_vein_thrombosis', 'lactate', ["2_4", "gt4"], 0.20, 0.85);
   KB.addRelation('acute_portal_vein_thrombosis', 'ddimer', ["elevated"], 0.50, 0.85);
-  KB.addRelation('acute_portal_vein_thrombosis', 'hb_imaging', ["portal_thrombosis", "ascites"], 0.80, 0.85, { key: true });
+  KB.addRelation('acute_portal_vein_thrombosis', 'ct', ["pvt", "ascites"], 0.80, 0.85, { key: true });
+  KB.addRelation('acute_portal_vein_thrombosis', 'us', ["free_fluid"], 0.80, 0.85, { key: true });
   KB.addRelation('acute_portal_vein_thrombosis', 'ct', ["ischemia"], 0.20, 0.85);
   KB.addDisease('hepatorenal_syndrome', "肝腎症候群", { urgency: 'emergent', mnm: true, prior: 0.002, onset: {"minutes": 0.05, "hours": 0.2, "days": 0.9, "weeks": 0.6, "months": 0.1, "unknown": 0.7}, requires: {}, mult: [], clear: ["ascites_exam", "distension", "skin_finding", "renal"], category: "肝胆膵", note: "腹水肝硬変+進行性腎機能低下で腎前性/腎性/腎後性を除外; SBP・消化管出血の後に発症しやすい", ext: true });
   KB.addRelation('hepatorenal_syndrome', 'cirrhosis_hx', null, 0.80, 0.90);
@@ -3008,7 +3044,8 @@ svg.body .rl{font-size:11px}
   KB.addRelation('psc', 'liver_enz', ["elevated"], 0.50, 0.85);
   KB.addRelation('psc', 'bili', ["elevated"], 0.50, 0.85);
   KB.addRelation('psc', 'igg4', ["normal"], 0.50, 0.85);
-  KB.addRelation('psc', 'hb_imaging', ["biliary_dilation"], 0.80, 0.85);
+  KB.addRelation('psc', 'ct', ["biliary_dilation"], 0.80, 0.85);
+  KB.addRelation('psc', 'us', ["cbd_dilated"], 0.80, 0.85);
   KB.addDisease('igg4_sclerosing_cholangitis', "IgG4関連硬化性胆管炎", { urgency: 'routine', mnm: false, prior: 0.002, onset: {"minutes": 0.05, "hours": 0.1, "days": 0.3, "weeks": 0.8, "months": 1.0, "unknown": 0.7}, requires: {}, mult: [{"when": {"sex": "male"}, "x": 1.5}], clear: [], category: "肝胆膵", note: "高齢男性の閉塞性黄疸+膵腫大/他臓器IgG4病変+IgG4高値; 胆管癌・膵癌・PSCの除外が必須", ext: true });
   KB.addRelation('igg4_sclerosing_cholangitis', 'jaundice_sub', null, 0.80, 0.95);
   KB.addRelation('igg4_sclerosing_cholangitis', 'pruritus', null, 0.50, 0.90);
@@ -3019,13 +3056,14 @@ svg.body .rl{font-size:11px}
   KB.addRelation('igg4_sclerosing_cholangitis', 'igg4', ["elevated"], 0.80, 0.85);
   KB.addRelation('igg4_sclerosing_cholangitis', 'alp_ggt', ["elevated"], 0.80, 0.85);
   KB.addRelation('igg4_sclerosing_cholangitis', 'bili', ["elevated"], 0.80, 0.85);
-  KB.addRelation('igg4_sclerosing_cholangitis', 'hb_imaging', ["biliary_dilation", "diffuse_pancreas_swelling"], 0.80, 0.85);
+  KB.addRelation('igg4_sclerosing_cholangitis', 'ct', ["biliary_dilation", "diffuse_pancreas_swelling"], 0.80, 0.85);
+  KB.addRelation('igg4_sclerosing_cholangitis', 'us', ["cbd_dilated"], 0.80, 0.85);
   KB.addDisease('echinococcosis', "エキノコックス症(肝多包虫症)", { urgency: 'routine', mnm: false, prior: 0.002, onset: {"minutes": 0.05, "hours": 0.05, "days": 0.05, "weeks": 0.3, "months": 1.0, "unknown": 0.7}, requires: {}, mult: [], clear: [], category: "肝胆膵", note: "北海道曝露歴+石灰化肝腫瘤の偶発発見; 急性腹症の原因ではない", ext: true });
   KB.addRelation('echinococcosis', 'travel', null, 0.50, 0.95);
   KB.addRelation('echinococcosis', 'abd_pain', ["ruq"], 0.20, 0.85);
   KB.addRelation('echinococcosis', 'jaundice_sub', null, 0.20, 0.95);
   KB.addRelation('echinococcosis', 'hepatomegaly', null, 0.20, 0.90);
-  KB.addRelation('echinococcosis', 'hb_imaging', ["liver_mass"], 0.80, 0.85);
+  KB.addRelation('echinococcosis', 'ct', ["liver_mass"], 0.80, 0.85);
   KB.addRelation('echinococcosis', 'liver_enz', ["normal"], 0.50, 0.85);
   KB.addDisease('hemochromatosis', "ヘモクロマトーシス/鉄過剰症", { urgency: 'routine', mnm: false, prior: 0.002, onset: {"minutes": 0.05, "hours": 0.05, "days": 0.05, "weeks": 0.2, "months": 1.0, "unknown": 0.7}, requires: {}, mult: [{"when": {"sex": "male"}, "x": 1.5}], clear: [], category: "肝胆膵", note: "糖尿病+皮膚色素沈着+肝障害+関節痛の組合せ、輸血歴/家族歴; 急性腹症ではない", ext: true });
   KB.addRelation('hemochromatosis', 'fatigue', null, 0.50, 0.90);
@@ -3034,7 +3072,7 @@ svg.body .rl{font-size:11px}
   KB.addRelation('hemochromatosis', 'liver_enz', ["elevated"], 0.50, 0.85);
   KB.addRelation('hemochromatosis', 'hospitalized_recent', null, 0.20, 0.90);
   KB.addRelation('hemochromatosis', 'abd_pain', ["ruq", "epi"], 0.20, 0.85);
-  KB.addRelation('hemochromatosis', 'hb_imaging', ["cirrhotic_liver"], 0.20, 0.85);
+  KB.addRelation('hemochromatosis', 'ct', ["cirrhotic_liver"], 0.20, 0.85);
   KB.addDisease('wilson_disease', "ウィルソン病", { urgency: 'urgent', mnm: false, prior: 0.002, onset: {"minutes": 0.05, "hours": 0.1, "days": 0.5, "weeks": 0.7, "months": 1.0, "unknown": 0.7}, requires: {}, mult: [], clear: [], category: "肝胆膵", note: "若年(5-35歳)の原因不明肝障害±溶血±神経精神症状; Kayser-Fleischer輪・低セルロプラスミン", ext: true });
   KB.addRelation('wilson_disease', 'liver_enz', ["elevated"], 0.80, 0.85);
   KB.addRelation('wilson_disease', 'jaundice_sub', null, 0.50, 0.95);
@@ -3045,6 +3083,9 @@ svg.body .rl{font-size:11px}
   KB.addRelation('wilson_disease', 'autoantibodies', ["neg"], 0.50, 0.85);
   KB.addRelation('wilson_disease', 'abd_pain', ["ruq"], 0.20, 0.85);
   KB.addRelation('wilson_disease', 'ascites_exam', null, 0.20, 0.90);
+  KB.addRelation('drug_colitis_other', 'ici_use', null, 0.50, 0.98);
+  KB.addRelation('drug_induced_liver_injury', 'ici_use', null, 0.10, 0.98);
+  KB.addRelation('sigmoid_volvulus', 'constipation_hx', null, 0.50, 0.85);
   KB.reindex();
   KB.tertiaryRefs = {"appendicitis": ["急性腹症.txt", "筋性防御.txt", "腹痛.txt", "虫垂炎.txt"], "sbo": ["吐気嘔吐.txt", "急性腹症.txt", "腸閉塞.txt", "腸音異常.txt", "腹痛.txt", "腹部膨満・腹部腫瘤.txt"], "sigmoid_volvulus": ["急性腹症.txt", "腸軸捻転・腸重積.txt", "腸音異常.txt", "腹部膨満・腹部腫瘤.txt"], "intussusception_adult": ["悪性リンパ腫-小腸・大腸.txt", "腸軸捻転・腸重積.txt", "腸閉塞.txt", "腸音異常.txt"], "internal_hernia": ["内ヘルニア・横隔膜ヘルニア.txt"], "incarcerated_hernia": ["筋性防御.txt", "腸閉塞.txt", "腸音異常.txt", "腹痛.txt", "腹部膨満・腹部腫瘤.txt", "鼠径ヘルニア・大腿ヘルニア・腹壁ヘルニア.txt"], "reducible_hernia": ["鼠径ヘルニア・大腿ヘルニア・腹壁ヘルニア.txt"], "diverticulitis": ["大腸憩室症.txt", "急性下痢.txt", "急性腹症.txt", "筋性防御.txt", "腹痛.txt"], "diverticular_bleeding": ["下血血便.txt", "便潜血.txt", "大腸憩室症.txt", "拍動性腫瘤.txt", "血便.txt"], "gastroenteritis": ["吐気嘔吐.txt", "急性下痢.txt", "急性腹症.txt", "感染性腸炎.txt", "腹痛.txt", "虫垂炎.txt", "集団食中毒.txt"], "bacterial_colitis": ["下血血便.txt", "急性下痢.txt", "感染性腸炎.txt", "筋性防御.txt", "虫垂炎.txt", "血便.txt", "集団食中毒.txt"], "enteric_fever_yersinia": ["感染性腸炎.txt"], "mesenteric_adenitis_ileitis": ["感染性腸炎.txt", "筋性防御.txt", "腸軸捻転・腸重積.txt"], "cdiff": ["急性下痢.txt", "感染性腸炎.txt", "慢性下痢.txt", "潰瘍性大腸炎.txt", "腹痛.txt", "薬剤性腸炎（含む 偽膜性腸炎、NSAIDs腸炎、薬剤起因性collagenous colitis等）.txt", "集団食中毒.txt"], "antibiotic_hemorrhagic_colitis": ["薬剤性腸炎（含む 偽膜性腸炎、NSAIDs腸炎、薬剤起因性collagenous colitis等）.txt", "虚血性大腸炎.txt"], "nsaid_enteropathy": ["腸管ベーチェット病.txt", "薬剤性腸炎（含む 偽膜性腸炎、NSAIDs腸炎、薬剤起因性collagenous colitis等）.txt", "非特異性多発性小腸潰瘍症.txt"], "drug_colitis_other": ["薬剤性腸炎（含む 偽膜性腸炎、NSAIDs腸炎、薬剤起因性collagenous colitis等）.txt", "過敏性腸症候群.txt"], "cmv_colitis": ["急性下痢.txt", "潰瘍性大腸炎.txt", "肝機能異常（胆汁うっ滞）.txt", "腸管CMV感染症.txt", "虚血性大腸炎.txt"], "ischemic_colitis": ["下腹痛(婦人科).txt", "下血血便.txt", "大腸憩室症.txt", "急性下痢.txt", "虚血性大腸炎.txt", "血便.txt", "集団食中毒.txt"], "mesenteric_ischemia": ["上腸間膜動脈閉塞症・上腸間膜静脈血栓症.txt", "下腹痛(婦人科).txt", "急性腹症.txt", "筋性防御.txt", "腸間膜動脈虚血.txt", "腹痛.txt", "腹部膨満・腹部腫瘤.txt"], "smv_thrombosis": ["上腸間膜動脈閉塞症・上腸間膜静脈血栓症.txt", "蛋白漏出性胃腸症.txt"], "ibd_flare": ["Crohn病.txt", "下腹痛(婦人科).txt", "下血血便.txt", "急性腹症.txt", "慢性下痢.txt", "潰瘍性大腸炎.txt", "痔核・肛門周囲膿瘍・痔瘻・裂肛.txt", "血便.txt", "黄疸.txt"], "intestinal_behcet": ["下血血便.txt", "慢性下痢.txt", "直腸肛門部腫瘤.txt", "腸管ベーチェット病.txt", "集団食中毒.txt"], "intestinal_tb": ["Crohn病.txt", "腸管ベーチェット病.txt", "過敏性腸症候群.txt"], "ibs": ["下腹痛(婦人科).txt", "便秘症.txt", "慢性下痢.txt", "月経困難症月経痛.txt", "腸音異常.txt", "腹痛.txt", "腹部膨満・腹部腫瘤.txt", "過敏性腸症候群.txt"], "microscopic_colitis": ["潰瘍性大腸炎.txt", "薬剤性腸炎（含む 偽膜性腸炎、NSAIDs腸炎、薬剤起因性collagenous colitis等）.txt", "過敏性腸症候群.txt"], "colorectal_cancer": ["下血血便.txt", "便潜血.txt", "便秘症.txt", "大腸ポリポーシス.txt", "大腸ポリープ.txt", "大腸癌.txt", "慢性下痢.txt", "直腸肛門部腫瘤.txt", "筋性防御.txt", "腸閉塞.txt", "腹痛.txt", "腹部膨満・腹部腫瘤.txt", "虚血性大腸炎.txt", "血便.txt"], "small_bowel_tumor": ["小腸腫瘍.txt"], "gi_lymphoma_gist_small_bowel_tumor": ["下腹部腫瘤.txt", "下血血便.txt", "便潜血.txt", "吐血.txt", "小腸腫瘍.txt", "悪性リンパ腫-小腸・大腸.txt", "慢性下痢.txt", "腹水貯留.txt", "腹部膨満・腹部腫瘤.txt"], "gi_net_carcinoid": ["小腸:虫垂:直腸の神経内分泌腫瘍（NET）:カルチノイド.txt", "小腸腫瘍.txt"], "ceas": ["非特異性多発性小腸潰瘍症.txt"], "eosinophilic_gastroenteritis": ["吐気嘔吐.txt", "好酸球性胃腸炎.txt", "慢性下痢.txt"], "gi_amyloidosis": ["消化管アミロイドーシス.txt", "潰瘍性大腸炎.txt"], "protein_losing_enteropathy": ["慢性下痢.txt", "腹水貯留.txt", "蛋白漏出性胃腸症.txt"], "acute_hemorrhagic_rectal_ulcer": ["下血血便.txt", "急性出血性直腸潰瘍.txt", "血便.txt"], "hemorrhoids_fissure": ["下血血便.txt", "便潜血.txt", "痔核・肛門周囲膿瘍・痔瘻・裂肛.txt", "直腸肛門部腫瘤.txt", "血便.txt"], "perianal_abscess": ["Crohn病.txt", "慢性下痢.txt", "痔核・肛門周囲膿瘍・痔瘻・裂肛.txt", "直腸肛門部腫瘤.txt"], "rectal_prolapse_mps": ["急性出血性直腸潰瘍.txt", "直腸脱・粘膜脱症候群.txt"], "fecal_impaction": ["内ヘルニア・横隔膜ヘルニア.txt", "急性出血性直腸潰瘍.txt", "腸軸捻転・腸重積.txt"], "hiatal_diaphragmatic_hernia": ["内ヘルニア・横隔膜ヘルニア.txt"], "iga_vasculitis": ["吐血.txt", "好酸球性胃腸炎.txt", "急性腹症.txt", "腸軸捻転・腸重積.txt", "血管炎症候群.txt"], "pan_mesenteric_vasculitis": ["ANCA関連血管炎.txt", "好酸球性胃腸炎.txt", "潰瘍性大腸炎.txt", "血管炎症候群.txt"], "hypercalcemia": ["便秘症.txt", "吐気嘔吐.txt", "急性腹症.txt", "消化不良.txt", "背部痛.txt", "腹痛.txt", "高カルシウム血症.txt"], "dka": ["下腹痛(婦人科).txt", "代謝性アシドーシス.txt", "吐気嘔吐.txt", "妊娠悪阻.txt", "急性腹症.txt", "意識障害.txt", "筋性防御.txt", "腹痛.txt"], "uremia_aki": ["代謝性アシドーシス.txt", "腎機能低下.txt", "高カリウム血症.txt"], "hyperkalemia": ["代謝性アシドーシス.txt", "高カリウム血症.txt"], "hypokalemia_ileus": ["低カリウム血症.txt"], "hyponatremia": ["低ナトリウム血症.txt"], "adrenal_insufficiency": ["吐気嘔吐.txt", "好酸球性胃腸炎.txt", "妊娠悪阻.txt", "急性下痢.txt", "急性腹症.txt", "意識障害.txt", "慢性下痢.txt", "肝機能異常.txt", "腹痛.txt"], "heat_stroke": ["熱中症.txt", "高CK血症.txt"], "anaphylaxis": ["アナフィラキシー.txt", "ショック.txt", "急性下痢.txt"], "rhabdomyolysis": ["熱中症.txt", "高CK血症.txt"], "acs": ["ショック.txt", "労作性胸痛.txt", "吐気嘔吐.txt", "急性腹症.txt", "消化不良.txt", "胸痛.txt", "腹痛.txt", "高CK血症.txt"], "pneumonia_pleurisy": ["急性腹症.txt", "筋性防御.txt", "縦隔気腫.txt", "胸痛.txt", "腹痛.txt"], "pneumothorax": ["緊張性気胸.txt", "胸痛.txt"], "esophageal_perforation": ["マロリー・ワイス症候群.txt", "吐気嘔吐.txt", "吐血.txt", "妊娠悪阻.txt", "縦隔気腫.txt", "胸痛.txt", "食道穿孔・破裂.txt"], "herpes_zoster": ["下腹痛(婦人科).txt", "背部痛.txt", "胸痛.txt", "腹痛.txt"], "thyroid_storm": ["感染性腸炎.txt", "高カルシウム血症.txt"], "fmf": ["下腹痛(婦人科).txt", "潰瘍性大腸炎.txt", "筋性防御.txt"], "endometriosis_adenomyosis": ["下腹痛(婦人科).txt", "下血血便.txt", "性交痛.txt", "月経困難症月経痛.txt", "腸音異常.txt", "腹痛.txt", "虫垂炎.txt", "鼠径ヘルニア・大腿ヘルニア・腹壁ヘルニア.txt"], "ovarian_cyst_rupture_hemorrhage": ["上腸間膜動脈閉塞症・上腸間膜静脈血栓症.txt", "下腹痛(婦人科).txt", "下腹部腫瘤.txt", "急性腹症.txt", "腹痛.txt", "虫垂炎.txt"], "ovulation_pain": ["下腹痛(婦人科).txt", "虫垂炎.txt"], "tubo_ovarian_abscess": ["下腹痛(婦人科).txt", "下腹部腫瘤.txt", "外陰掻痒帯下増加.txt", "大腸憩室症.txt", "急性腹症.txt", "虫垂炎.txt"], "epididymitis": ["虫垂炎.txt"], "urinary_retention": ["前立腺癌.txt", "腎機能低下.txt", "腹部膨満・腹部腫瘤.txt"], "cholecystitis": ["吐気嘔吐.txt", "急性胆嚢炎.txt", "急性腹症.txt", "筋性防御.txt", "胆のう結石症.txt", "腹痛.txt"], "biliary_colic": ["消化不良.txt", "総胆管結石症.txt", "肝機能異常.txt", "胆のう結石症.txt", "胆嚢ポリープ・胆嚢腺筋腫症.txt", "腹痛.txt", "黄疸.txt"], "cholangitis": ["急性胆管炎.txt", "急性腹症.txt", "総胆管結石症.txt", "肝機能異常.txt", "肝機能異常（胆汁うっ滞）.txt", "黄疸.txt"], "pancreatitis": ["吐気嘔吐.txt", "急性胆管炎.txt", "急性腹症.txt", "急性膵炎.txt", "腹水貯留.txt", "腹痛.txt"], "pud_gastritis": ["ヘリコバクター・ピロリ感染症.txt", "下血血便.txt", "吐血.txt", "呑酸.txt", "急性胃炎・慢性胃炎.txt", "急性腹症.txt", "消化不良.txt", "胃・十二指腸潰瘍.txt"], "perforation": ["吐血.txt", "急性胆管炎.txt", "急性腹症.txt", "急性膵炎.txt", "筋性防御.txt", "胃・十二指腸潰瘍.txt", "腹痛.txt"], "ruptured_aaa": ["急性腹症.txt", "拍動性腫瘤.txt", "背部痛.txt", "腹痛.txt", "腹部膨満・腹部腫瘤.txt"], "aortic_dissection": ["ショック.txt", "吐気嘔吐.txt", "急性腹症.txt", "背部痛.txt", "腹痛.txt"], "ectopic_pregnancy": ["下腹痛(婦人科).txt", "下腹部腫瘤.txt", "急性腹症.txt", "月経困難症月経痛.txt", "筋性防御.txt", "腹痛.txt"], "ovarian_torsion": ["下腹痛(婦人科).txt", "下腹部腫瘤.txt", "急性腹症.txt", "月経困難症月経痛.txt"], "pid": ["下腹痛(婦人科).txt", "急性腹症.txt", "筋性防御.txt", "腹痛.txt"], "ureteral_stone": ["急性腹症.txt", "月経困難症月経痛.txt", "着色尿.txt", "背部痛.txt", "腹痛.txt"], "pyelonephritis": ["吐気嘔吐.txt", "急性腹症.txt", "筋性防御.txt", "背部痛.txt", "腹痛.txt"], "toxic_megacolon": ["下血血便.txt", "急性下痢.txt", "腹部膨満・腹部腫瘤.txt"], "testicular_torsion": ["腹痛.txt"], "sma_syndrome": ["吐気嘔吐.txt", "腹部膨満・腹部腫瘤.txt"], "nonspecific_ap": ["便秘症.txt", "急性腹症.txt", "腹痛.txt"], "dehydration": ["吐気嘔吐.txt", "妊娠悪阻.txt", "急性下痢.txt"], "gerd": ["GERD.txt", "下血血便.txt", "吐血.txt", "呑酸.txt", "消化不良.txt", "食道裂孔ヘルニア.txt"], "functional_dyspepsia": ["吐気嘔吐.txt", "急性胃炎・慢性胃炎.txt", "機能性ディスペプシア.txt", "消化不良.txt", "腹部膨満・腹部腫瘤.txt"], "gastric_cancer": ["下血血便.txt", "吐血.txt", "呑酸.txt", "機能性ディスペプシア.txt", "消化不良.txt", "胃・十二指腸潰瘍.txt", "胃癌.txt", "腹痛.txt", "腹部膨満・腹部腫瘤.txt"], "esophageal_cancer": ["吐血.txt", "呑酸.txt", "消化不良.txt", "食道癌.txt"], "mallory_weiss": ["マロリー・ワイス症候群.txt", "下血血便.txt", "吐気嘔吐.txt", "吐血.txt", "妊娠悪阻.txt"], "variceal_bleeding": ["下血血便.txt", "吐血.txt", "肝硬変.txt", "腹水貯留.txt", "腹部膨満・腹部腫瘤.txt", "門脈圧亢進.txt", "食道・胃静脈瘤.txt"], "gastric_outlet_obstruction": ["吐気嘔吐.txt", "腹部膨満・腹部腫瘤.txt"], "gastroparesis": ["吐気嘔吐.txt", "妊娠悪阻.txt", "消化不良.txt", "腹部膨満・腹部腫瘤.txt"], "achalasia": ["アカラシア.txt", "吐気嘔吐.txt", "呑酸.txt", "妊娠悪阻.txt"], "acute_hepatitis": ["吐気嘔吐.txt", "肝機能異常.txt", "肝機能異常（胆汁うっ滞）.txt", "肝腫大.txt", "腹痛.txt", "黄疸.txt"], "alcoholic_hepatitis": ["アルコール性肝障害.txt", "急性肝不全.txt", "肝機能異常.txt", "肝機能異常（胆汁うっ滞）.txt", "肝腫大.txt", "黄疸.txt"], "acute_liver_failure": ["A型肝炎.txt", "ウィルソン病.txt", "吐気嘔吐.txt", "急性肝不全.txt", "肝機能異常.txt", "肝機能異常（胆汁うっ滞）.txt", "腹水貯留.txt", "黄疸.txt"], "drug_induced_liver_injury": ["肝機能異常.txt", "肝機能異常（胆汁うっ滞）.txt", "肝腫大.txt", "薬物性肝障害.txt", "黄疸.txt"], "fatty_liver": ["肝機能異常.txt", "肝機能異常（胆汁うっ滞）.txt", "肝腫大.txt"], "decompensated_cirrhosis": ["肝硬変.txt", "肝腎症候群.txt", "肝腫大.txt", "脾腫.txt", "腹水貯留.txt", "腹部膨満・腹部腫瘤.txt", "門脈圧亢進.txt", "黄疸.txt"], "spontaneous_bacterial_peritonitis": ["筋性防御.txt", "肝硬変.txt", "肝腎症候群.txt", "腹水貯留.txt", "門脈圧亢進.txt"], "hcc_rupture": ["急性腹症.txt", "肝腫大.txt", "腹水貯留.txt", "腹部膨満・腹部腫瘤.txt"], "liver_abscess": ["急性胆嚢炎.txt", "急性胆管炎.txt", "肝機能異常.txt", "肝腫大.txt", "腹痛.txt", "薬物性肝障害.txt"], "budd_chiari": ["肝機能異常.txt", "肝腫大.txt", "腹水貯留.txt", "黄疸.txt"], "portal_vein_thrombosis": ["脾腫.txt", "腹水貯留.txt"], "pancreatic_cancer": ["慢性下痢.txt", "拍動性腫瘤.txt", "肝機能異常.txt", "肝機能異常（胆汁うっ滞）.txt", "背部痛.txt", "腹痛.txt", "腹部膨満・腹部腫瘤.txt", "膵嚢胞.txt", "膵癌(診断).txt", "膵管内乳頭粘液性腫瘍、粘液性嚢胞腫瘍.txt", "黄疸.txt"], "extrahepatic_cholangiocarcinoma": ["吐血.txt", "総胆管結石症.txt", "肝機能異常（胆汁うっ滞）.txt", "肝腫大.txt", "胆管癌（肝門部を含む）.txt", "胆管癌（遠位）.txt", "腹部膨満・腹部腫瘤.txt", "黄疸.txt"], "chronic_pancreatitis": ["吐血.txt", "慢性下痢.txt", "慢性膵炎.txt", "肝機能異常（胆汁うっ滞）.txt", "腹痛.txt", "膵嚢胞.txt"], "autoimmune_pancreatitis": ["IgG4関連硬化性胆管炎.txt", "肝機能異常（胆汁うっ滞）.txt", "自己免疫性膵炎.txt", "黄疸.txt"], "pbc": ["原発性胆汁性胆管炎.txt", "肝機能異常.txt", "肝機能異常（胆汁うっ滞）.txt", "肝腫大.txt", "黄疸.txt"], "hemolytic_anemia": ["着色尿.txt", "肝機能異常.txt", "脾腫.txt", "黄疸.txt"], "gilbert_syndrome": ["肝機能異常.txt", "黄疸.txt"], "infectious_mononucleosis": ["肝機能異常.txt", "肝腫大.txt", "脾腫.txt", "黄疸.txt"], "fitz_hugh_curtis": ["急性胆嚢炎.txt", "急性腹症.txt", "筋性防御.txt", "胆のう結石症.txt", "腹水貯留.txt", "腹痛.txt"], "hyperemesis_gravidarum": ["吐気嘔吐.txt", "妊娠悪阻.txt", "肝機能異常.txt"], "aflp_hellp": ["吐気嘔吐.txt", "妊娠悪阻.txt", "肝機能異常.txt"], "angiodysplasia": ["下血血便.txt", "便潜血.txt", "吐血.txt", "血便.txt"], "radiation_enteritis": ["下血血便.txt", "慢性下痢.txt", "血便.txt"], "chronic_constipation_impaction": ["便秘症.txt", "慢性下痢.txt", "腸音異常.txt", "腹痛.txt", "腹部膨満・腹部腫瘤.txt"], "strangulated_obstruction": ["吐気嘔吐.txt", "急性腹症.txt", "筋性防御.txt", "腹痛.txt", "腹部膨満・腹部腫瘤.txt"], "paralytic_ileus_pseudoobstruction": ["吐気嘔吐.txt", "急性腹症.txt", "腸音異常.txt", "腹部膨満・腹部腫瘤.txt"], "meckel_diverticulum": ["下血血便.txt", "筋性防御.txt"], "intestinal_tuberculosis_peritonitis": ["慢性下痢.txt", "筋性防御.txt", "肝腫大.txt", "腹水貯留.txt", "集団食中毒.txt"], "drug_induced_enterocolitis": ["下血血便.txt", "急性下痢.txt", "慢性下痢.txt", "血便.txt", "集団食中毒.txt"], "celiac_malabsorption": ["下腹痛(婦人科).txt", "急性下痢.txt", "慢性下痢.txt", "消化不良.txt", "肝機能異常.txt"], "bile_acid_diarrhea": ["慢性下痢.txt"], "parasitic_enteritis": ["下血血便.txt", "急性下痢.txt", "慢性下痢.txt", "消化不良.txt", "腸音異常.txt", "黄疸.txt"], "ehec_hus": ["急性下痢.txt", "慢性下痢.txt", "着色尿.txt", "集団食中毒.txt"], "toxin_food_poisoning": ["吐気嘔吐.txt", "急性下痢.txt", "集団食中毒.txt"], "typhoid_cholera_travel": ["急性下痢.txt", "脾腫.txt", "集団食中毒.txt"], "malaria_dengue": ["急性下痢.txt", "肝機能異常.txt", "脾腫.txt"], "vibrio_vulnificus": ["集団食中毒.txt"], "anorectal_cancer_prolapse": ["下血血便.txt", "便潜血.txt", "便秘症.txt", "直腸肛門部腫瘤.txt"], "pneumatosis_intestinalis": ["腹部膨満・腹部腫瘤.txt"], "psoas_intraabdominal_abscess": ["急性腹症.txt", "腹痛.txt"], "peritoneal_carcinomatosis": ["腹水貯留.txt", "腹部膨満・腹部腫瘤.txt"], "pd_peritonitis": ["筋性防御.txt"], "primary_dysmenorrhea": ["下腹痛(婦人科).txt", "月経困難症月経痛.txt", "腹痛.txt"], "uterine_fibroid": ["下腹痛(婦人科).txt", "下腹部腫瘤.txt", "妊娠悪阻.txt", "月経困難症月経痛.txt", "背部痛.txt", "腹部膨満・腹部腫瘤.txt", "過多月経.txt"], "ovarian_tumor": ["下腹痛(婦人科).txt", "下腹部腫瘤.txt", "背部痛.txt", "腹水貯留.txt", "腹痛.txt", "腹部膨満・腹部腫瘤.txt"], "miscarriage": ["下腹痛(婦人科).txt", "下腹部腫瘤.txt", "月経困難症月経痛.txt"], "molar_pregnancy": ["下腹痛(婦人科).txt", "妊娠悪阻.txt"], "placental_abruption_uterine_rupture": ["下腹痛(婦人科).txt"], "round_ligament_uterine_contraction": ["下腹痛(婦人科).txt"], "pms_pelvic_congestion": ["下腹痛(婦人科).txt", "月経困難症月経痛.txt"], "uterine_cancer_hematometra": ["下腹痛(婦人科).txt", "下腹部腫瘤.txt", "過多月経.txt"], "ohss": ["下腹痛(婦人科).txt", "腹水貯留.txt"], "cystitis": ["下腹痛(婦人科).txt", "急性腹症.txt", "腹痛.txt"], "polycystic_kidney_renal_mass": ["着色尿.txt", "肝腫大.txt", "腹部膨満・腹部腫瘤.txt"], "renal_infarction": ["背部痛.txt"], "splenic_infarct_rupture": ["急性腹症.txt", "筋性防御.txt", "肝機能異常.txt", "脾腫.txt", "腹痛.txt"], "visceral_aneurysm_rupture": ["吐血.txt", "急性腹症.txt", "拍動性腫瘤.txt", "筋性防御.txt"], "malas": ["腹痛.txt"], "uremia_renal_failure": ["吐気嘔吐.txt", "吐血.txt", "妊娠悪阻.txt", "急性下痢.txt", "急性腹症.txt", "腹水貯留.txt"], "acute_porphyria": ["下腹痛(婦人科).txt", "妊娠悪阻.txt", "急性腹症.txt", "着色尿.txt", "筋性防御.txt", "腹痛.txt"], "lead_poisoning": ["下腹痛(婦人科).txt", "急性腹症.txt", "筋性防御.txt", "腹痛.txt"], "sickle_cell_crisis": ["脾腫.txt", "腹痛.txt"], "sle_vasculitis_serositis": ["吐気嘔吐.txt", "吐血.txt", "慢性下痢.txt", "筋性防御.txt", "腹水貯留.txt"], "hyperthyroidism": ["吐気嘔吐.txt", "妊娠悪阻.txt", "急性下痢.txt", "慢性下痢.txt", "肝機能異常（胆汁うっ滞）.txt"], "hypothyroidism": ["便秘症.txt", "吐気嘔吐.txt", "肝機能異常（胆汁うっ滞）.txt", "腸音異常.txt", "腹水貯留.txt"], "neuroendocrine_tumor_hormonal": ["吐血.txt", "急性下痢.txt", "慢性下痢.txt", "腹痛.txt"], "opioid_withdrawal": ["急性腹症.txt"], "sepsis_nonabdominal": ["ショック.txt", "吐気嘔吐.txt", "急性下痢.txt", "急性腹症.txt", "肝機能異常.txt", "脾腫.txt"], "acute_hiv": ["急性下痢.txt", "慢性下痢.txt", "直腸肛門部腫瘤.txt", "肝機能異常.txt"], "hematologic_malignancy_hsm": ["吐血.txt", "肝腫大.txt", "背部痛.txt", "脾腫.txt", "腹水貯留.txt", "腹部膨満・腹部腫瘤.txt", "黄疸.txt"], "gvhd_vod": ["急性下痢.txt", "肝腫大.txt", "腹水貯留.txt", "黄疸.txt"], "amyloidosis_gi": ["吐気嘔吐.txt", "吐血.txt", "慢性下痢.txt", "肝腫大.txt", "黄疸.txt"], "pericarditis": ["ショック.txt", "腹痛.txt"], "pulmonary_embolism": ["ショック.txt", "妊娠悪阻.txt", "急性腹症.txt", "肝腫大.txt"], "heart_failure_congestive_hepatopathy": ["ショック.txt", "吐気嘔吐.txt", "肝機能異常.txt", "肝機能異常（胆汁うっ滞）.txt", "肝腫大.txt", "脾腫.txt", "腹水貯留.txt"], "intracranial_vomiting": ["吐気嘔吐.txt", "妊娠悪阻.txt"], "vestibular_migraine_vomiting": ["吐気嘔吐.txt", "妊娠悪阻.txt", "月経困難症月経痛.txt"], "acute_angle_closure_glaucoma": ["吐気嘔吐.txt"], "drug_toxicity_vomiting": ["吐気嘔吐.txt", "妊娠悪阻.txt"], "psychogenic_vomiting_eating_disorder": ["下腹痛(婦人科).txt", "便秘症.txt", "吐気嘔吐.txt", "呑酸.txt", "腹痛.txt"], "abdominal_wall_pain_acnes": ["下腹痛(婦人科).txt", "急性腹症.txt", "筋性防御.txt", "腹痛.txt"], "rectus_sheath_hematoma": ["急性腹症.txt"], "insect_spider_bite": ["急性腹症.txt", "腹痛.txt"], "tension_pneumothorax_esophageal": ["ショック.txt", "吐血.txt"], "spinal_infection_cauda": ["背部痛.txt"], "vertebral_fracture_metastasis": ["背部痛.txt"], "nonspecific_low_back_pain": ["背部痛.txt"], "gastric_anisakiasis": ["消化管内異物.txt", "胃アニサキス症.txt"], "postgastrectomy_syndrome": ["胃切除後症候群.txt"], "hiatal_hernia": ["GERD.txt", "食道裂孔ヘルニア.txt"], "eosinophilic_esophagitis": ["好酸球性食道炎.txt", "消化管内異物.txt", "食道穿孔・破裂.txt"], "infectious_esophagitis": ["感染性食道炎、潰瘍.txt"], "corrosive_esophagitis": ["腐食性食道炎、潰瘍.txt"], "gi_foreign_body": ["消化管内異物.txt"], "gastrinoma_zes": ["ガストリノーマ.txt", "胃・十二指腸の神経内分泌腫瘍（NEN）:カルチノイド.txt"], "gastric_malt_lymphoma": ["胃MALTリンパ腫.txt"], "gastric_smt_gist": ["胃・十二指腸の神経内分泌腫瘍（NEN）:カルチノイド.txt", "胃粘膜下腫瘍.txt"], "gastroduodenal_nen": ["胃・十二指腸の神経内分泌腫瘍（NEN）:カルチノイド.txt"], "gastric_polyp": ["胃ポリープ.txt"], "autoimmune_gastritis": ["急性胃炎・慢性胃炎.txt", "自己免疫性胃炎.txt"], "hepatolithiasis": ["肝内結石症.txt", "膵・胆管合流異常（先天性胆道拡張症を含む）.txt"], "pancreatic_pseudocyst_won": ["急性膵炎.txt", "膵嚢胞.txt"], "ipmn_mcn": ["膵嚢胞.txt", "膵管内乳頭粘液性腫瘍、粘液性嚢胞腫瘍.txt"], "pancreaticobiliary_maljunction": ["膵・胆管合流異常（先天性胆道拡張症を含む）.txt"], "gallbladder_cancer": ["急性胆嚢炎.txt", "胆嚢ポリープ・胆嚢腺筋腫症.txt", "膵・胆管合流異常（先天性胆道拡張症を含む）.txt"], "gallbladder_polyp": ["胆嚢ポリープ・胆嚢腺筋腫症.txt"], "hcc": ["肝癌(概要).txt", "肝良性腫瘍（肝血管腫、アデノーマ）.txt"], "intrahepatic_cholangiocarcinoma": ["肝内胆管癌、その他の原発性肝癌.txt"], "liver_metastases": ["転移性肝癌.txt"], "benign_liver_tumor": ["肝良性腫瘍（肝血管腫、アデノーマ）.txt"], "acute_viral_hepatitis": ["A型肝炎.txt", "B型肝炎（診断.txt", "C型肝炎.txt", "その他の肝炎（D、E、EBV、CMV）.txt"], "chronic_viral_hepatitis": ["B型肝炎（診断.txt", "C型肝炎.txt", "その他の肝炎（D、E、EBV、CMV）.txt"], "autoimmune_hepatitis": ["自己免疫性肝炎.txt", "薬物性肝障害.txt"], "nafld_nash": ["脂肪肝(NAFLD).txt", "非アルコール性脂肪肝炎(NASH).txt"], "acute_portal_vein_thrombosis": ["門脈圧亢進.txt"], "hepatorenal_syndrome": ["肝硬変.txt", "肝腎症候群.txt"], "psc": ["IgG4関連硬化性胆管炎.txt", "原発性硬化性胆管炎.txt"], "igg4_sclerosing_cholangitis": ["IgG4関連硬化性胆管炎.txt", "自己免疫性膵炎.txt"], "echinococcosis": ["エキノコックス症.txt"], "hemochromatosis": ["ヘモクロマトーシス.txt"], "wilson_disease": ["ウィルソン病.txt", "急性肝不全.txt"]};
   P.push({ id: 'abd_ext', label: '腹部症状 拡張パック', version: '0.1.0', source: '今日の臨床サポート（参照のみ・ドラフト値）' });
@@ -3559,7 +3600,8 @@ svg.body .rl{font-size:11px}
  *  単位・基準値: 国立がん研究センター中央病院 臨床検査科「検査基準値一覧」
  *   https://www.ncc.go.jp/jp/ncch/division/clinical_laboratory/kensa.pdf（2026-09-26 参照）
  *  Hb の低下閾値はオーナー指定（男 <13 / 女 <12）。乳酸・NT-proBNP は同表に無く一般的単位。
- *  map: null の項目は KB に対応 feature が無く、テキストとして入力欄に残す
+ *  map: null の項目は KB に対応 feature が無く、テキストとして入力欄に残す。map は {f, code, status?} かその配列を返す
+ *  異常の閾値は臨床的カットオフ（2026-09-27 オーナー指定: 低Na <135、高K >5.5、低K <3.5、高Ca >10.5、Plt <15）
  * ============================================================ */
 (function (g) {
   const DDX = g.DDX = g.DDX || {};
@@ -3571,7 +3613,7 @@ svg.body .rl{font-size:11px}
       { label: '血算', items: [
         L('wbc', 'WBC', '10³/μL', v => ({ f: 'wbc', code: v < 4000 ? 'lt4' : v <= 10000 ? '4_10' : v <= 15000 ? '10_15' : 'gt15' }), { hint: '基準 3.3～8.6。例 12.3（12300 と入れても可）', norm: v => v < 100 ? v * 1000 : v }),
         L('hb', 'Hb', 'g/dL', (v, ctx) => ({ f: 'hb', code: v < (male(ctx) ? 13 : 12) ? 'low' : 'normal' }), { hint: '低下: 男 <13 / 女 <12（基準 男 13.7～16.8 / 女 11.6～14.8。性別未設定は 12）' }),
-        L('plt', 'Plt', '10⁴/μL', null, { hint: '基準 15.8～34.8（記録のみ）' })
+        L('plt', 'Plt', '10⁴/μL', v => v < 15 ? { f: 'chronic_liver_labs', code: 'plt_low' } : { f: 'chronic_liver_labs', code: 'plt_low', status: 'absent' }, { hint: '減少: <15（臨床的定義 15万/μL）。基準 15.8～34.8。12.3 のように入力（123000 も可）', norm: v => v >= 1000 ? v / 10000 : v >= 100 ? v / 10 : v })
       ] },
       { label: '生化学', items: [
         L('crp', 'CRP', 'mg/dL', v => ({ f: 'crp', code: v < 1 ? 'lt1' : v <= 5 ? '1_5' : v <= 10 ? '5_10' : 'gt10' }), { hint: '基準 0.14 以下。区分 1 / 5 / 10' }),
@@ -3584,16 +3626,18 @@ svg.body .rl{font-size:11px}
         L('lip', 'リパーゼ', 'U/L', v => ({ f: 'lipase', code: v >= 165 ? 'ge3x' : v > 55 ? 'lt3x' : 'normal' }), { hint: '基準 13～55（3倍 = 165）' }),
         L('bun', 'BUN', 'mg/dL', v => ({ f: 'renal', code: v > 20 ? 'elevated' : 'normal' }), { hint: '基準 8～20' }),
         L('cre', 'Cre', 'mg/dL', (v, ctx) => ({ f: 'renal', code: v > (male(ctx) ? 1.07 : 0.79) ? 'elevated' : 'normal' }), { hint: '基準 男 0.65～1.07 / 女 0.46～0.79' }),
-        L('na', 'Na', 'mmol/L', null, { hint: '基準 138～145（記録のみ）' }), L('k', 'K', 'mmol/L', null, { hint: '基準 3.6～4.8（記録のみ）' }), L('cl', 'Cl', 'mmol/L', null, { hint: '基準 101～108（記録のみ）' }),
-        L('ca', 'Ca', 'mg/dL', null, { hint: '基準 8.8～10.1（記録のみ）' }), L('p', 'P（無機リン）', 'mg/dL', null, { hint: '基準 2.7～4.6（記録のみ）' }), L('mg', 'Mg', 'mg/dL', null, { hint: '基準 1.8～2.4（記録のみ）' }),
+        L('na', 'Na', 'mmol/L', v => ({ f: 'electrolyte', code: 'hypona', status: v < 135 ? 'present' : 'absent' }), { hint: '低Na: <135（臨床的定義）。基準 138～145' }),
+        L('k', 'K', 'mmol/L', v => [{ f: 'electrolyte', code: 'hyperk', status: v > 5.5 ? 'present' : 'absent' }, { f: 'electrolyte', code: 'hypok', status: v < 3.5 ? 'present' : 'absent' }], { hint: '高K: >5.5 / 低K: <3.5（臨床的定義）。基準 3.6～4.8' }),
+        L('cl', 'Cl', 'mmol/L', null, { hint: '基準 101～108（記録のみ）' }),
+        L('ca', 'Ca', 'mg/dL', v => ({ f: 'electrolyte', code: 'hyperca', status: v > 10.5 ? 'present' : 'absent' }), { hint: '高Ca: >10.5（臨床的定義。低Alb なら補正Ca を入力）。基準 8.8～10.1' }), L('p', 'P（無機リン）', 'mg/dL', null, { hint: '基準 2.7～4.6（記録のみ）' }), L('mg', 'Mg', 'mg/dL', null, { hint: '基準 1.8～2.4（記録のみ）' }),
         L('glu', '血糖', 'mg/dL', v => ({ f: 'glucose', code: v > 250 ? 'gt250' : 'normal' }), { hint: '基準 73～109（血清）。>250 で高血糖' }),
         L('lac', '乳酸', 'mmol/L', v => ({ f: 'lactate', code: v < 2 ? 'lt2' : v <= 4 ? '2_4' : 'gt4' }), { hint: '区分 2 / 4' }),
-        L('ck', 'CK', 'U/L', null, { hint: '基準 男 59～248 / 女 41～153（記録のみ）' }), L('ckmb', 'CK-MB', 'ng/mL', null, { hint: '基準 3.6 以下（記録のみ）' }),
-        L('ldh', 'LD', 'U/L', null, { hint: '基準 124～222（記録のみ）' }),
+        L('ck', 'CK', 'U/L', (v, ctx) => ({ f: 'ck', code: v > (male(ctx) ? 248 : 153) ? 'elevated' : 'normal' }), { hint: '上昇: 基準上限超（男 248 / 女 153）' }), L('ckmb', 'CK-MB', 'ng/mL', null, { hint: '基準 3.6 以下（記録のみ）' }),
+        L('ldh', 'LD', 'U/L', v => ({ f: 'ldh', code: v > 222 ? 'elevated' : 'normal' }), { hint: '上昇: >222（基準 124～222）' }),
         L('ddimer', 'D-dimer', 'μg/mL', v => ({ f: 'ddimer', code: v >= 1.0 ? 'elevated' : 'normal' }), { hint: '基準 1.0 未満' }),
         L('tni', 'トロポニンI', 'ng/mL', v => ({ f: 'troponin', code: v > 0.03 ? 'pos' : 'neg' }), { hint: '基準 0.03 以下（施設の hs 法では要調整）' }),
         L('bnp', 'BNP', 'pg/mL', null, { hint: '基準 18.4 以下（記録のみ）' }), L('ntprobnp', 'NT-proBNP', 'pg/mL', null, { hint: '記録のみ' }),
-        L('nh3', 'アンモニア', 'μg/dL', null, { hint: '基準 12～66（記録のみ）' })
+        L('nh3', 'アンモニア', 'μg/dL', v => ({ f: 'ammonia', code: v > 66 ? 'elevated' : 'normal' }), { hint: '上昇: >66（基準 12～66）' })
       ] },
       { label: '尿検査（一般）', items: [
         L('ua', '尿定性', '', null, { choice: [['normal', '正常（潜血− 白血球−）'], ['pyuria', '膿尿（白血球エステラーゼ＋）'], ['hematuria', '血尿（潜血＋）'], ['both', '膿尿＋血尿']], f: 'urinalysis' })
@@ -3602,6 +3646,39 @@ svg.body .rl{font-size:11px}
     byId: {}
   };
   for (const gr of DDX.LABS.groups) for (const it of gr.items) DDX.LABS.byId[it.id] = it;
+
+  /* 入力済みの検査値すべて → 所見のリスト（純粋関数）。
+     - 同じ項目に書く検査（AST/ALT、BUN/Cre、アミラーゼ/リパーゼ、ALP/γ-GTP）は最も異常な値を採る（後から入れた正常値で上書きしない）
+     - 複数選択の項目（電解質など）は値ごとに「あり/なし」
+     - AST と ALT が両方あり上昇していれば AST/ALT パターンを付ける
+     戻り値: [{ f, code, status, from: [検査ID…] }] */
+  DDX.LABS.resolve = function (values, ctx) {
+    const KB = DDX.KB, raw = [];
+    for (const id in values) {
+      const it = DDX.LABS.byId[id], v = values[id];
+      if (!it || !it.map || typeof v !== 'number') continue;
+      for (const x of [].concat(it.map(v, ctx || {}))) if (x && KB.feature[x.f]) raw.push({ f: x.f, code: x.code, status: x.status || 'present', from: id });
+    }
+    const groups = {};
+    for (const x of raw) { const multi = KB.feature[x.f].multi; const k = multi ? x.f + '|' + x.code : x.f; (groups[k] = groups[k] || []).push(x); }
+    const out = [];
+    for (const k in groups) {
+      const g = groups[k], f = KB.feature[g[0].f], from = [...new Set(g.map(x => x.from))];
+      if (f.multi) { out.push({ f: f.id, code: g[0].code, status: g.some(x => x.status === 'present') ? 'present' : 'absent', from }); continue; }
+      const idx = c => f.values.findIndex(v => v.code === c);
+      const worst = g.reduce((a, b) => idx(b.code) > idx(a.code) ? b : a);
+      out.push({ f: f.id, code: worst.code, status: 'present', from });
+    }
+    const ast = values.ast, alt = values.alt;
+    if (typeof ast === 'number' && typeof alt === 'number' && KB.feature.ast_alt_pattern) {
+      const altUln = ctx && ctx.sex === 'male' ? 42 : 23;
+      let code = null;
+      if (Math.max(ast, alt) > 1000) code = 'gt1000';
+      else if (ast > 30 || alt > altUln) code = alt > ast ? 'alt_dominant' : ast > alt ? 'ast_dominant' : null;
+      if (code) out.push({ f: 'ast_alt_pattern', code, status: 'present', from: ['ast', 'alt'] });
+    }
+    return out;
+  };
 })(typeof window !== 'undefined' ? window : globalThis);
 
 </script>
@@ -3620,7 +3697,7 @@ svg.body .rl{font-size:11px}
   class ClinicalState {
     constructor(init) {
       this.case_token = (init && init.case_token) || token();
-      this.context = Object.assign({ age_band: null, sex: null, setting: 'emergency', pregnancy: 'unknown', trauma: 'no' }, init && init.context);
+      this.context = Object.assign({ age_band: null, sex: null, setting: 'emergency', pregnancy: 'unknown', preg_stage: null, trauma: 'no' }, init && init.context);
       this.observations = []; // all, including superseded
       this.deferred = {};     // feature_id -> true (「後で」)
       this.created_at = (init && init.created_at) || Date.now();
@@ -3699,6 +3776,7 @@ svg.body .rl{font-size:11px}
           out.push(best);
         }
       }
+      derive(out, this.context, this.created_at);
       return out.sort((a, b) => a.entered_seq - b.entered_seq);
     }
     superseded() {
@@ -3754,6 +3832,32 @@ svg.body .rl{font-size:11px}
     hash() { let h = 0, s = this.canonical(); for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0; return (h >>> 0).toString(16); }
     toJSON() { return { case_token: this.case_token, context: this.context, observations: this.observations, deferred: this.deferred, created_at: this.created_at, kb_version: KB().version }; }
     static fromJSON(j) { const s = new ClinicalState({ case_token: j.case_token, context: j.context, created_at: j.created_at }); for (const o of j.observations || []) s.observations.push(ClinicalState.normalize(o)); s.deferred = j.deferred || {}; return s; }
+  }
+  /* 自動導出: 一方の入力から他方の項目を立てる（利用者が直接入力した項目があればそちらを優先し、導出しない）。
+     重複項目の統合（docs/feature_dedup_candidates.md 4章）で、疾患側は導出先だけを参照するようにしてある */
+  const DERIVE = [
+    { from: 'diabetes_new_worsening', to: 'diabetes', why: '糖尿病の新規発症/悪化' },
+    { from: 'diabetes', to: 'cv_risk', why: '糖尿病' },
+    { from: 'ecg', values: ['af'], to: 'af_vascular', why: '心電図で心房細動' },
+    { from: 'hernia_irreducible', to: 'groin_bulge', why: '還納不能ヘルニア' }
+  ];
+  function derive(out, ctx, t0) {
+    const kb = KB(); const has = fid => out.some(o => o.feature_id === fid);
+    const push = (fid, status, value, src, why) => {
+      if (!kb.feature[fid] || has(fid)) return;
+      const o = ClinicalState.normalize({ obs_id: 'drv-' + fid, feature_id: fid, status, value_code: value || null, source: 'derived', note: '自動: ' + why,
+        time_context: src ? src.time_context : { elapsed_bucket: null }, entered_seq: src ? src.entered_seq : 0, entered_at: src ? src.entered_at : t0 });
+      o.derived = true; out.push(o);
+    };
+    for (const r of DERIVE) {
+      const src = out.find(o => o.feature_id === r.from && o.status === 'present' && (!r.values || r.values.includes(o.value_code)));
+      if (src) push(r.to, 'present', null, src, r.why);
+    }
+    // 妊娠: 文脈の妊娠時期 → 妊娠状態。男性・妊娠可能性なしなら「妊娠状態 なし」
+    if (ctx) {
+      if (ctx.preg_stage) push('pregnancy_status', 'present', ctx.preg_stage, null, '妊娠時期の設定');
+      else if (ctx.sex === 'male' || ctx.pregnancy === 'no') push('pregnancy_status', 'absent', null, null, ctx.sex === 'male' ? '男性' : '妊娠可能性なし');
+    }
   }
   function sevRank(s) { return s === 'severe' ? 3 : s === 'moderate' ? 2 : s === 'mild' ? 1 : 0; }
   // a is newer than b ?
@@ -4005,7 +4109,7 @@ svg.body .rl{font-size:11px}
   function H(p) { let h = 0; for (const x of p) if (x > 0) h -= x * Math.log(x); return h; }
   function ageIdx(b) { const i = KB().ageIndex[b]; return i === undefined ? null : i; }
   function featureApplicable(f, ctx) {
-    const femaleOnly = ['adnexal_tender', 'hcg', 'lmp_delayed', 'vaginal_bleeding'];
+    const femaleOnly = ['adnexal_tender', 'hcg', 'lmp_delayed', 'vaginal_bleeding', 'pregnancy_status', 'menstrual_relation', 'vaginal_discharge'];
     const maleOnly = ['scrotal_exam', 'scrotal_pain'];
     if (ctx.sex === 'male' && femaleOnly.includes(f.id)) return false;
     if (ctx.sex === 'female' && maleOnly.includes(f.id)) return false;
@@ -4342,6 +4446,9 @@ svg.body .rl{font-size:11px}
 - 画像所見は modality の feature（xray / us / ct）に、所見ごとに value_code を1つずつ付けて複数項目にする（例: 「CTで虫垂腫大」→ ct appendicitis、「CTで小腸拡張とニボー」→ ct sbo、「エコーで胆嚢壁肥厚」→ us gb、「CTで上腸間膜動脈の造影欠損」→ ct ischemia、「CTで尿管結石」→ ct stone、「CTで異常なし」→ ct normal）。
 - 「free air なし」「虫垂腫大は指摘できず」のような否定の画像所見は項目として出さない（画像全体が正常なら normal を1つ）。該当コードの無い画像所見（腹水、リンパ節腫大など）は unmapped に入れる。
 - 画像で偶発的に見つかった胆石は gallstone_hx（胆石あり）にする。
+- 肝胆膵・脾・腎梗塞・腹水・腸重積・腸管壁肥厚などの CT 所見も ct の値にする。MRI/MRCP の同じ所見も ct に入れる（例: 「MRCPで総胆管拡張」→ ct biliary_dilation、「CTで門脈血栓」→ ct pvt、「CTで腹水」→ ct ascites）。身体診察の腹水（波動・濁音界移動）だけが ascites_exam。
+- 画像の「肝硬変像」を既往（cirrhosis_hx）にしない。圧痛だけの記載を腹痛（abd_pain）にしない。「無痛性」「痛みを伴わない」は abd_pain を absent にする。
+- 妊娠週数は pregnancy_status（14週未満 first_tri、それ以降 late）。免疫チェックポイント阻害薬（ニボルマブ等）の使用は ici_use。
 - 年齢帯・性別・妊娠可能性が読み取れれば context に入れる。個人を特定する情報は出力しない。
 - 各項目には根拠となった短い引用(quote)を付ける。
 
@@ -4427,28 +4534,28 @@ ${catalogText()}`;
     ['dysuria', '排尿時痛|排尿痛|頻尿|残尿感', null], ['vaginal_bleeding', '不正(性器)?出血|性器出血', null], ['jaundice_sub', '黄疸|眼球黄染', null], ['weight_loss', '体重(減少|が減)', null],
     ['chest_sx', '胸痛|胸が苦しい|呼吸苦|息切れ|冷汗', null], ['syncope', '失神|気を失|前失神|意識消失', null], ['sick_contact_food', '周囲に同(様|じ)症状|家族も|食中毒|生もの|生肉|生牡蠣|生ガキ', null], ['scrotal_pain', '陰嚢(の)?痛|精巣(の)?痛|睾丸', null],
     ['pain_onset_char', '突然|急に|突発', 'sudden'], ['pain_onset_char', '徐々に|だんだん|次第に', 'gradual'],
-    ['pain_char', '食後(に|の)?(痛|増悪|悪化)|食事(で|後)(痛|増悪)', 'postprandial'], ['pain_char', '疝痛|波がある|間欠的|差し込む', 'colicky'], ['pain_char', '持続(性|的)(の)?痛|ずっと痛', 'constant'], ['pain_char', '臍(周囲)?から右下|移動', 'migrating_rlq'], ['pain_char', '背中に(放散|抜け)|背部(へ|に)放散|背部痛を伴', 'radiate_back'], ['pain_char', '肩に(放散|抜け)', 'radiate_shoulder'], ['pain_char', '鼠径(部)?に(放散|抜け)|陰部に放散', 'radiate_groin'],
+    ['pain_char', '食後(に|の)?(痛|増悪|悪化)|食事(で|後)(痛|増悪)', 'postprandial'], ['pain_char', '疝痛|波がある|間欠的|差し込む', 'colicky'], ['pain_char', '持続(性|的)(の)?痛|ずっと痛', 'constant'], ['pain_char', '(臍(周囲)?|心窩部|みぞおち|上腹部)から右下|右下腹部(へ|に)移動|痛み(が|の)?移動|移動性(の)?(痛|疼痛)', 'migrating_rlq'], ['pain_char', '背中(に|へ)(放散|抜け)|背部(へ|に)放散|背部痛を伴', 'radiate_back'], ['pain_char', '肩(甲部)?(に|へ)(放散|抜け)', 'radiate_shoulder'], ['pain_char', '鼠径(部)?(に|へ)(放散|抜け)|陰部(に|へ)放散', 'radiate_groin'],
     ['pain_worse_moving', '体動で(増悪|悪化)|動くと痛|振動で痛|歩くと痛|咳で痛', null],
     ['lmp_delayed', '月経(が)?(遅れ|遅延)|生理が(遅れ|来て)', null], ['prior_abd_surgery', '開腹|腹部手術|手術歴|(虫垂|胆嚢|胃|大腸|子宮)(切除|摘出)|帝王切開', null], ['alcohol_heavy', '大酒|多量飲酒|アルコール(多飲|依存)|毎日飲酒|飲酒歴', null],
     ['nsaid_aspirin', 'NSAID|ロキソ|ロキソニン|イブプロフェン|ボルタレン|アスピリン|バファリン|鎮痛薬', null], ['anticoag', '抗凝固|ワーファリン|ワルファリン|DOAC|エリキュース|イグザレルト|リクシアナ|プラザキサ|抗血小板|クロピドグレル', null],
     ['recent_abx', '抗菌薬|抗生剤|抗生物質', null], ['hospitalized_recent', '最近(の)?入院|入院歴|施設入所|退院後', null], ['travel', '海外渡航|渡航歴|旅行から', null],
     ['af_vascular', '心房細動|AF|Af|動脈硬化|閉塞性動脈|心筋梗塞の既往|脳梗塞の既往', null], ['cv_risk', '高血圧|脂質異常|高脂血症|喫煙|タバコ', null], ['diabetes', '糖尿病|DM|インスリン', null],
-    ['immunosupp', 'ステロイド|免疫抑制|化学療法|抗がん剤|化療', null], ['gallstone_hx', '胆石', null], ['ibd_hx', '潰瘍性大腸炎|クローン|IBD', null], ['divertic_hx', '憩室.{0,4}(既往|歴)|憩室症', null], ['pud_hx', '(胃|十二指腸)潰瘍(の)?(既往|歴)|潰瘍歴', null], ['hernia_hx', 'ヘルニア(の)?既往|ヘルニア歴|脱腸', null], ['similar_episodes', '以前(に)?も同(様|じ)|同様の発作|繰り返し', null],
-    ['rebound_guarding', '反跳痛|Blumberg|ブルンベルグ|筋性防御|腹膜刺激', null], ['rigidity', '板状硬', null], ['tender_rlq', 'McBurney|マックバーニー|右下腹部(の)?圧痛', null], ['tender_ruq', '右上腹部(の)?圧痛|右季肋部(の)?圧痛', null], ['murphy', 'Murphy|マーフィー', null],
-    ['tender_llq', '左下腹部(の)?圧痛', null], ['tender_epi', '心窩部(の)?圧痛|(?<![右左])上腹部(の)?圧痛', null], ['distension', '腹部膨満|膨隆|お腹が張', null],
+    ['immunosupp', 'ステロイド|免疫抑制|化学療法|抗がん剤|化療', null], ['gallstone_hx', '胆石', null], ['ibd_hx', '潰瘍性大腸炎|クローン|Crohn|IBD|炎症性腸疾患', null], ['divertic_hx', '憩室.{0,4}(既往|歴)|憩室症', null], ['pud_hx', '(胃|十二指腸)潰瘍(の)?(既往|歴)|潰瘍歴', null], ['hernia_hx', 'ヘルニア(の)?既往|ヘルニア歴|脱腸', null], ['similar_episodes', '以前(に)?も同(様|じ)|同様の発作|繰り返し', null],
+    ['rebound_guarding', '反跳痛|Blumberg|ブルンベルグ|筋性防御|腹膜刺激', null], ['rigidity', '板状硬', null], ['tender_rlq', 'McBurney|マックバーニー|右下腹部(の|に)?圧痛', null], ['tender_ruq', '右上腹部(の|に)?圧痛|右季肋部(の|に)?圧痛', null], ['murphy', 'Murphy|マーフィー', null],
+    ['tender_llq', '左下腹部(の|に)?圧痛', null], ['tender_epi', '心窩部(の|に)?圧痛|(?<![右左])上腹部(の|に)?圧痛', null], ['distension', '腹部膨満|(?<!(腹壁|鼠径|大腿|臍)部?(の)?)膨隆|お腹が張', null],
     ['bowel_sounds', '腸(蠕動)?音(の)?亢進|金属音', 'hyper'], ['bowel_sounds', '腸(蠕動)?音(の)?(減弱|低下)', 'hypo'], ['bowel_sounds', '腸(蠕動)?音(の)?消失', 'absent'], ['bowel_sounds', '腸(蠕動)?音(は)?正常', 'normal'],
-    ['cva_tender', 'CVA|肋骨脊柱角|叩打痛', null], ['pulsatile_mass', '拍動性(の)?腫瘤|拍動する', null], ['hernia_irreducible', '還納(不能|できない)|嵌頓', null], ['pain_disproportion', '所見に比して|所見に乏しい(のに|が)|痛みが強い割に', null],
+    ['cva_tender', 'CVA|肋骨脊柱角|(?<!肝(臓)?(の)?)叩打痛', null], ['pulsatile_mass', '拍動性(の)?腫瘤|拍動する', null], ['hernia_irreducible', '還納(不能|できない)|嵌頓', null], ['pain_disproportion', '所見に比して|所見に乏しい(のに|が)|痛みが強い割に', null],
     ['psoas_obturator', 'psoas|腸腰筋徴候|閉鎖筋徴候|obturator', null], ['dehydration_signs', '脱水|口腔(内)?乾燥|ツルゴール|皮膚の張り', null], ['rectal_blood', '直腸診で(血|出血)|直腸診.*血', null], ['adnexal_tender', '付属器(の)?圧痛|子宮頸部移動痛|CMT', null],
     ['scrotal_exam', '陰嚢(の)?(腫脹|圧痛|腫大)|精巣(の)?(腫脹|圧痛)', 'tender_swollen'],
     // 神経症状（拡張項目 neuro_sx）: 値ごとに明示ルール
     ['neuro_sx', '末梢神経障害|ニューロパチー|多発(性)?(単)?神経炎|(四肢|手足|両手|両足|手|足)(の|に)?(しびれ|痺れ)|しびれ|痺れ|知覚(障害|鈍麻)|感覚(障害|鈍麻)|筋力低下|脱力|下垂足|手袋靴下|(四肢|手|足|下肢|上肢)(の)?麻痺', 'paresthesia_weakness'],
-    ['neuro_sx', '頭痛|項部硬直|髄膜刺激', 'headache'], ['neuro_sx', '錯乱|失調|眼球運動障害|眼振|(意識|認知)(の)?変容', 'confusion_ataxia'],
+    ['neuro_sx', '頭痛|項部硬直|髄膜刺激', 'headache'], ['neuro_sx', '錯乱|失調|眼球運動障害|眼振', 'confusion_ataxia'],
     ['neuro_sx', 'めまい|眩暈|回転性', 'vertigo'], ['neuro_sx', '眼痛|視力(低下|障害)|霧視|かすみ|視野', 'eye_pain_visual'], ['neuro_sx', '局所神経|片麻痺|構音障害|失語|顔面麻痺', 'focal_deficit'], ['neuro_sx', '神経(学的)?(症状|所見|異常|脱落)', null],
  ['skin_pallor_cold', '末梢冷感|冷感|蒼白|顔色不良', null], ['consciousness', '意識(障害|レベル低下|混濁|変容)|JCS|GCS\\s*1[0-4]|傾眠|せん妄', 'altered'], ['consciousness', '意識(清明|は清明|レベル清明)', 'alert'],
     ['hcg', '(妊娠反応|hCG|HCG)\\s*(陽性|\\(\\+\\)|（\\+）|\\+)', 'pos'], ['hcg', '(妊娠反応|hCG|HCG)\\s*(陰性|\\(-\\)|（-）|-)', 'neg'],
-    ['urinalysis', '(血尿|潜血).*(膿尿|白血球)|(膿尿|白血球).*(血尿|潜血)', 'both'], ['urinalysis', '血尿|潜血', 'hematuria'], ['urinalysis', '膿尿|尿中白血球|尿WBC', 'pyuria'], ['urinalysis', '尿(検査|所見)(は)?正常|尿所見なし', 'normal'],
+    ['urinalysis', '(血尿|(?<!便)潜血).*(膿尿|白血球)|(膿尿|白血球).*(血尿|(?<!便)潜血)', 'both'], ['urinalysis', '血尿|(?<!便)潜血', 'hematuria'], ['urinalysis', '膿尿|尿中白血球|尿WBC', 'pyuria'], ['urinalysis', '尿(検査|所見)(は)?正常|尿所見なし', 'normal'],
     ['troponin', 'トロポニン\\s*(陽性|上昇|\\+)', 'pos'], ['troponin', 'トロポニン\\s*(陰性|正常|-)', 'neg'], ['ecg', '(心電図|ECG).*(ST|虚血|T波)', 'ischemic'], ['ecg', '(心電図|ECG).*(心房細動|AF|Af)', 'af'], ['ecg', '(心電図|ECG)(は|に)?(正常|異常なし)', 'normal'],
-    ['lipase', '(リパーゼ|アミラーゼ).*(3倍|著明|高値|上昇)', 'ge3x'], ['lipase', '(リパーゼ|アミラーゼ).*(軽度上昇|やや高)', 'lt3x'], ['lipase', '(リパーゼ|アミラーゼ).*(正常|基準内)', 'normal'],
+    ['lipase', '(?<!(腹水|穿刺液|ドレーン|排液)[^。]{0,8})(リパーゼ|アミラーゼ).*(3倍|著明|高値|上昇)', 'ge3x'], ['lipase', '(?<!(腹水|穿刺液|ドレーン|排液)[^。]{0,8})(リパーゼ|アミラーゼ).*(軽度上昇|やや高)', 'lt3x'], ['lipase', '(?<!(腹水|穿刺液|ドレーン|排液)[^。]{0,8})(リパーゼ|アミラーゼ).*(正常|基準内)', 'normal'],
     ['liver_enz', '(AST|ALT|肝酵素|トランスアミナーゼ).*(上昇|高値)', 'elevated'], ['liver_enz', '(AST|ALT|肝酵素).*(正常|基準内)', 'normal'], ['bili', '(ビリルビン|T-?Bil).*(上昇|高値)', 'elevated'], ['bili', '(ビリルビン|T-?Bil).*(正常|基準内)', 'normal'],
     ['alp_ggt', '(ALP|γ-?GTP|GGT).*(上昇|高値)', 'elevated'], ['renal', '(Cre|クレアチニン|BUN|腎機能).*(上昇|高値|悪化|障害)', 'elevated'], ['hb', '(Hb|ヘモグロビン|貧血).*(低下|進行)|貧血あり|貧血', 'low'],
     ['acidosis', '代謝性アシドーシス|アシドーシス', 'metabolic'], ['ddimer', 'D-?ダイマー\\s*(上昇|高値|陽性)', 'elevated'], ['ddimer', 'D-?ダイマー\\s*(正常|陰性)', 'normal'],
@@ -4457,10 +4564,46 @@ ${catalogText()}`;
     ['us', '(エコー|超音波|US).*(虫垂(腫大|腫脹)|虫垂炎)', 'appendix'], ['us', '(エコー|超音波|US).*(胆嚢(壁)?肥厚|胆嚢腫大|胆嚢結石|sonographic)', 'gb'], ['us', '(エコー|超音波|US).*(総胆管拡張|胆管拡張)', 'cbd_dilated'], ['us', '(エコー|超音波|US).*(腹水|液体貯留|ダグラス窩)', 'free_fluid'], ['us', '(エコー|超音波|US).*水腎', 'hydro'], ['us', '(エコー|超音波|US).*(大動脈瘤|AAA)', 'aaa'], ['us', '(エコー|超音波|US).*(付属器|卵巣)(腫大|腫瘤)', 'adnexal'], ['us', '(エコー|超音波|US)(は|で)(異常なし|正常)', 'normal'],
     ['ct', 'CT.*虫垂', 'appendicitis'], ['ct', 'CT.*憩室炎', 'diverticulitis'], ['ct', 'CT.*(free ?air|遊離ガス|フリーエア|腹腔内(遊離)?ガス)', 'free_air'],
     ['ct', 'CT.*(腸閉塞|イレウス|SBO|閉塞起点|(小腸|腸管)(の)?拡張|ニボー|鏡面像|niveau)', 'sbo'],
-    ['ct', 'CT.*(上腸間膜動脈症候群|SMA症候群|十二指腸(の)?(圧排|狭窄|通過障害)|大動脈.{0,6}上腸間膜動脈.{0,6}角)', 'duodenal_compression'], ['ct', '(?![^。]*(症候群|十二指腸|の角|角狭小|角が))CT.*(腸管虚血|壁造影不良|造影不良|造影欠損|SMA|上腸間膜動脈|腸間膜動脈|門脈ガス|腸管気腫|血栓)', 'ischemia'], ['ct', 'CT.*膵(炎|腫大|周囲)', 'pancreatitis'], ['ct', 'CT.*(大動脈瘤|解離|AAA|フラップ)', 'aortic'],
-    ['ct', 'CT.*(尿管結石|尿路結石|腎結石|(?<![胆嚢胆])結石)', 'stone'], ['ct', 'CT.*(大腸炎|腸炎|(結腸|大腸|腸管)(の)?壁肥厚)', 'colitis'], ['ct', 'CT.*(胆嚢炎|胆管炎|胆嚢壁肥厚|胆嚢周囲)', 'cholecystitis'], ['ct', 'CT.*膿瘍', 'abscess'], ['ct', 'CT.*(嵌頓|ヘルニア)', 'hernia'], ['ct', 'CT.*(付属器|卵巣)', 'adnexal'], ['ct', 'CT.*(軸捻|捻転)', 'volvulus'],
+    ['ct', 'CT.*(上腸間膜動脈症候群|SMA症候群|十二指腸(の)?(圧排|狭窄|通過障害)|大動脈.{0,6}上腸間膜動脈.{0,6}角)', 'duodenal_compression'], ['ct', '(?![^。]*(症候群|十二指腸|の角|角狭小|角が))CT.*(腸管虚血|壁造影不良|造影不良|造影欠損|SMA|上腸間膜動脈|腸間膜動脈|門脈ガス|腸管気腫|(?<!(門脈|静脈|SMV)(内)?(の)?)血栓)', 'ischemia'], ['ct', 'CT.*膵(炎|腫大|周囲)', 'pancreatitis'], ['ct', 'CT.*(大動脈瘤|解離|AAA|フラップ)', 'aortic'],
+    ['ct', 'CT.*(尿管結石|尿路結石|腎結石|(?<![胆嚢胆])結石)', 'stone'], ['ct', 'CT.*(大腸炎|腸炎|(大腸|結腸|S状結腸|直腸|盲腸|上行結腸|横行結腸|下行結腸)[^。]{0,6}壁(の)?肥厚)', 'colitis'], ['ct', 'CT.*(胆嚢炎|胆管炎|胆嚢壁肥厚|胆嚢周囲)', 'cholecystitis'], ['ct', 'CT.*膿瘍', 'abscess'], ['ct', 'CT.*(嵌頓|(?<!内)ヘルニア)', 'hernia'], ['ct', 'CT.*(付属器|卵巣)', 'adnexal'], ['ct', 'CT.*(軸捻|捻転)', 'volvulus'],
     ['ct', 'CT(は|で|では|上|:|：)?\\s*(明らかな)?(異常なし|異常所見なし|正常|特記所見なし|特記すべき所見なし|有意な所見なし)', 'normal'],
-    ['gallstone_hx', '(CT|エコー|超音波|US).*(胆嚢結石|胆石)', null]
+    ['gallstone_hx', '(CT|エコー|超音波|US).*(胆嚢結石|胆石)', null],
+    // 腹部CT（ct_other / ct_wall_mass / 肝胆膵画像を集約した値。MRI/MRCP の同じ所見もここ）
+    ['ct', '(CT|ＣＴ|MRI|MRCP)[^。]*((肝|肝臓)(内)?(の)?(腫瘤|腫瘍|SOL|占拠性病変|結節)|肝(転移|細胞癌)|HCC)', 'liver_mass'],
+    ['ct', '(CT|ＣＴ|MRI|MRCP)[^。]*(脂肪肝|肝(の)?脂肪(沈着|化))', 'fatty_liver'],
+    ['ct', '(CT|ＣＴ|MRI|MRCP)[^。]*(肝硬変|肝(表面|辺縁)(の)?(凹凸|不整|鈍)|肝(の)?萎縮)', 'cirrhotic_liver'],
+    ['ct', '(CT|ＣＴ|MRI|MRCP)[^。]*((肝内|肝外|総)?胆管(の)?(拡張|狭窄))', 'biliary_dilation'],
+    ['ct', '(CT|ＣＴ|MRI|MRCP)[^。]*(胆嚢(の)?壁(の)?肥厚|胆嚢(の)?(腫瘤|腫瘍|隆起))', 'gb_wall_thick'],
+    ['ct', '(CT|ＣＴ|MRI|MRCP)[^。]*(膵(臓)?(の)?(腫瘤|腫瘍|癌|低吸収)|(主)?膵管(の)?拡張)', 'pancreatic_mass'],
+    ['ct', '(CT|ＣＴ|MRI|MRCP)[^。]*(膵(の)?嚢胞|IPMN|嚢胞性膵)', 'pancreatic_cyst'],
+    ['ct', '(CT|ＣＴ|MRI|MRCP)[^。]*(びまん性(の)?膵腫大|ソーセージ様|capsule-like)', 'diffuse_pancreas_swelling'],
+    ['ct', '(CT|ＣＴ|MRI|MRCP)[^。]*(膵(石|石灰化)|膵管(の)?不整)', 'chronic_pancreatitis'],
+    ['ct', '(CT|ＣＴ|MRI|MRCP)[^。]*(門脈(内)?(の)?(血栓|閉塞)|(上)?腸間膜静脈(内)?(の)?血栓|SMV(内)?(の)?血栓)', 'pvt'],
+    ['ct', '(CT|ＣＴ|MRI|MRCP)[^。]*(腹水|腹腔内(の)?液体貯留)', 'ascites'],
+    ['ct', '(CT|ＣＴ|MRI|MRCP)[^。]*(胃(の)?壁(の)?肥厚|胃壁肥厚)', 'gastric_wall_thick'],
+    ['ct', '(CT|ＣＴ|MRI|MRCP)[^。]*(脾梗塞)', 'splenic_infarct'],
+    ['ct', '(CT|ＣＴ|MRI|MRCP)[^。]*(脾(臓)?(の)?(破裂|損傷)|脾動脈瘤破裂)', 'splenic_rupture'],
+    ['ct', '(CT|ＣＴ|MRI|MRCP)[^。]*(肝脾腫|脾腫|肝腫大)', 'hepatosplenomegaly'],
+    ['ct', '(CT|ＣＴ|MRI|MRCP)[^。]*(腎梗塞|腎(の)?楔状(の)?造影不良)', 'renal_infarct'],
+    ['ct', '(CT|ＣＴ|MRI|MRCP)[^。]*((後腹膜|腹腔内|腸間膜)(の)?(腫瘤|腫瘍))', 'retro_mass'],
+    ['ct', '(CT|ＣＴ|MRI|MRCP)[^。]*(腸管(壁)?(内)?気腫|腸管壁内(の)?ガス|pneumatosis)', 'pneumatosis'],
+    ['ct', '(CT|ＣＴ|MRI|MRCP)[^。]*(腸腰筋(の)?(膿瘍|腫大))', 'psoas_abscess'],
+    ['ct', '(CT|ＣＴ|MRI|MRCP)[^。]*(腹直筋鞘(内)?血腫|腹壁(の)?血腫)', 'wall_hematoma'],
+    ['ct', '(CT|ＣＴ|MRI|MRCP)[^。]*((腸)?重積|target sign|ターゲットサイン)', 'intussusception'],
+    ['ct', '(CT|ＣＴ|MRI|MRCP)[^。]*((腸管|小腸|大腸|結腸|S状結腸|直腸|盲腸|上行結腸|横行結腸|下行結腸)[^。]{0,6}壁(の)?肥厚|腸管壁肥厚)', 'wall_thick'],
+    ['ct', '(CT|ＣＴ|MRI|MRCP)[^。]*((腸管|小腸|大腸|結腸|S状結腸|直腸|盲腸)[^。]{0,6}(腫瘤|腫瘍|全周性(の)?(壁肥厚|狭窄)|apple core))', 'bowel_mass'],
+    ['ct', '(CT|ＣＴ|MRI|MRCP)[^。]*(内ヘルニア|傍十二指腸|網嚢孔|closed ?loop|クローズドループ|beak sign)', 'internal_hernia'],
+    // 検査（拡張項目。明示ルールのみで抽出）
+    ['fobt', '便潜血(反応)?\\s*(検査)?\\s*(は|で)?\\s*(陽性|\\(\\+\\)|（\\+）|\\+)', 'pos'], ['fobt', '便潜血(反応)?\\s*(検査)?\\s*(は|で)?\\s*(陰性|\\(-\\)|（-）|-)', 'neg'],
+    ['electrolyte', '低Na|低ナトリウム', 'hypona'], ['electrolyte', '高K(?![A-Za-z])|高カリウム', 'hyperk'], ['electrolyte', '低K(?![A-Za-z])|低カリウム', 'hypok'], ['electrolyte', '高Ca|高カルシウム', 'hyperca'],
+    ['ck', '(?<![A-Za-z])(CK|CPK)(?!-?MB)\\s*(の)?(上昇|高値)', 'elevated'], ['ck', '(?<![A-Za-z])(CK|CPK)(?!-?MB)\\s*(は)?(正常|基準内)', 'normal'],
+    ['ldh', '(?<![A-Za-z])(LDH?|乳酸脱水素酵素)\\s*(の)?(上昇|高値)', 'elevated'], ['ldh', '(?<![A-Za-z])LDH?\\s*(は)?(正常|基準内)', 'normal'],
+    ['sil2r', '(sIL-?2R|可溶性IL-?2(受容体|レセプター))\\s*(の)?(上昇|高値)', 'elevated'],
+    ['ammonia', '(アンモニア|NH3)\\s*(の)?(上昇|高値)|高アンモニア', 'elevated'], ['ammonia', '(アンモニア|NH3)\\s*(は)?(正常|基準内)', 'normal'],
+    ['hemolysis_labs', '溶血(所見|性)?(あり|を認め)|ハプトグロビン(の)?(低値|低下|感度以下)|網(状)?赤血球(の)?(増加|上昇)|間接(型)?ビリルビン(優位)?', 'positive'],
+    ['ici_use', '免疫チェックポイント阻害|(?<![A-Za-z])ICI(?![A-Za-z])|ニボルマブ|オプジーボ|ペムブロリズマブ|キイトルーダ|イピリムマブ|ヤーボイ|アテゾリズマブ|テセントリク|デュルバルマブ|イミフィンジ|アベルマブ|バベンチオ|トレメリムマブ|イジュド|セミプリマブ|リブタヨ|抗PD-?L?1|抗CTLA-?4', null],
+    ['pregnancy_status', '産褥|産後|出産後|分娩後', 'postpartum'], ['pregnancy_status', '不妊治療|排卵誘発|体外受精|hCG投与', 'infertility_tx'], ['pregnancy_status', '妊娠初期|つわり', 'first_tri'], ['pregnancy_status', '妊娠(中期|後期)|臨月', 'late'],
+    ['diarrhea_pattern', '脂肪便|油っぽい便|便が(水に)?浮く', 'steatorrhea'],
   ];
   function bucketTime(text) {
     const m1 = text.match(/(\d+)\s*(分|時間|日|週間|週|か月|ヶ月|カ月)\s*(前|ほど前|くらい前|から)/);
@@ -4491,6 +4634,16 @@ ${catalogText()}`;
     for (m of text.matchAll(/(?:乳酸|Lac|ラクテート|lactate)\s*[:：=]?\s*(\d{1,2}(?:\.\d+)?)/gi)) { const v = parseFloat(m[1]); add('lactate', v < 2 ? 'lt2' : v <= 4 ? '2_4' : 'gt4', m[0]); }
     for (m of text.matchAll(/(?:血糖|BS|Glu|グルコース)\s*[:：=]?\s*(\d{2,4})/gi)) { const v = +m[1]; add('glucose', v > 250 ? 'gt250' : 'normal', m[0]); }
     for (m of text.matchAll(/(?:Hb|ヘモグロビン)\s*[:：=]?\s*(\d{1,2}(?:\.\d+)?)/g)) { const v = parseFloat(m[1]); add('hb', v < 11 ? 'low' : 'normal', m[0]); }
+    // 検査値パネルと同じ変換（DDX.LABS.resolve）。AST と ALT が同じ文にあればパターンも出る
+    if (DDX.LABS && DDX.LABS.resolve) {
+      const LV = {}, pick = (id, re, f) => { const mm = text.match(re); if (mm) { let v = parseFloat(mm[1]); if (f) v = f(v, mm); if (v >= 0) LV[id] = v; } };
+      pick('na', /(?<![A-Za-z])Na\s*[:：=]?\s*(1\d{2})(?!\d)/); pick('k', /(?<![A-Za-z])K\s*[:：=]?\s*(\d(?:\.\d+)?)(?![\d.])/); pick('ca', /(?<![A-Za-z])Ca\s*[:：=]?\s*(\d{1,2}(?:\.\d+)?)(?![\d.\-])/);
+      pick('ck', /(?<![A-Za-z])C(?:P)?K(?!-?MB)\s*[:：=]?\s*(\d{2,6})/); pick('ldh', /(?<![A-Za-z])LDH?\s*[:：=]?\s*(\d{2,5})/); pick('nh3', /(?:NH3|NH₃|アンモニア)\s*[:：=]?\s*(\d{2,4})/);
+      pick('plt', /(?:Plt|PLT|血小板)\s*[:：=]?\s*(\d+(?:\.\d+)?)\s*(万)?/, (v, mm) => mm[2] ? v : DDX.LABS.byId.plt.norm(v));
+      pick('ast', /(?<![A-Za-z])(?:AST|GOT)\s*[:：=]?\s*(\d{1,5})/); pick('alt', /(?<![A-Za-z])(?:ALT|GPT)\s*[:：=]?\s*(\d{1,5})/);
+      for (const x of DDX.LABS.resolve(LV, {})) add(x.f, x.code, Object.keys(LV).join('/'), x.status);
+    }
+    for (m of text.matchAll(/妊娠\s*(\d{1,2})\s*週/g)) add('pregnancy_status', +m[1] < 14 ? 'first_tri' : 'late', m[0]);
   }
   /* 拡張パックの feature（ext:true）用の語彙をラベルから自動生成 */
   let KW_EXT = null;
@@ -4498,7 +4651,8 @@ ${catalogText()}`;
     if (KW_EXT) return KW_EXT;
     KW_EXT = [];
     const esc = t => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    const MANUAL = { radiation_hx: ['放射線治療', '放射線照射', '照射歴'], cancer_hx: ['癌の既往', 'がんの既往', '担癌', '悪性腫瘍の既往', '化学療法中'], cirrhosis_hx: ['肝硬変', '慢性肝炎', 'B型肝炎', 'C型肝炎', '慢性肝疾患'], dialysis_ckd: ['透析', '腎不全', 'CKD'], opioid_use: ['オピオイド', 'オキシコドン', 'モルヒネ', 'フェンタニル', 'トラマドール'], heartburn_regurg: ['胸やけ', '胸焼け', '呑酸', '逆流症状'], dysphagia: ['嚥下障害', '嚥下痛', '飲み込みにくい', 'つかえ'], hepatomegaly: ['肝腫大', '肝を触知', '肝叩打痛'], splenomegaly: ['脾腫', '脾を触知'], ascites_exam: ['腹水', '波動', 'shifting'], leg_edema: ['下腿浮腫', '下肢浮腫', '浮腫あり'], pruritus: ['瘙痒', 'そう痒', 'かゆみ'], tenesmus_urgency: ['しぶり腹', '便意切迫', 'テネスムス'], early_satiety_bloating: ['早期飽満', '早期満腹', '食後膨満', 'もたれ'], carnett_sign: ['Carnett', 'カーネット'], sti_risk: ['性感染症', 'STI', '複数パートナー', 'MSM', 'IUD'], raw_fish_intake: ['生魚', 'サバ', 'イカ', 'アジ', '刺身', '寿司'], pain_fasting_nocturnal: ['空腹時痛', '夜間痛', '空腹時に痛'], pain_relief_leaning_forward: ['前屈で軽減', '前かがみ', '坐位で軽減'], steatorrhea: ['脂肪便', '油っぽい便'], fatigue: ['倦怠感', 'だるさ', '疲労感'], obesity: ['肥満', 'BMI'], subcutaneous_emphysema: ['皮下気腫', 'Hamman'], forceful_vomiting_prior: ['激しい嘔吐の後', '嘔吐直後'], allergy_hx: ['喘息', 'アトピー', 'アレルギー性鼻炎', 'アレルギー'], new_medication: ['新しく開始', '開始した薬', '漢方', 'サプリ', '健康食品'], hepatotoxic_drug_supplement: ['健康食品', 'サプリ', '漢方', '免疫チェックポイント'], pancreatitis_hx: ['膵炎の既往', '膵炎歴', '高TG', '高トリグリセリド'], diabetes_new_worsening: ['糖尿病の新規発症', '血糖コントロール悪化'], blood_sexual_exposure: ['輸血歴', '刺青', '注射薬物', '性的接触'], eosinophilia: ['好酸球増多', '好酸球'], igg4: ['IgG4'], diarrhea_pattern: ['下痢', '便'], urine_stool_color: ['尿', '便'], abd_mass: ['腫瘤', '腫瘍を触知', 'しこり'], skin_finding: ['皮疹', '紫斑', '水疱', '紅斑', '色素沈着', 'くも状血管腫', '手掌紅斑'], electrolyte: ['Na', 'K', 'Ca', 'ナトリウム', 'カリウム', 'カルシウム'], endocrine_lab: ['TSH', 'コルチゾール', '甲状腺'], hemolysis_labs: ['溶血', 'ハプトグロビン', 'LDH'], menstrual_relation: ['月経', '生理', '排卵'], pregnancy_status: ['妊娠', '産褥', '分娩', '不妊治療'], ingestion_event: ['誤飲', '異物', '服用', '内視鏡'], paracentesis: ['腹水穿刺', 'SAAG'], endoscopy: ['内視鏡', '胃カメラ', 'EGD', 'GIF', 'CF', '大腸カメラ'], cxr: ['胸部X線', '胸部レントゲン', '胸写', 'CXR'], ct_other: ['CT'] };
+    const MANUAL = { nocturnal_sx: [/(夜間|夜中|睡眠中|就寝中)[^。]{0,10}(目が覚め|目を覚ま|覚醒|起き(る|た|て))|夜間覚醒/], groin_bulge: [/(鼠径|大腿|腹壁|臍)部?(の|に)?(膨隆|腫瘤|しこり|ふくらみ|腫脹)|(鼠径|大腿|臍|腹壁|白線|半月状線)ヘルニア(?!の既往|の術後|術後|の手術)/], autoimmune_hx: ['膠原病', 'SLE', '全身性エリテマトーデス', 'ループス', '関節リウマチ', '強皮症', '皮膚筋炎', '多発性筋炎', 'シェーグレン', 'MCTD', '混合性結合組織病', '血管炎の既往', '結節性多発動脈炎', 'EGPA', '好酸球性多発血管炎'], thrombophilia_hx: ['抗リン脂質抗体', 'APS', 'プロテインC', 'プロテインS', 'アンチトロンビン', '血栓性素因', '凝固異常', '血栓症の既往', 'DVT', '深部静脈血栓', '肺塞栓の既往', '骨髄増殖性', '真性多血症', '本態性血小板血症', 'エストロゲン', '経口避妊薬', 'ピル'], bedridden_psych: ['長期臥床', '寝たきり', '臥床', '施設入所', '認知症', '精神疾患', 'パーキンソン', '統合失調症'], radiation_hx: ['放射線治療', '放射線照射', '照射歴'], cancer_hx: ['癌の既往', 'がんの既往', '担癌', '悪性腫瘍の既往', '化学療法中'], cirrhosis_hx: [/(?<!(CT|ＣＴ|エコー|超音波|US|MRI|MRCP)[^。]*)(肝硬変|慢性肝炎|B型肝炎|C型肝炎|慢性肝疾患)(?!像|様)/], dialysis_ckd: ['透析', '腎不全', 'CKD'], opioid_use: ['オピオイド', 'オキシコドン', 'モルヒネ', 'フェンタニル', 'トラマドール'], heartburn_regurg: ['胸やけ', '胸焼け', '呑酸', '逆流症状'], dysphagia: ['嚥下障害', '嚥下痛', '飲み込みにくい', 'つかえ'], hepatomegaly: [/(?<!(CT|ＣＴ|エコー|超音波|US|MRI|MRCP)[^。]*)(肝腫大|肝を触知|肝叩打痛|肝(臓)?を\d*横指)/], splenomegaly: [/(?<!(CT|ＣＴ|エコー|超音波|US|MRI|MRCP)[^。]*)(脾腫|脾を触知|脾(臓)?を触)/], ascites_exam: [/(?<!(CT|ＣＴ|エコー|超音波|US|MRI|MRCP)[^。]*)(腹水|波動|shifting|蛙腹)/], leg_edema: [/(下腿|下肢|両足|足|脚)(の|に)?(浮腫|むくみ)|圧痕性浮腫|pitting/], pruritus: ['瘙痒', 'そう痒', 'かゆみ'], tenesmus_urgency: ['しぶり腹', '便意切迫', 'テネスムス'], early_satiety_bloating: ['早期飽満', '早期満腹', '食後膨満', 'もたれ'], carnett_sign: ['Carnett', 'カーネット'], sti_risk: ['性感染症', 'STI', '複数パートナー', 'MSM', 'IUD'], raw_fish_intake: ['生魚', 'サバ', 'イカ', 'アジ', '刺身', '寿司'], pain_fasting_nocturnal: ['空腹時痛', '夜間痛', '空腹時に痛'], pain_relief_leaning_forward: ['前屈で軽減', '前かがみ', '坐位で軽減'], steatorrhea: ['脂肪便', '油っぽい便'], fatigue: ['倦怠感', 'だるさ', '疲労感'], obesity: ['肥満', 'BMI'], subcutaneous_emphysema: ['皮下気腫', 'Hamman'], forceful_vomiting_prior: ['激しい嘔吐の後', '嘔吐直後'], allergy_hx: ['喘息', 'アトピー', 'アレルギー性鼻炎', 'アレルギー'], new_medication: ['新しく開始', '開始した薬', '漢方', 'サプリ', '健康食品'], pancreatitis_hx: ['膵炎の既往', '膵炎歴', '高TG', '高トリグリセリド'], diabetes_new_worsening: ['糖尿病の新規発症', '血糖コントロール悪化'], blood_sexual_exposure: ['輸血歴', '刺青', '注射薬物', '性的接触'], eosinophilia: ['好酸球増多', '好酸球'], igg4: ['IgG4'], diarrhea_pattern: ['下痢', '便'], urine_stool_color: ['尿', '便'], abd_mass: ['腫瘤', '腫瘍を触知', 'しこり'], skin_finding: ['皮疹', '紫斑', '水疱', '紅斑', '色素沈着', 'くも状血管腫', '手掌紅斑'], endocrine_lab: ['TSH', 'コルチゾール', '甲状腺'], menstrual_relation: ['月経', '生理', '排卵'], ingestion_event: ['誤飲', '異物', '服用', '内視鏡'], paracentesis: ['腹水穿刺', 'SAAG'], endoscopy: ['内視鏡', '胃カメラ', 'EGD', 'GIF', 'CF', '大腸カメラ'], cxr: ['胸部X線', '胸部レントゲン', '胸写', 'CXR'] };
+    const EXPLICIT = new Set(['neuro_sx', 'electrolyte', 'pregnancy_status', 'fobt', 'ck', 'ldh', 'sil2r', 'ammonia', 'ici_use', 'hemolysis_labs']);
     const GENERIC = /^(腹部|上腹部|下腹部|骨盤|腫瘤|触知|正常|異常|異常なし|なし|所見|既往|歴|使用|服用|摂取|上昇|低下|陽性|陰性|その他|増多|性状|変化|急性|慢性|検査|血清|末梢|皮膚|神経|症状|パターン|状態|関連|リスク|持続|反復|大量|少量|頻回|軽減|増悪|数時間|数日|以内|新規|最近|一時|治療中|治療歴|状態)$/;
     for (const f of KB().features) {
       if (!f.ext) continue;
@@ -4506,9 +4660,10 @@ ${catalogText()}`;
       const strip = t => t.replace(/（.*?）|\(.*?\)/g, '').trim();
       const stem = t => { const m = t.replace(/(の)?(既往|歴|所見|検査|触知|の使用|使用|摂取)$/, ''); return m.length >= 2 ? m : t; };
       const manual = f.kw || MANUAL[f.id];
-      const terms = manual ? manual.map(t => t.trim()).filter(Boolean) : strip(f.label).split(/[/／・]/).map(t => stem(t.trim())).filter(t => t.length >= 2 && !GENERIC.test(t));
+      if (EXPLICIT.has(f.id)) continue;
+      const terms = manual ? manual.map(t => t instanceof RegExp ? t : t.trim()).filter(Boolean) : strip(f.label).split(/[/／・]/).map(t => stem(t.trim())).filter(t => t.length >= 2 && !GENERIC.test(t));
       if (!terms.length) continue;
-      const fre = terms.map(esc).join('|');
+      const fre = terms.map(t => t instanceof RegExp ? t.source : esc(t)).join('|');
       if (f.values) {
         // 値付き: 項目語と値語の両方が同じ文にあるときだけ（値語だけでは反応しない）
         for (const v of f.values) { const vt = strip(v.label).split(/[/／、・]/).map(t => t.trim()).filter(t => t.length >= 2 && !GENERIC.test(t)); if (vt.length) KW_EXT.push([f.id, vt.map(esc).join('|'), v.code, fre]); }
@@ -4524,11 +4679,12 @@ ${catalogText()}`;
     for (const s of sentences) {
       const tb = bucketTime(s), tr = trendOf(s);
       // 腹痛（部位）
-      if (/痛/.test(s)) {
+      if (/痛/.test(s.replace(/圧痛|叩打痛|反跳痛|移動痛|放散痛|無痛/g, ''))) {
         let any = false;
         for (const [code, re] of LOC) { const m = s.match(new RegExp(re)); if (m) { any = true; const neg = negated(s, m.index, m[0].length) && /痛.{0,4}(なし|ない)/.test(s); add('abd_pain', code, s.slice(0, 60), neg ? 'absent' : 'present', { severity: sevOf(s), time_context: { elapsed_bucket: tb || 'unknown', trend: tr } }); } }
         if (!any && /腹痛|お腹が痛|腹が痛/.test(s)) add('abd_pain', 'diffuse', s.slice(0, 60), /腹痛(は|も)?(なし|ない)/.test(s) ? 'absent' : 'present', { severity: sevOf(s), time_context: { elapsed_bucket: tb || 'unknown', trend: tr } });
       }
+      if (/無痛性|痛み(の|を)?(ない|伴わない|なし)|腹痛(は|を)?伴わ/.test(s)) add('abd_pain', null, s.slice(0, 60), 'absent', { time_context: { elapsed_bucket: tb || 'unknown', trend: 'unknown' } });
       for (const [fid, re, val, fre] of KW.concat(extKW())) {
         if (fre && !new RegExp(fre).test(s)) continue; // 値付き拡張項目: 項目語が同じ文に必要
         const m = s.match(new RegExp(re)); if (!m) continue;
@@ -4539,7 +4695,7 @@ ${catalogText()}`;
         if (f.multi && f.type === 'imaging' && neg) continue; // 画像の「〜なし」は所見として登録しない（異常なし は normal で扱う）。症状系の multi は値付き absent で登録
         add(fid, f.values ? val : null, s.slice(0, 60), neg ? 'absent' : 'present', extra);
       }
-      numbers(s, (fid, val, q) => add(fid, val, q, 'present', { time_context: { elapsed_bucket: tb || 'unknown', trend: 'unknown' } }));
+      numbers(s, (fid, val, q, st) => add(fid, val, q, st || 'present', { time_context: { elapsed_bucket: tb || 'unknown', trend: 'unknown' } }));
     }
     // 文脈
     const ctx = {}; const am = text.match(/(\d{1,3})\s*歳/) || text.match(/(\d)0代/);
@@ -4589,7 +4745,7 @@ ${catalogText()}`;
   function timeText(o) { const f = KB().feature[o.feature_id]; if (f.anchor === 'none' || !o.time_context.elapsed_bucket) return ''; const b = o.time_context.elapsed_bucket; if (KB().time.tier1Of(b) === 'unknown') return ''; return KB().time.label(b) + '前'; }
   function obsLine(o) {
     const f = KB().feature[o.feature_id]; const st = KB().status.find(s => s.code === o.status);
-    const v = o.status === 'present' ? (f.values ? valueLabel(f, o.value_code) : 'あり') : (st ? st.label : o.status);
+    const v = o.status === 'present' ? (f.values ? valueLabel(f, o.value_code) : 'あり') : (o.status === 'absent' && o.value_code && f.values ? valueLabel(f, o.value_code) + ' なし' : (st ? st.label : o.status));
     const sev = o.severity ? { mild: '軽', moderate: '中', severe: '高' }[o.severity] : '';
     const tr = o.time_context.trend && o.time_context.trend !== 'unknown' ? (KB().trend.find(t => t.code === o.time_context.trend) || {}).label : '';
     return { label: f.label.replace('（部位）', ''), value: v, meta: [o.note, sev && '程度' + sev, timeText(o), tr].filter(Boolean).join(' · '), absent: o.status === 'absent' };
@@ -4625,7 +4781,7 @@ ${catalogText()}`;
   function renderInput() {
     const st = UI.state, c = st.context, kb = KB();
     let h = '';
-    h += `<div class="ctxrow"><select data-ctx="age_band" aria-label="年齢帯"><option value="">年齢帯</option>${kb.context.age_band.map(o => `<option value="${o.code}" ${o.code === c.age_band ? 'selected' : ''}>${esc(o.label)}</option>`).join('')}</select><select data-ctx="sex" aria-label="性別"><option value="">性別</option>${kb.context.sex.map(o => `<option value="${o.code}" ${o.code === c.sex ? 'selected' : ''}>${esc(o.label)}</option>`).join('')}</select>${c.sex !== 'male' ? `<select data-ctx="pregnancy" aria-label="妊娠可能性">${kb.context.pregnancy.map(o => `<option value="${o.code}" ${o.code === c.pregnancy ? 'selected' : ''}>${esc(o.label)}</option>`).join('')}</select>` : ''}</div>`;
+    h += `<div class="ctxrow"><select data-ctx="age_band" aria-label="年齢帯"><option value="">年齢帯</option>${kb.context.age_band.map(o => `<option value="${o.code}" ${o.code === c.age_band ? 'selected' : ''}>${esc(o.label)}</option>`).join('')}</select><select data-ctx="sex" aria-label="性別"><option value="">性別</option>${kb.context.sex.map(o => `<option value="${o.code}" ${o.code === c.sex ? 'selected' : ''}>${esc(o.label)}</option>`).join('')}</select>${c.sex !== 'male' ? `<select data-ctx="pregnancy" aria-label="妊娠可能性">${kb.context.pregnancy.map(o => `<option value="${o.code}" ${o.code === c.pregnancy ? 'selected' : ''}>${esc(o.label)}</option>`).join('')}</select>` : ''}${c.sex !== 'male' && c.pregnancy !== 'no' ? `<select data-ctx="preg_stage" aria-label="妊娠時期"><option value="">妊娠時期</option>${kb.context.preg_stage.map(o => `<option value="${o.code}" ${o.code === c.preg_stage ? 'selected' : ''}>${esc(o.label)}</option>`).join('')}</select>` : ''}</div>`;
     h += `<div class="inputbox"><div class="tawrap"><textarea id="freeText" rows="5" placeholder="例）40代女性。昨日から右下腹部痛が悪化、嘔気あり。反跳痛あり。体温38.2、CRP 5.8。妊娠反応陰性。">${esc(UI.draft || '')}</textarea><button class="mic ${UI.listening ? 'rec' : ''}" data-act="mic" title="音声入力" aria-label="音声入力">${UI.listening ? '⏹' : '🎤'}</button></div>
       <div class="inputacts"><button class="big" data-act="body">🧍 部位</button><button class="big" data-act="labs">🧪 検査値</button><button class="big primary grow" data-act="analyze" ${UI.busy ? 'disabled' : ''}>${UI.busy ? '解析中…' : '情報を追加'}</button></div>
       <div class="tiny muted">送信前に氏名・ID・日付・連絡先などは自動で除去されます${DDX.Extract.LLM.ready() ? '' : '。AI 未設定のためローカル解析で動作中（設定で API キーを登録）'}</div></div>`;
@@ -4640,9 +4796,9 @@ ${catalogText()}`;
       if (UI.lastResult && UI.lastResult.llm && UI.lastResult.llm.ok === false) h += `<div class="tiny" style="color:var(--danger)">AI: ${esc(UI.lastResult.llm.error)}</div>`;
       h += `</div></div>`;
     }
-    const cur = st.current();
+    const cur = st.current().filter(o => !(o.derived && o.status === 'absent'));
     if (cur.length) {
-      h += `<div class="card"><details ${UI.open.entered ? 'open' : ''} data-details="entered"><summary>入力済み ${cur.length} 件</summary><div class="items" style="margin-top:8px">${cur.map(o => { const l = obsLine(o); return `<div class="item ${l.absent ? 'abs' : ''} ${st.isStale(o) ? 'stale' : ''}"><div class="grow"><b>${esc(l.label)}</b> ${esc(l.value)}<div class="tiny muted">${esc(l.meta)}${st.isStale(o) ? ' · 古い' : ''}</div></div><button class="ghost" data-del="${o.obs_id}" aria-label="削除">✕</button></div>`; }).join('')}</div></details></div>`;
+      h += `<div class="card"><details ${UI.open.entered ? 'open' : ''} data-details="entered"><summary>入力済み ${cur.length} 件</summary><div class="items" style="margin-top:8px">${cur.map(o => { const l = obsLine(o); return `<div class="item ${l.absent ? 'abs' : ''} ${st.isStale(o) ? 'stale' : ''}"><div class="grow"><b>${esc(l.label)}</b> ${esc(l.value)}<div class="tiny muted">${o.derived ? esc(o.note || '自動') + '（自動）' : esc(l.meta)}${st.isStale(o) ? ' · 古い' : ''}</div></div>${o.derived ? '' : `<button class="ghost" data-del="${o.obs_id}" aria-label="削除">✕</button>`}</div>`; }).join('')}</div></details></div>`;
     } else if (!UI.lastAdded.length) {
       h += `<div class="card"><div class="empty">話すか書くだけで、鑑別と次の一手を出します。<br><br>まだ何も入力されていません。上の欄に主訴・経過・所見・検査値を自由に入れてください。</div></div>`;
     }
@@ -4671,7 +4827,7 @@ ${catalogText()}`;
     function base(f) { return f.label.replace(/（.*?）|\s*\(.*?\)/g, ''); }
   }
   function evidenceHtml(x) {
-    const kb = KB(); const item = (s, cls) => { const f = kb.feature[s.feature_id]; const o = s.obs; const v = o ? (o.status === 'present' ? (f.values ? valueLabel(f, o.value_code) : 'あり') : 'なし') : ''; return `<span class="tag ${cls}">${esc(f.label.replace('（部位）', ''))}${v ? ': ' + esc(v) : ''}</span>`; };
+    const kb = KB(); const item = (s, cls) => { const f = kb.feature[s.feature_id]; const o = s.obs; const v = o ? (o.status === 'present' ? (f.values ? valueLabel(f, o.value_code) : 'あり') : (o.value_code && f.values ? valueLabel(f, o.value_code) + ' なし' : 'なし')) : ''; return `<span class="tag ${cls}">${esc(f.label.replace('（部位）', ''))}${v ? ': ' + esc(v) : ''}</span>`; };
     let h = '';
     if (x.support.length) h += `<div class="ev"><span class="lab">支持</span>${x.support.slice(0, 6).map(s => item(s, 'sup')).join('')}</div>`;
     if (x.refute.length) h += `<div class="ev"><span class="lab">反証</span>${x.refute.slice(0, 6).map(s => item(s, 'ref')).join('')}</div>`;
@@ -4787,7 +4943,12 @@ ${catalogText()}`;
     const st = UI.labs, it = DDX.LABS.byId[st.sel]; let v = parseFloat(st.buf); if (!(v >= 0)) { toast('数値を入力してください'); return; }
     if (it.norm) v = it.norm(v);
     UI.labValues[it.id] = v;
-    if (it.map) { const m = it.map(v, UI.state.context); UI.state.add({ feature_id: m.f, status: 'present', value_code: m.code, time_context: { elapsed_bucket: 'h_1_3', trend: 'unknown' }, note: `${it.label} ${v} ${it.unit}` }); toast(`${it.label} ${v} ${it.unit} → ${valueLabel(KB().feature[m.f], m.code)}`); recompute('lab_value'); }
+    if (it.map) {
+      const mine = DDX.LABS.resolve(UI.labValues, UI.state.context).filter(x => x.from.includes(it.id));
+      for (const x of mine) UI.state.add({ feature_id: x.f, status: x.status, value_code: x.code, time_context: { elapsed_bucket: 'h_1_3', trend: 'unknown' }, note: `${x.from.map(id => DDX.LABS.byId[id].label + ' ' + UI.labValues[id]).join(' / ')} ${x.from.length === 1 ? it.unit : ''}`.trim() });
+      const pos = mine.filter(x => x.status === 'present').map(x => { const f = KB().feature[x.f]; return f.multi || x.f === 'ast_alt_pattern' ? valueLabel(f, x.code) : `${f.label.replace(/（.*?）/g, '')} ${valueLabel(f, x.code)}`; });
+      toast(`${it.label} ${v} ${it.unit} → ${pos.length ? pos.join('、') : '異常なし'}`); recompute('lab_value');
+    }
     else { insertText(`${it.label} ${v} ${it.unit}。`); toast(`${it.label} ${v} ${it.unit} を入力欄に追加`); }
     st.sel = null; st.buf = ''; renderLabs();
   }
@@ -4842,7 +5003,7 @@ ${catalogText()}`;
   }
 
   /* ---------- demo ---------- */
-  function demoStart(i) { const d = DDX.DEMO_TEXT[i]; if (!d) return; UI.state = new DDX.ClinicalState({}); UI.demoQueue = { label: d.label, steps: d.steps.slice() }; UI.lastAdded = []; UI.lastResult = null; UI.tab = 'input'; demoNext(); }
+  function demoStart(i) { const d = DDX.DEMO_TEXT[i]; if (!d) return; UI.state = new DDX.ClinicalState({}); UI.labValues = {}; UI.demoQueue = { label: d.label, steps: d.steps.slice() }; UI.lastAdded = []; UI.lastResult = null; UI.tab = 'input'; demoNext(); }
   function demoNext() { if (!UI.demoQueue || !UI.demoQueue.steps.length) return; const t = UI.demoQueue.steps.shift(); if (!UI.demoQueue.steps.length) UI.demoQueue = null; UI.draft = t; UI.tab = 'input'; renderAll(); }
 
   /* ---------- events ---------- */
@@ -4851,7 +5012,7 @@ ${catalogText()}`;
     document.querySelectorAll('nav.tabs button').forEach(b => b.addEventListener('click', () => { UI.tab = b.dataset.tab; renderTabs(); }));
     $('#sheetWrap .bg').addEventListener('click', () => { if (UI.labs) closeLabs(); else closeBody(); });
     document.addEventListener('input', e => { if (e.target.id === 'freeText') UI.draft = e.target.value; });
-    document.addEventListener('change', e => { const t = e.target; if (t.dataset.ctx) { UI.state.context[t.dataset.ctx] = t.value || null; if (t.dataset.ctx === 'sex' && t.value === 'male') UI.state.context.pregnancy = 'no'; recompute('context'); } });
+    document.addEventListener('change', e => { const t = e.target; if (t.dataset.ctx) { UI.state.context[t.dataset.ctx] = t.value || null; if (t.dataset.ctx === 'sex' && t.value === 'male') { UI.state.context.pregnancy = 'no'; UI.state.context.preg_stage = null; } if (t.dataset.ctx === 'pregnancy' && t.value === 'no') UI.state.context.preg_stage = null; if (t.dataset.ctx === 'preg_stage' && (t.value === 'first_tri' || t.value === 'late')) UI.state.context.pregnancy = 'confirmed'; recompute('context'); } });
     document.addEventListener('toggle', e => { const d = e.target.dataset && e.target.dataset.details; if (d) UI.open[d] = e.target.open; }, true);
     document.addEventListener('click', async e => {
       const el = e.target.closest('[data-act],[data-toggle],[data-del],[data-qa],[data-ins],[data-bregion],[data-bview],[data-btoggle],[data-lab],[data-key],[data-labchoice]'); if (!el) return; const d = el.dataset;
@@ -4881,7 +5042,7 @@ ${catalogText()}`;
         case 'localOnly': await runExtract(UI.pending.text, false); break;
         case 'cancelSend': UI.pending = null; renderInput(); break;
         case 'saveLLM': { const L = DDX.Extract.LLM; L.config.apiKey = $('#apiKey').value.trim(); L.config.model = $('#model').value; L.config.confirm = $('#confirmSend').checked; LS.set('ddxnav_llm', { apiKey: L.config.apiKey, model: L.config.model, confirm: L.config.confirm }); toast('保存しました'); renderAll(); break; }
-        case 'newCase': if (UI.confirmKey === 'newCase') { UI.confirmKey = null; UI.state = new DDX.ClinicalState({}); UI.lastAdded = []; UI.lastResult = null; UI.demoQueue = null; UI.open = {}; UI.draft = ''; recompute('new_case'); UI.tab = 'input'; } else { UI.confirmKey = 'newCase'; renderSettings(); setTimeout(() => { if (UI.confirmKey === 'newCase') { UI.confirmKey = null; renderSettings(); } }, 4000); } break;
+        case 'newCase': if (UI.confirmKey === 'newCase') { UI.confirmKey = null; UI.state = new DDX.ClinicalState({}); UI.labValues = {}; UI.lastAdded = []; UI.lastResult = null; UI.demoQueue = null; UI.open = {}; UI.draft = ''; recompute('new_case'); UI.tab = 'input'; } else { UI.confirmKey = 'newCase'; renderSettings(); setTimeout(() => { if (UI.confirmKey === 'newCase') { UI.confirmKey = null; renderSettings(); } }, 4000); } break;
         case 'exportCase': download(`ddx_case_${UI.state.case_token}.json`, JSON.stringify(UI.state.toJSON(), null, 2)); break;
         case 'exportLog': download('ddx_audit_log.json', DDX.Audit.export()); break;
         case 'clearLog': if (UI.confirmKey === 'clearLog') { UI.confirmKey = null; DDX.Audit.clear(); renderSettings(); } else { UI.confirmKey = 'clearLog'; renderSettings(); setTimeout(() => { if (UI.confirmKey === 'clearLog') { UI.confirmKey = null; renderSettings(); } }, 4000); } break;
