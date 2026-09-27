@@ -143,6 +143,9 @@ for fid, vals in FDEFS.get('add_values', {}).items():
         lines.append(f"  KB.addValue('{fid}', '{c}', {js(l)});")
         if c not in KF[fid]['values']: KF[fid]['values'].append(c)
 DROP_REL = {(x['d'], x['f']) for x in FDEFS.get('drop_relations', [])}
+DIAG = FDEFS.get('diagnostic', [])
+def is_diag(d, f, vals):
+    return any(x['d'] == d and x['f'] == f and (x['v'] is None or (vals and x['v'] in vals)) for x in DIAG)
 # diseases + relations
 n_new = 0; n_rel = 0; unknown_feat = {}
 for key, it in diseases.items():
@@ -161,6 +164,8 @@ for key, it in diseases.items():
                 if not vals: continue
             if fid not in KF: unknown_feat[fid] = unknown_feat.get(fid, 0) + 1; continue
             if (did, fid) in DROP_REL: continue
+            for ov in FDEFS.get('relation_value_override', []):
+                if ov['d'] == did and ov['f'] == fid and vals: vals = [ov['to'] if v == ov['from'] else v for v in vals]
             fdef = KF[fid]
             if vals:
                 vals = [v for v in vals if v in fdef['values']]
@@ -204,7 +209,8 @@ for key, it in diseases.items():
         n_new += 1
     refs[did] = sorted(set(it.get('source_files', []) or []))
     for r in rels:
-        lines.append(f"  KB.addRelation('{did}', '{r['fid']}', {js(r['vals'])}, {r['sens']:.2f}, {r['spec']:.2f}{', { key: true }' if r['key'] else ''});")
+        opts = [k for k in ([' key: true'] if r['key'] else []) + ([' diag: true'] if is_diag(did, r['fid'], r['vals']) else [])]
+        lines.append(f"  KB.addRelation('{did}', '{r['fid']}', {js(r['vals'])}, {r['sens']:.2f}, {r['spec']:.2f}{', {' + ','.join(opts) + ' }' if opts else ''});")
         n_rel += 1
 # 資料の鑑別表に無かった疾患（症例問題集の検討で不足が判明したもの）。所見は add_relations で付ける
 for did, dd in FDEFS.get('add_diseases', {}).items():
@@ -216,7 +222,7 @@ EXTRA_D = set(FDEFS.get('add_diseases', {}).keys())
 for r in FDEFS.get('add_relations', []):
     if r['d'] not in KD and r['d'] not in EXTRA_D and r['d'] not in {it['_id'] for it in diseases.values()}: print('add_relations: unknown disease', r['d']); continue
     if r['f'] not in KF: print('add_relations: unknown feature', r['f']); continue
-    lines.append(f"  KB.addRelation('{r['d']}', '{r['f']}', {js(r.get('values'))}, {r['sens']:.2f}, {r['spec']:.2f});"); n_rel += 1
+    lines.append(f"  KB.addRelation('{r['d']}', '{r['f']}', {js(r.get('values'))}, {r['sens']:.2f}, {r['spec']:.2f}{', { diag: true }' if is_diag(r['d'], r['f'], r.get('values')) else ''});"); n_rel += 1
 lines.append("  KB.reindex();")
 lines.append(f"  KB.tertiaryRefs = {js(refs)};")
 lines.append("  P.push({ id: 'abd_ext', label: '腹部症状 拡張パック', version: '0.1.0', source: '今日の臨床サポート（参照のみ・ドラフト値）' });")

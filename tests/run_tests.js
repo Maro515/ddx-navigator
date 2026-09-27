@@ -1,6 +1,6 @@
 /* 回帰テスト（合成症例）: node tests/run_tests.js */
 const path = require('path');
-for (const f of ['10_kb', '11_kb_abd_ext', '12_evidence', '15_demo', '18_bodymap', '19_labs', '20_state', '30_safety', '40_ddx', '50_next', '60_audit', '65_extract']) require(path.join(__dirname, '..', 'build', f + '.js'));
+for (const f of ['10_kb', '11_kb_abd_ext', '12_evidence', '13_prevalence', '15_demo', '18_bodymap', '19_labs', '20_state', '30_safety', '40_ddx', '50_next', '60_audit', '65_extract']) require(path.join(__dirname, '..', 'build', f + '.js'));
 const D = globalThis.DDX, KB = D.KB;
 let seed = 12345; const rnd = () => { seed = (seed * 1103515245 + 12345) & 0x7fffffff; return seed / 0x7fffffff; };
 const pick = a => a[Math.floor(rnd() * a.length)];
@@ -66,6 +66,11 @@ for (const c of cases) {
 const n = cases.length;
 console.log(`Top1 ${(top1 / n * 100).toFixed(1)}%  Top3 ${(top3 / n * 100).toFixed(1)}%  Top5 ${(top5 / n * 100).toFixed(1)}%  Top10 ${(top10 / n * 100).toFixed(1)}%  MRR ${(rr / n).toFixed(3)}`);
 // コア（腹痛/下痢パック）と拡張パックを分けて評価
+{ // 有病率で重み付けした再現率（合成症例は疾患ごとに同数なので、まれな疾患の比重が実際より大きい）
+  let w = 0, w3 = 0, w5 = 0, w10 = 0;
+  for (const c of cases) { const pr = KB.disease[c.ref].prior; const ids = run(c).r.ddx.likely.filter(x => !x.comorbid).map(x => x.id); const k = ids.indexOf(c.ref); w += pr; if (k >= 0 && k < 3) w3 += pr; if (k >= 0 && k < 5) w5 += pr; if (k >= 0) w10 += pr; }
+  console.log(`有病率で重み付け: Top3 ${(w3 / w * 100).toFixed(1)}%  Top5 ${(w5 / w * 100).toFixed(1)}%  Top10 ${(w10 / w * 100).toFixed(1)}%`);
+}
 const recallOf = pred => { const cs = cases.filter(c => pred(KB.disease[c.ref])); let t10 = 0, t3 = 0; for (const c of cs) { const ids = run(c).r.ddx.likely.filter(x => !x.comorbid).map(x => x.id); const k = ids.indexOf(c.ref); if (k >= 0) t10++; if (k >= 0 && k < 3) t3++; } return { n: cs.length, top10: t10 / cs.length, top3: t3 / cs.length }; };
 const core = recallOf(d => !d.ext), ext = recallOf(d => d.ext);
 console.log(`コア: N=${core.n} Top3 ${(core.top3 * 100).toFixed(1)}% Top10 ${(core.top10 * 100).toFixed(1)}% / 拡張: N=${ext.n} Top3 ${(ext.top3 * 100).toFixed(1)}% Top10 ${(ext.top10 * 100).toFixed(1)}%`);
@@ -198,6 +203,17 @@ check('入力順序不変性 (Top10/Next5/hash 同一)', orderFail === 0, `${ord
   const e = D.Extract.local('CTで大動脈と上腸間膜動脈の角が狭小、十二指腸の圧排あり。');
   check('画像: SMA症候群の CT 所見 → ct duodenal_compression（虚血ではない）', e.items.some(i => i.feature_id === 'ct' && i.value_code === 'duodenal_compression') && !e.items.some(i => i.value_code === 'ischemia'), JSON.stringify(e.items.map(i => i.feature_id + ':' + i.value_code)));
   {
+    // ---- 有病率（2026-09-27 オーナー指定）----
+    const rank = (text, ctx, id) => { const st = new D.ClinicalState({ context: ctx }); for (const it of D.Extract.local(text).items) st.add(it); const r = D.runSync(st); return r.ddx.ranked.indexOf(id) + 1; };
+    const ctx = { age_band: '60-69', sex: 'female' };
+    const t1 = '食後の心窩部不快感と体重減少。上部内視鏡で胃体部に腫瘍を認め、生検待ち。';
+    check('有病率: 所見で区別できない胃の腫瘍性病変は胃癌が MALT リンパ腫より上', rank(t1, ctx, 'gastric_cancer') < rank(t1, ctx, 'gastric_malt_lymphoma'), rank(t1, ctx, 'gastric_cancer') + ' vs ' + rank(t1, ctx, 'gastric_malt_lymphoma'));
+    const t2 = '血便がある。大腸内視鏡で大腸全域に数百個の腺腫性ポリープを認める。';
+    check('診断的所見: 大腸の多発ポリープ（数百個）で FAP が Top3（まれでも所見で決まる）', (k => k > 0 && k <= 3)(rank(t2, { age_band: '18-29', sex: 'male' }, 'fap')), 'rank ' + rank(t2, { age_band: '18-29', sex: 'male' }, 'fap'));
+    const all = D.KB.diseases.filter(d => d.ext);
+    check('有病率: 拡張疾患すべてに有病率の概算が付いている', all.every(d => D.KB.prevalence[d.id] && D.KB.prevalence[d.id].src !== 'draft'), all.filter(d => !D.KB.prevalence[d.id] || D.KB.prevalence[d.id].src === 'draft').map(d => d.id).join(','));
+  }
+  {
     // ---- 症例問題集での改善（2026-09-27）: 否定・上書き・定性表現・画像/内視鏡の語彙・統合 ----
     const fmt = it => it.feature_id + (it.value_code ? ':' + it.value_code : '') + (it.status === 'absent' ? '(absent)' : '');
     const hasT = (arr, t) => arr.some(x => x === t || x.startsWith(t + ':') || x.startsWith(t + '('));
@@ -287,7 +303,7 @@ check('入力順序不変性 (Top10/Next5/hash 同一)', orderFail === 0, `${ord
   }
   {
     // 神経症状（拡張 multi 項目）: 値ごとの否定は他の値の relation に影響しない
-    const run = text => { const st = new D.ClinicalState({ context: { age_band: '40-49', sex: 'male' } }); for (const it of D.Extract.local(text).items) st.add(it); const dd = D.Differential.compute(st); const lp = dd.likely.find(x => x.id === 'lead_poisoning'); return { sup: (lp && lp.support || []).map(x => x.feature_id), ref: (lp && lp.refute || []).map(x => x.feature_id) }; };
+    const run = text => { const st = new D.ClinicalState({ context: { age_band: '40-49', sex: 'male' } }); for (const it of D.Extract.local(text).items) st.add(it); const dd = D.Differential.compute(st); const lp = dd.items.find(x => x.id === 'lead_poisoning'); return { sup: (lp && lp.ev.support || []).map(x => x.feature_id), ref: (lp && lp.ev.refute || []).map(x => x.feature_id) }; };
     const base = '臍周囲の疝痛が2週間続く。便秘あり。Hb 9.5。';
     const a = run(base + '末梢神経障害あり。'), b = run(base + 'しびれあり。めまいなし。'), c = run(base + '頭痛なし。'), e2 = run(base + 'しびれなし。'), d = run(base + '神経症状なし。');
     check('神経症状: 末梢神経障害/しびれ → 鉛中毒の支持所見に入る', a.sup.includes('neuro_sx') && b.sup.includes('neuro_sx'), JSON.stringify([a, b]));

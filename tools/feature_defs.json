@@ -74,7 +74,7 @@
     ],
     [
      "tumor",
-     "腫瘍/狭窄"
+     "上部消化管の腫瘍/狭窄（食道・胃・十二指腸）"
     ],
     [
      "uc_continuous",
@@ -633,6 +633,10 @@
    [
     "mucinous_cyst",
     "粘液性膵嚢胞の所見（膵管交通・壁在結節・厚い被膜）"
+   ],
+   [
+    "hiatal_hernia",
+    "食道裂孔からの胃の脱出（胸腔内）"
    ]
   ],
   "us": [
@@ -727,6 +731,14 @@
    [
     "chronic_gastritis",
     "慢性（萎縮性）胃炎"
+   ],
+   [
+    "hiatal_hernia",
+    "食道裂孔ヘルニア（胃の滑脱）"
+   ],
+   [
+    "tumor_lower",
+    "下部消化管の腫瘍/狭窄（大腸・直腸・小腸）"
    ]
   ],
   "ecg": [
@@ -3474,6 +3486,66 @@
    "sens": 0.8,
    "spec": 0.99,
    "_why": "肝腫瘤/膵嚢胞の造影パターン（ドラフト値）"
+  },
+  {
+   "d": "hiatal_hernia",
+   "f": "ct",
+   "values": [
+    "hiatal_hernia"
+   ],
+   "sens": 0.8,
+   "spec": 0.99,
+   "_why": "診断的所見の追加（ドラフト値）"
+  },
+  {
+   "d": "hiatal_hernia",
+   "f": "endoscopy",
+   "values": [
+    "hiatal_hernia"
+   ],
+   "sens": 0.8,
+   "spec": 0.99,
+   "_why": "診断的所見の追加（ドラフト値）"
+  },
+  {
+   "d": "gerd",
+   "f": "endoscopy",
+   "values": [
+    "hiatal_hernia"
+   ],
+   "sens": 0.3,
+   "spec": 0.9,
+   "_why": "診断的所見の追加（ドラフト値）"
+  },
+  {
+   "d": "anorectal_cancer_prolapse",
+   "f": "endoscopy",
+   "values": [
+    "tumor_lower"
+   ],
+   "sens": 0.8,
+   "spec": 0.97,
+   "_why": "下部消化管の腫瘍所見（ドラフト値）"
+  },
+  {
+   "d": "small_bowel_tumor",
+   "f": "endoscopy",
+   "values": [
+    "tumor_lower"
+   ],
+   "sens": 0.5,
+   "spec": 0.97,
+   "_why": "下部消化管の腫瘍所見（ドラフト値）"
+  },
+  {
+   "d": "gi_lymphoma_gist_small_bowel_tumor",
+   "f": "endoscopy",
+   "values": [
+    "tumor_lower"
+   ],
+   "sens": 0.4,
+   "spec": 0.97,
+   "_why": "下部消化管の腫瘍所見（ドラフト値）"
   }
  ],
  "drop_relations": [
@@ -3744,5 +3816,272 @@
    },
    "note": "症例問題集の検討で追加（ドラフト値）"
   }
- }
+ },
+ "diagnostic": [
+  {
+   "d": "fap",
+   "f": "endoscopy",
+   "v": "polyposis"
+  },
+  {
+   "d": "peutz_jeghers",
+   "f": "endoscopy",
+   "v": "polyposis"
+  },
+  {
+   "d": "protein_losing_enteropathy",
+   "f": "endoscopy",
+   "v": "polyposis"
+  },
+  {
+   "d": "barrett",
+   "f": "endoscopy",
+   "v": "barrett"
+  },
+  {
+   "d": "dieulafoy",
+   "f": "endoscopy",
+   "v": "dieulafoy"
+  },
+  {
+   "d": "mallory_weiss",
+   "f": "endoscopy",
+   "v": "mallory_weiss"
+  },
+  {
+   "d": "gastric_anisakiasis",
+   "f": "endoscopy",
+   "v": "anisakis"
+  },
+  {
+   "d": "cdiff",
+   "f": "endoscopy",
+   "v": "pseudomembrane"
+  },
+  {
+   "d": "infectious_esophagitis",
+   "f": "endoscopy",
+   "v": "candida_ulcer"
+  },
+  {
+   "d": "gastric_polyp",
+   "f": "endoscopy",
+   "v": "gastric_polyp"
+  },
+  {
+   "d": "hepatolithiasis",
+   "f": "ct",
+   "v": "intrahepatic_stones"
+  },
+  {
+   "d": "pancreaticobiliary_maljunction",
+   "f": "ct",
+   "v": "pbm"
+  },
+  {
+   "d": "malas",
+   "f": "ct",
+   "v": "celiac_stenosis"
+  },
+  {
+   "d": "budd_chiari",
+   "f": "ct",
+   "v": "hepatic_vein_occlusion"
+  },
+  {
+   "d": "pancreas_divisum",
+   "f": "ct",
+   "v": "pancreas_divisum"
+  },
+  {
+   "d": "gastric_volvulus",
+   "f": "ct",
+   "v": "gastric_volvulus"
+  },
+  {
+   "d": "lamn",
+   "f": "ct",
+   "v": "appendiceal_mucocele"
+  },
+  {
+   "d": "pseudomyxoma",
+   "f": "ct",
+   "v": "pseudomyxoma"
+  },
+  {
+   "d": "gallstone_ileus",
+   "f": "ct",
+   "v": "bowel_stone"
+  },
+  {
+   "d": "rectus_sheath_hematoma",
+   "f": "ct",
+   "v": "wall_hematoma"
+  },
+  {
+   "d": "splenic_infarct_rupture",
+   "f": "ct",
+   "v": "splenic_infarct"
+  },
+  {
+   "d": "renal_infarction",
+   "f": "ct",
+   "v": "renal_infarct"
+  },
+  {
+   "d": "intussusception_adult",
+   "f": "ct",
+   "v": "intussusception"
+  },
+  {
+   "d": "intussusception_adult",
+   "f": "us",
+   "v": "target"
+  },
+  {
+   "d": "sigmoid_volvulus",
+   "f": "xray",
+   "v": "coffee_bean"
+  },
+  {
+   "d": "benign_liver_tumor",
+   "f": "ct",
+   "v": "hemangioma_pattern"
+  },
+  {
+   "d": "ipmn_mcn",
+   "f": "ct",
+   "v": "mucinous_cyst"
+  },
+  {
+   "d": "echinococcosis",
+   "f": "ct",
+   "v": "cystic_calcified"
+  },
+  {
+   "d": "gallbladder_polyp",
+   "f": "us",
+   "v": "gb_polyp"
+  },
+  {
+   "d": "hiatal_hernia",
+   "f": "ct",
+   "v": "hiatal_hernia"
+  },
+  {
+   "d": "hiatal_hernia",
+   "f": "endoscopy",
+   "v": "hiatal_hernia"
+  },
+  {
+   "d": "parasitic_enteritis",
+   "f": "stool_test",
+   "v": "parasite"
+  },
+  {
+   "d": "clonorchiasis",
+   "f": "stool_test",
+   "v": "parasite"
+  },
+  {
+   "d": "gi_net_carcinoid",
+   "f": "urine_5hiaa",
+   "v": null
+  },
+  {
+   "d": "neuroendocrine_tumor_hormonal",
+   "f": "urine_5hiaa",
+   "v": null
+  },
+  {
+   "d": "acute_porphyria",
+   "f": "porphyrin_urine",
+   "v": null
+  },
+  {
+   "d": "protein_losing_enteropathy",
+   "f": "stool_a1at",
+   "v": null
+  },
+  {
+   "d": "celiac_malabsorption",
+   "f": "autoantibodies",
+   "v": "ttg_pos"
+  },
+  {
+   "d": "autoimmune_gastritis",
+   "f": "autoantibodies",
+   "v": "parietal_pos"
+  },
+  {
+   "d": "pheochromocytoma",
+   "f": "catecholamine_high",
+   "v": null
+  },
+  {
+   "d": "wilson_disease",
+   "f": "ceruloplasmin_low",
+   "v": null
+  },
+  {
+   "d": "hyperkalemia",
+   "f": "electrolyte",
+   "v": "hyperk"
+  },
+  {
+   "d": "hyponatremia",
+   "f": "electrolyte",
+   "v": "hypona"
+  },
+  {
+   "d": "hypercalcemia",
+   "f": "electrolyte",
+   "v": "hyperca"
+  },
+  {
+   "d": "hypokalemia_ileus",
+   "f": "electrolyte",
+   "v": "hypok"
+  },
+  {
+   "d": "herpes_zoster",
+   "f": "skin_finding",
+   "v": "zoster_vesicles"
+  },
+  {
+   "d": "corrosive_esophagitis",
+   "f": "ingestion_event",
+   "v": "caustic"
+  },
+  {
+   "d": "gi_foreign_body",
+   "f": "ingestion_event",
+   "v": "foreign_body"
+  },
+  {
+   "d": "acute_viral_hepatitis",
+   "f": "hepatitis_serology",
+   "v": "hav_igm_pos"
+  },
+  {
+   "d": "acute_viral_hepatitis",
+   "f": "hepatitis_serology",
+   "v": "hev_pos"
+  },
+  {
+   "d": "chronic_viral_hepatitis",
+   "f": "hepatitis_serology",
+   "v": "hcv_pos"
+  }
+ ],
+ "diagnostic_doc": "診断的所見: その所見があればほぼその疾患と言えるもの。特異度 0.9999・尤度比の上限 1万で扱う（同じ所見を持つ疾患どうしは有病率順）。臨床判断によるドラフト",
+ "relation_value_override": [
+  {
+   "d": "colorectal_cancer",
+   "f": "endoscopy",
+   "from": "tumor",
+   "to": "tumor_lower",
+   "_why": "内視鏡の腫瘍所見を上部/下部に分けた（2026-09-27）"
+  }
+ ]
 }

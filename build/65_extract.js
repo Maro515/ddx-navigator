@@ -198,7 +198,7 @@ ${catalogText()}`;
     ['ct', '(CT|ＣＴ|MRI|MRCP)[^。]*((後腹膜|腹腔内|腸間膜)(の)?(腫瘤|腫瘍))', 'retro_mass'],
     ['ct', '(CT|ＣＴ|MRI|MRCP)[^。]*(腸管(壁)?(内)?気腫|腸管壁内(の)?ガス|pneumatosis)', 'pneumatosis'],
     ['ct', '(CT|ＣＴ|MRI|MRCP)[^。]*(腸腰筋(の)?(膿瘍|腫大))', 'psoas_abscess'],
-    ['ct', '(CT|ＣＴ|MRI|MRCP)[^。]*(腹直筋鞘(内)?血腫|腹壁(の)?血腫)', 'wall_hematoma'],
+    ['ct', '(CT|ＣＴ|MRI|MRCP)[^。]*(腹直筋鞘[^。、]{0,6}血腫|腹壁[^。、]{0,6}血腫)', 'wall_hematoma'],
     ['ct', '(CT|ＣＴ|MRI|MRCP)[^。]*((腸)?重積|target sign|ターゲットサイン)', 'intussusception'],
     ['ct', '(CT|ＣＴ|MRI|MRCP)[^。]*((腸管|小腸|空腸|回腸|十二指腸|大腸|結腸|S状結腸|直腸|盲腸|上行結腸|横行結腸|下行結腸)[^。]{0,6}壁(の)?肥厚|腸管壁肥厚)', 'wall_thick'],
     ['ct', '(CT|ＣＴ|MRI|MRCP)[^。]*((腸管|小腸|空腸|回腸|十二指腸|大腸|結腸|S状結腸|直腸|盲腸)[^。]{0,10}(腫瘤|腫瘍|全周性(の)?(壁肥厚|狭窄)|apple core))', 'bowel_mass'],
@@ -304,6 +304,7 @@ ${catalogText()}`;
     ['ct', IMGP + '虫垂[^。、]{0,8}(嚢胞状|粘液|拡張)', 'appendiceal_mucocele'],
     ['ct', '(scalloping|スキャロッピング|ゼリー状(の)?腹水|粘液性腹水|腹膜表面[^。、]{0,6}低吸収)', 'pseudomyxoma'],
     ['ct', IMGP + '副腎[^。、]{0,6}(腫瘤|腫瘍|結節)', 'adrenal_mass'],
+    ['ct', '(食道裂孔[^。、]{0,10}(越え|脱出|滑脱)|胸腔内に[^。、]{0,6}(滑脱|脱出)|裂孔ヘルニア)', 'hiatal_hernia'], ['endoscopy', ENDO + '(食道裂孔ヘルニア|裂孔ヘルニア|胃の滑脱)', 'hiatal_hernia'],
     // 肝腫瘤・膵嚢胞の造影パターン（疾患の区別に使う古典的所見）
     ['ct', IMGP + '(辺縁(から|より)?[^。、]{0,6}結節状[^。、]{0,6}濃染|中心(へ|に向かって)[^。、]{0,6}(造影|濃染)が(進|広が)|fill-?in|遷延性濃染)', 'hemangioma_pattern'],
     ['ct', IMGP + '(動脈相[^。、]{0,6}(濃染|早期濃染)|早期濃染|多血性)', 'arterial_enhancement'], ['ct', IMGP + '(washout|ウォッシュアウト|門脈相[^。、]{0,6}(低吸収|洗い出し)|後期相[^。、]{0,6}低吸収)', 'washout'],
@@ -312,6 +313,12 @@ ${catalogText()}`;
     ['ct', IMGP + '(壁在結節|分枝膵管|主膵管(と|に)[^。、]{0,6}交通|交通する[^。、]{0,10}嚢胞|厚い被膜[^。、]{0,10}嚢胞|卵巣様間質|膵[^。、]{0,12}粘液)', 'mucinous_cyst'],
     ['ct', IMGP + '((腹腔動脈|上腸間膜動脈|SMA)[^。、]{0,12}動脈硬化|動脈硬化性[^。、]{0,4}狭窄|上腸間膜動脈[^。、]{0,8}(狭窄|閉塞))', 'visceral_artery_stenosis'],
   ];
+  /* 「〜を造影CTで認める」のように検査名が所見の後に来る語順にも対応（前置きの検査名の代わりに、同じ文の後ろにあればよい） */
+  for (const rule of KW) {
+    for (const P of [IMGP, ENDO, USP]) {
+      if (typeof rule[1] === 'string' && rule[1].startsWith(P)) { const rest = rule[1].slice(P.length); rule[1] = '(?:' + P + rest + '|' + rest + '(?=[^。]*' + P.slice(0, P.indexOf(')') + 1) + '))'; break; }
+    }
+  }
   function bucketTime(text) {
     const m1 = text.match(/(\d+)\s*(分|時間|日|週間|週|か月|ヶ月|カ月)\s*(前|ほど前|くらい前|から)/);
     if (m1) { const n = parseInt(m1[1], 10), u = m1[2];
@@ -434,6 +441,8 @@ ${catalogText()}`;
         if (f.multi && f.type === 'imaging' && neg) continue; // 画像の「〜なし」は所見として登録しない（異常なし は normal で扱う）。症状系の multi は値付き absent で登録
         add(fid, f.values ? val : null, s.slice(0, 60), neg ? 'absent' : 'present', extra);
       }
+      // 内視鏡の腫瘍所見は臓器で上部/下部に分ける（大腸・小腸などの語が同じ文にあれば下部）
+      if (/大腸|結腸|直腸|盲腸|回腸|空腸|小腸|S状|回盲|肛門|CF|カプセル/.test(s)) for (const it of items) if (it._s === curS && it.feature_id === 'endoscopy' && it.value_code === 'tumor') it.value_code = 'tumor_lower';
       numbers(s, (fid, val, q, st) => add(fid, val, q, st || 'present', { time_context: { elapsed_bucket: tb || 'unknown', trend: 'unknown' } }));
     }
     // 文脈

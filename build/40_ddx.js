@@ -7,8 +7,9 @@
   const KB = () => DDX.KB;
   const CLAMP = 3.5;       // 陰性側（なし）の上限: LR 1/33
   const CLAMP_POS = 4.6;   // 陽性側の上限: LR 100（内視鏡・画像・特異的検査の決め手が事前確率の差を覆せるように。2026-09-27）
+  const CLAMP_DIAG = 9.2;  // 診断的所見（diag: true）: 特異度 0.9999・上限 LR 1万。その所見があればほぼその疾患と言えるもの
   const clamp = x => Math.max(-CLAMP, Math.min(CLAMP_POS, x));
-  const lnLRpos = r => clamp(Math.log(r.sens / (1 - r.spec)));
+  const lnLRpos = r => r.diag ? Math.min(CLAMP_DIAG, Math.log(r.sens / (1 - Math.max(r.spec, 0.9999)))) : clamp(Math.log(r.sens / (1 - r.spec)));
   const lnLRneg = r => clamp(Math.log((1 - r.sens) / r.spec));
 
   function ageIdx(b) { const i = KB().ageIndex[b]; return i === undefined ? null : i; }
@@ -86,6 +87,23 @@
     if (tm) { ln += Math.log(tm); }
     return { ln, notes, onset: co.tier1, trend: co.trend };
   }
+  /* 所見の尤度（事前確率を除いた部分）の差が TIE 以内の隣り合う疾患は「所見では区別できない」とみなし、
+     有病率（事前確率・年齢/性別補正込み）の高い方を上にする。病理でしか区別できない疾患は有病率順になる（2026-09-27 オーナー指定）。
+     入れ替えは所見の差が TIE を超える疾患をまたがない。上位 TIE_SCOPE 件のみ対象（表示と次項目の計算に十分） */
+  const TIE = Math.log(3), TIE_SCOPE = 40;
+  const lik = x => x.ev.sum + x.tf.ln;
+  function prevalenceOrder(list) {
+    const n = Math.min(list.length, TIE_SCOPE);
+    for (let pass = 0; pass < n; pass++) {
+      let swapped = false;
+      for (let i = 0; i + 1 < n; i++) {
+        const a = list[i], b = list[i + 1];
+        if (b.logprior > a.logprior + 1e-9 && Math.abs(lik(a) - lik(b)) <= TIE) { list[i] = b; list[i + 1] = a; swapped = true; }
+      }
+      if (!swapped) break;
+    }
+    return list;
+  }
   function fitLevel(p, rank) {
     if (p >= 0.15 || (rank === 1 && p >= 0.08)) return 'high';
     if (p >= 0.04) return 'mid';
@@ -112,12 +130,15 @@
       else x.p = Math.exp(x.logodds - mx) / Z;
     }
     const nObs = state.current().filter(o => o.status === 'present' || o.status === 'absent').length;
-    const likely = items.filter(x => !x.d.comorbid).sort((a, b) => b.p - a.p);
+    const likely = prevalenceOrder(items.filter(x => !x.d.comorbid).sort((a, b) => (b.p - a.p) || (b.logprior - a.logprior) || (a.id < b.id ? -1 : 1)));
     const comorbid = items.filter(x => x.d.comorbid && x.p >= 0.25).sort((a, b) => b.p - a.p);
     const top = likely.slice(0, 10).map((x, i) => ({
       id: x.id, label: x.label, rank: i + 1, p: x.p, fit: fitLevel(x.p, i + 1), urgency: x.d.urgency, mnm: x.d.mnm,
       support: x.ev.support, refute: x.ev.refute, missing: x.ev.missing.slice(0, 6), timeNotes: x.tf.notes, note: x.d.note, comorbid: false
     }));
+    // 適合度の表示は順位に対して単調にする（有病率順で上に来た疾患が下の疾患より低い適合度に見えないように）
+    const FO = { low: 0, mid: 1, high: 2 };
+    for (let i = top.length - 2; i >= 0; i--) if (FO[top[i + 1].fit] > FO[top[i].fit]) top[i].fit = top[i + 1].fit;
     for (const x of comorbid) top.push({ id: x.id, label: x.label, rank: null, p: x.p, fit: x.p >= 0.6 ? 'high' : 'mid', urgency: x.d.urgency, mnm: false, support: x.ev.support, refute: x.ev.refute, missing: x.ev.missing.slice(0, 6), timeNotes: [], note: '併存病態（独立評価）', comorbid: true });
     // Must-not-miss
     const mnm = [];
@@ -148,7 +169,7 @@
     mnm.sort((a, b) => (b.openScore - a.openScore) || (b.p - a.p));
     const posterior = Object.fromEntries(items.map(x => [x.id, x.p]));
     return {
-      likely: top, mnm, excluded, posterior, items,
+      likely: top, mnm, excluded, posterior, items, ranked: likely.map(x => x.id),
       insufficient: nObs < 3, nObs, kb_version: kb.version,
       ranking_suppressed: !!(safety && safety.emergent)
     };

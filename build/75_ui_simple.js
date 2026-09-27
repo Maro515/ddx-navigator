@@ -97,6 +97,7 @@
     return `<div class="qa"><button data-ins="${esc(base(f))} ">入力欄に書く</button>${negBtn}${naBtn}</div>`;
     function base(f) { return f.label.replace(/（.*?）|\s*\(.*?\)/g, ''); }
   }
+  function prevTag(id) { const t = KB().prevalenceTier && KB().prevalenceTier(id); return t ? `<span class="prev">${esc(t)}</span>` : ''; }
   function evidenceHtml(x) {
     const kb = KB(); const item = (s, cls) => { const f = kb.feature[s.feature_id]; const o = s.obs; const v = o ? (o.status === 'present' ? (f.values ? valueLabel(f, o.value_code) : 'あり') : (o.value_code && f.values ? valueLabel(f, o.value_code) + ' なし' : 'なし')) : ''; return `<span class="tag ${cls}">${esc(f.label.replace('（部位）', ''))}${v ? ': ' + esc(v) : ''}</span>`; };
     let h = '';
@@ -129,10 +130,10 @@
     if (em.cleared.length) h += `<div class="tiny muted" style="margin-top:6px">✓ 概ね除外: ${em.cleared.map(m => esc(m.label)).join('、')}</div>`;
     h += `</div>`;
     // 3. 可能性の高い順
-    h += `<div class="card"><h2>🟦 可能性の高い順 ${d.insufficient ? '<span class="cnt">情報不足・暫定</span>' : ''}</h2>`;
-    for (const x of d.likely.filter(x => !x.comorbid).slice(0, 5)) { const key = 'L' + x.id; h += `<div class="dx"><div class="head" data-toggle="${key}"><span class="rank">${x.rank}</span><span class="name">${esc(x.label)}</span><span class="badge ${x.fit}">${{ high: '高', mid: '中', low: '低' }[x.fit]}</span></div>${UI.open[key] ? `<div class="detail">${evidenceHtml(x)}</div>` : ''}</div>`; }
+    h += `<div class="card"><h2>🟦 可能性の高い順 ${d.insufficient ? '<span class="cnt">情報不足・暫定</span>' : ''}</h2><div class="tiny muted" style="margin:-4px 0 6px">所見で区別できない疾患は頻度の高い順</div>`;
+    for (const x of d.likely.filter(x => !x.comorbid).slice(0, 5)) { const key = 'L' + x.id; h += `<div class="dx"><div class="head" data-toggle="${key}"><span class="rank">${x.rank}</span><span class="name">${esc(x.label)}</span>${prevTag(x.id)}<span class="badge ${x.fit}">${{ high: '高', mid: '中', low: '低' }[x.fit]}</span></div>${UI.open[key] ? `<div class="detail">${evidenceHtml(x)}</div>` : ''}</div>`; }
     const more = d.likely.filter(x => !x.comorbid).slice(5);
-    if (more.length) h += `<details class="small" style="margin-top:6px"><summary>6位以下 (${more.length})</summary>${more.map(x => `<div class="dx"><div class="head" data-toggle="L${x.id}"><span class="rank">${x.rank}</span><span class="name">${esc(x.label)}</span><span class="badge ${x.fit}">${{ high: '高', mid: '中', low: '低' }[x.fit]}</span></div>${UI.open['L' + x.id] ? `<div class="detail">${evidenceHtml(x)}</div>` : ''}</div>`).join('')}</details>`;
+    if (more.length) h += `<details class="small" style="margin-top:6px"><summary>6位以下 (${more.length})</summary>${more.map(x => `<div class="dx"><div class="head" data-toggle="L${x.id}"><span class="rank">${x.rank}</span><span class="name">${esc(x.label)}</span>${prevTag(x.id)}<span class="badge ${x.fit}">${{ high: '高', mid: '中', low: '低' }[x.fit]}</span></div>${UI.open['L' + x.id] ? `<div class="detail">${evidenceHtml(x)}</div>` : ''}</div>`).join('')}</details>`;
     const como = d.likely.filter(x => x.comorbid); if (como.length) h += `<div class="tiny muted" style="margin-top:6px">併存の可能性: ${como.map(x => esc(x.label)).join('、')}</div>`;
     h += `</div>`;
     // 4. 次に聞く・調べる

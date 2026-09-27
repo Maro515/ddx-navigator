@@ -53,8 +53,9 @@ TypeSafe/Jev の実 API 仕様に合わせるには `DDX.Jev.remote()` と `buil
 ## 疾患カバレッジ
 - コア（腹痛/下痢パック v0.2）: 30 疾患。文献値・専門家ドラフト値
 - 拡張パック（腹部症状）: 184 疾患（上部消化管・肝胆膵・下部消化管・血管・婦人科・泌尿器・全身/代謝・胸部/その他・腹壁/ヘルニア）。妊娠中限定疾患は `requires.pregnancy_in`、性別は解剖学的限定のみ hard、それ以外は事前確率 ×1.5 の soft
-- 合成テストの Top10 recall: コア 94%、拡張 80%（拡張はドラフト値のため要レビュー）
+- 合成テストの Top10 recall: コア 94%、拡張 75%（有病率で重み付けすると Top10 91%）（拡張はドラフト値のため要レビュー）
 - 症例問題集（220 問）での評価: `node tools/eval_qbank.js <問題集.md>`。方法と結果は `docs/qbank_evaluation.md`（改善前 Top5 48% → 最終 95.5%。新しい症例への見積もりは取り分けた検証用で 45% → 63%）。問題集はリポジトリに含めない
+- 有病率: 拡張疾患の事前確率は `tools/prevalence.json`（腹部症状を伴う受診発症数/10万人年の概算 × 0.001）から `python3 tools/build_prevalence.py` で `build/13_prevalence.js` を生成。所見の尤度差が 3 倍以内の疾患は有病率順、診断的所見（`tools/feature_defs.json` の `diagnostic`）は尤度比上限 1万
 - 所見項目の重複整理: `docs/feature_dedup_candidates.md`（2026-09-27 承認・反映）。統合・分解は `tools/feature_alias.json`（`expand` で 1 対多、値マップは値リスト・`=` 恒等・`@項目`・`null` に対応）、項目の上書き・値の追加・関係の追加/削除は `tools/feature_defs.json`。一方の入力から他方を立てる自動導出（心電図AF→既往AF、糖尿病→冠危険因子、妊娠時期→妊娠状態 など）は `build/20_state.js` の `DERIVE`
 
 ## 根拠ポリシー（EvidenceSource）
