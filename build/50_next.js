@@ -157,10 +157,10 @@
     return { forced, top, others, all: list, emergency, differential, jev: jev ? { enabled: true, ok: jev.ok, provider: jev.provider, latency: jev.latency, error: jev.error || null } : { enabled: false }, weights: W };
   }
   function buildReasons(it, ddx) {
-    const lab = id => (DDX.KB.disease[id] || {}).label || id;
+    const lab = id => { const d = DDX.KB.disease[id] || {}; return d.short || d.label || id; };  // 疾患群は短い名前
     const r = [];
     const upIds = it.ups.map(x => x.d);
-    const others = ddx.likely.filter(x => !x.comorbid && !upIds.includes(x.id)).slice(0, 2).map(x => x.label);
+    const others = ddx.likely.filter(x => !x.comorbid && !upIds.includes(x.id)).slice(0, 2).map(x => lab(x.id));
     if (it.ups.length && others.length) r.push(`区別: ${it.ups.slice(0, 2).map(x => lab(x.d)).join('・')} vs ${others.join('・')}`);
     else if (it.ups.length) r.push(`陽性なら ${it.ups.slice(0, 2).map(x => lab(x.d)).join('・')} を支持`);
     else if (it.downs.length) r.push(`陰性なら ${it.downs.slice(0, 2).map(x => lab(x.d)).join('・')} を下げる`);

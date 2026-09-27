@@ -207,7 +207,9 @@ check('入力順序不変性 (Top10/Next5/hash 同一)', orderFail === 0, `${ord
     const rank = (text, ctx, id) => { const st = new D.ClinicalState({ context: ctx }); for (const it of D.Extract.local(text).items) st.add(it); const r = D.runSync(st); return r.ddx.ranked.indexOf(id) + 1; };
     const ctx = { age_band: '60-69', sex: 'female' };
     const t1 = '食後の心窩部不快感と体重減少。上部内視鏡で胃体部に腫瘍を認め、生検待ち。';
-    check('有病率: 所見で区別できない胃の腫瘍性病変は胃癌が MALT リンパ腫より上', rank(t1, ctx, 'gastric_cancer') < rank(t1, ctx, 'gastric_malt_lymphoma'), rank(t1, ctx, 'gastric_cancer') + ' vs ' + rank(t1, ctx, 'gastric_malt_lymphoma'));
+    check('疾患群: 病理でしか区別できない胃の腫瘍（MALT・GIST・NEN・ポリープ）は胃癌の群にまとまり、Top3 に入る', ['gastric_malt_lymphoma', 'gastric_smt_gist', 'gastroduodenal_nen', 'gastric_polyp'].every(x => !D.KB.disease[x]) && rank(t1, ctx, 'gastric_cancer') <= 3, 'rank ' + rank(t1, ctx, 'gastric_cancer'));
+    const grp = JSON.parse(require('fs').readFileSync(require('path').join(__dirname, '..', 'tools', 'feature_defs.json'), 'utf8')).disease_groups;
+    check('疾患群: 定義した群の構成疾患が KB に残っていない', Object.values(grp).every(g => g.members.every(m => !D.KB.disease[m])), Object.values(grp).flatMap(g => g.members.filter(m => D.KB.disease[m])).join(','));
     const t2 = '血便がある。大腸内視鏡で大腸全域に数百個の腺腫性ポリープを認める。';
     check('診断的所見: 大腸の多発ポリープ（数百個）で FAP が Top3（まれでも所見で決まる）', (k => k > 0 && k <= 3)(rank(t2, { age_band: '18-29', sex: 'male' }, 'fap')), 'rank ' + rank(t2, { age_band: '18-29', sex: 'male' }, 'fap'));
     const all = D.KB.diseases.filter(d => d.ext);
@@ -260,7 +262,7 @@ check('入力順序不変性 (Top10/Next5/hash 同一)', orderFail === 0, `${ord
     const cp = KB.diseases.find(d => /慢性膵炎/.test(d.label));
     check('統合: 慢性膵炎の脂肪便は下痢パターン1項目で参照', cp && relsTo(cp.id, 'diarrhea_pattern').some(r => r.values && r.values.includes('steatorrhea')));
     check('二重計上: 腸間膜虚血・腎梗塞は心電図AFを参照しない（既往AFへ自動導出）', relsTo('mesenteric_ischemia', 'ecg').every(r => !r.values || !r.values.includes('af')) && !relsTo('renal_infarction', 'ecg').length);
-    check('ICI: ICI大腸炎と薬物性肝障害の両方が ici_use を参照', relsTo('drug_colitis_other', 'ici_use').length > 0 && relsTo('drug_induced_liver_injury', 'ici_use').length > 0);
+    check('ICI: ICI大腸炎と薬物性肝障害の両方が ici_use を参照', relsTo('drug_induced_enterocolitis', 'ici_use').length > 0 && relsTo('drug_induced_liver_injury', 'ici_use').length > 0);
     const intus = KB.diseases.find(d => /腸重積/.test(d.label));
     check('画像: 腸重積は腹部CTの1値で参照（旧 2 項目の二重計上なし）', intus && relsTo(intus.id, 'ct').some(r => r.values && r.values.includes('intussusception')));
     // 語彙の誤反応と新しい語彙
@@ -303,7 +305,7 @@ check('入力順序不変性 (Top10/Next5/hash 同一)', orderFail === 0, `${ord
   }
   {
     // 神経症状（拡張 multi 項目）: 値ごとの否定は他の値の relation に影響しない
-    const run = text => { const st = new D.ClinicalState({ context: { age_band: '40-49', sex: 'male' } }); for (const it of D.Extract.local(text).items) st.add(it); const dd = D.Differential.compute(st); const lp = dd.items.find(x => x.id === 'lead_poisoning'); return { sup: (lp && lp.ev.support || []).map(x => x.feature_id), ref: (lp && lp.ev.refute || []).map(x => x.feature_id) }; };
+    const run = text => { const st = new D.ClinicalState({ context: { age_band: '40-49', sex: 'male' } }); for (const it of D.Extract.local(text).items) st.add(it); const dd = D.Differential.compute(st); const lp = dd.items.find(x => x.id === 'acute_porphyria'); return { sup: (lp && lp.ev.support || []).map(x => x.feature_id), ref: (lp && lp.ev.refute || []).map(x => x.feature_id) }; };
     const base = '臍周囲の疝痛が2週間続く。便秘あり。Hb 9.5。';
     const a = run(base + '末梢神経障害あり。'), b = run(base + 'しびれあり。めまいなし。'), c = run(base + '頭痛なし。'), e2 = run(base + 'しびれなし。'), d = run(base + '神経症状なし。');
     check('神経症状: 末梢神経障害/しびれ → 鉛中毒の支持所見に入る', a.sup.includes('neuro_sx') && b.sup.includes('neuro_sx'), JSON.stringify([a, b]));

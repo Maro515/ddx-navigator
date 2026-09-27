@@ -15,6 +15,13 @@ ALIAS = json.load(open(os.path.join(BASE, 'tools', 'disease_alias.json'))) if os
 MULTI = {'neuro_sx','skin_finding','electrolyte','ct_other','ct_wall_mass','endoscopy','hb_imaging','chronic_liver_labs','drug_hx_colitis','drug_hx_metabolic','anal_sx','abd_mass','endocrine_lab','autoantibodies','hepatitis_serology','cxr','urine_stool_color','diarrhea_pattern','hemolysis_labs','sx_sequence'}
 FALIAS = json.load(open(os.path.join(BASE, 'tools', 'feature_alias.json'))) if os.path.exists(os.path.join(BASE, 'tools', 'feature_alias.json')) else {}
 FDEFS = json.load(open(os.path.join(BASE, 'tools', 'feature_defs.json'), encoding='utf-8')) if os.path.exists(os.path.join(BASE, 'tools', 'feature_defs.json')) else {}
+def canon_d(x):
+    seen = set()
+    while x in ALIAS and x not in seen: seen.add(x); x = ALIAS[x]
+    return x
+for key in ('add_relations', 'diagnostic', 'relation_value_override', 'drop_relations'):
+    for r in FDEFS.get(key, []): r['d'] = canon_d(r['d'])
+FDEFS['add_diseases'] = {k: v for k, v in FDEFS.get('add_diseases', {}).items() if canon_d(k) == k}
 FDEF_F = FDEFS.get('features', {})
 MULTI |= {fid for fid, d in FDEF_F.items() if d.get('multi')}
 
@@ -73,7 +80,7 @@ new_features, new_values, diseases, relations, refs = {}, [], {}, [], {}
 skipped = []
 def norm_id(x):
     x = re.sub(r'[^a-z0-9_]+', '_', x.lower()).strip('_')
-    return ALIAS.get(x, x)
+    return canon_d(x)
 def norm_fid(x):
     return re.sub(r'[^a-z0-9_]+', '_', x.replace('NEW:', '').lower()).strip('_')
 for it in items:
@@ -133,6 +140,7 @@ for fid, nf in new_features.items():
     vals = nf.get('values')
     vals_js = ('[' + ', '.join(f"['{c}', {js(l)}]" for c, l in vals) + ']') if vals else 'null'
     acq = ACQ.get(t, "{ cost: 0, inv: 0, delay: 0, stage: 'bedside' }")
+    if FDEF_F.get(fid, {}).get('acq'): q = FDEF_F[fid]['acq']; acq = f"{{ cost: {q['cost']}, inv: {q['inv']}, delay: {q['delay']}, stage: '{q['stage']}' }}"
     multi = ', multi: true' if fid in MULTI and vals_js != 'null' else ''
     fbase = nf.get('base', 0.1)
     lines.append(f"  KB.addFeature({{ id: '{fid}', label: {js(nf['label'])}, type: '{t}', cat: '{cat}', anchor: '{ANCHOR.get(t, 'observation')}', values: {vals_js}{multi}, acq: {acq}, base: {fbase}, mgmt: 1, ext: true }});")
@@ -205,7 +213,8 @@ for key, it in diseases.items():
                 if r['sens'] >= 0.8 and r['type'] in ('lab', 'imaging', 'exam') and len(clear) < 4: r['key'] = True; clear.append(r['fid'])
             clear = list(dict.fromkeys(clear))
         dlabel = FDEFS.get('diseases', {}).get(did, {}).get('label', it['name_ja'])
-        lines.append(f"  KB.addDisease('{did}', {js(dlabel)}, {{ urgency: '{urg}', mnm: {'true' if mnm else 'false'}, prior: {prior}, onset: {js(onset)}, requires: {js(req)}, mult: {js(mult)}, clear: {js(clear)}, category: {js(it.get('category', ''))}, note: {js(it.get('discriminators', ''))}, ext: true }});")
+        dshort = dlabel.split('（')[0] if did in FDEFS.get('disease_groups', {}) else None
+        lines.append(f"  KB.addDisease('{did}', {js(dlabel)}, {{ urgency: '{urg}', mnm: {'true' if mnm else 'false'}, prior: {prior}, onset: {js(onset)}, requires: {js(req)}, mult: {js(mult)}, clear: {js(clear)}, category: {js(it.get('category', ''))}, note: {js(it.get('discriminators', ''))}{', short: ' + js(dshort) + ', group: true' if dshort else ''}, ext: true }});")
         n_new += 1
     refs[did] = sorted(set(it.get('source_files', []) or []))
     for r in rels:
@@ -216,7 +225,9 @@ for key, it in diseases.items():
 for did, dd in FDEFS.get('add_diseases', {}).items():
     if did in KD or did in {it['_id'] for it in diseases.values()}: continue
     onset = dict(dd.get('onset', {'minutes': 0.3, 'hours': 0.6, 'days': 1, 'weeks': 1, 'months': 1})); onset['unknown'] = 0.7
-    lines.append(f"  KB.addDisease('{did}', {js(dd['label'])}, {{ urgency: '{dd.get('urgency', 'routine')}', mnm: false, prior: {dd.get('prior', 0.002)}, onset: {js(onset)}, requires: {js(dd.get('requires', {}))}, mult: [], clear: [], category: {js(dd.get('category', ''))}, note: {js(dd.get('note', ''))}, ext: true }});")
+    glabel = FDEFS.get('diseases', {}).get(did, {}).get('label', dd['label'])
+    gshort = glabel.split('（')[0] if did in FDEFS.get('disease_groups', {}) else None
+    lines.append(f"  KB.addDisease('{did}', {js(glabel)}, {{ urgency: '{dd.get('urgency', 'routine')}', mnm: false, prior: {dd.get('prior', 0.002)}, onset: {js(onset)}, requires: {js(dd.get('requires', {}))}, mult: [], clear: [], category: {js(dd.get('category', ''))}, note: {js(dd.get('note', ''))}{', short: ' + js(gshort) + ', group: true' if gshort else ''}, ext: true }});")
     n_new += 1
 EXTRA_D = set(FDEFS.get('add_diseases', {}).keys())
 for r in FDEFS.get('add_relations', []):

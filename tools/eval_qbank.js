@@ -12,7 +12,11 @@ const src = args.find(a => !a.startsWith('--'));
 if (!src) { console.error('usage: node tools/eval_qbank.js <問題集.md> [--detail dev|holdout|all] [--json out.json]'); process.exit(1); }
 const detail = args.includes('--detail') ? (/^(dev|holdout|all)$/.test(args[args.indexOf('--detail') + 1] || '') ? args[args.indexOf('--detail') + 1] : 'dev') : '';
 const jsonOut = args.includes('--json') ? args[args.indexOf('--json') + 1] : null;
-const MAP = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'tests', 'qbank_answer_map.json'), 'utf8')).map;
+const MAP0 = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'tests', 'qbank_answer_map.json'), 'utf8')).map;
+// 統合された疾患（疾患群）は統合先の ID で採点する
+const ALIAS = JSON.parse(fs.readFileSync(path.join(__dirname, 'disease_alias.json'), 'utf8'));
+const canon = x => { const seen = new Set(); while (ALIAS[x] && !seen.has(x)) { seen.add(x); x = ALIAS[x]; } return x; };
+const MAP = Object.fromEntries(Object.entries(MAP0).map(([q, ids]) => [q, [...new Set(ids.map(canon))]]));
 
 /* 問題集の読み込み */
 const qs = []; let cur = null, sec = null;

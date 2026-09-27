@@ -283,7 +283,13 @@
      "elevated",
      "上昇"
     ]
-   ]
+   ],
+   "acq": {
+    "cost": 3,
+    "inv": 1,
+    "delay": 3,
+    "stage": "special"
+   }
   },
   "ici_use": {
    "label": "免疫チェックポイント阻害薬の使用（現在/過去1年）",
@@ -316,32 +322,68 @@
   "iron_overload": {
    "label": "フェリチン/トランスフェリン飽和度上昇",
    "type": "lab",
-   "base": 0.05
+   "base": 0.05,
+   "acq": {
+    "cost": 3,
+    "inv": 1,
+    "delay": 3,
+    "stage": "special"
+   }
   },
   "ceruloplasmin_low": {
    "label": "セルロプラスミン低値",
    "type": "lab",
-   "base": 0.02
+   "base": 0.02,
+   "acq": {
+    "cost": 3,
+    "inv": 1,
+    "delay": 3,
+    "stage": "special"
+   }
   },
   "gastrin_high": {
    "label": "高ガストリン血症",
    "type": "lab",
-   "base": 0.03
+   "base": 0.03,
+   "acq": {
+    "cost": 3,
+    "inv": 1,
+    "delay": 3,
+    "stage": "special"
+   }
   },
   "b12_low": {
    "label": "ビタミンB12低値/大球性貧血",
    "type": "lab",
-   "base": 0.05
+   "base": 0.05,
+   "acq": {
+    "cost": 3,
+    "inv": 1,
+    "delay": 3,
+    "stage": "special"
+   }
   },
   "porphyrin_urine": {
    "label": "尿中ポルホビリノーゲン/ALA高値",
    "type": "lab",
-   "base": 0.01
+   "base": 0.01,
+   "acq": {
+    "cost": 3,
+    "inv": 1,
+    "delay": 3,
+    "stage": "special"
+   }
   },
   "stool_a1at": {
    "label": "便中α1-アンチトリプシンクリアランス上昇",
    "type": "lab",
-   "base": 0.01
+   "base": 0.01,
+   "acq": {
+    "cost": 3,
+    "inv": 1,
+    "delay": 3,
+    "stage": "special"
+   }
   },
   "gastrectomy_hx": {
    "label": "胃切除後",
@@ -386,7 +428,13 @@
   "urine_5hiaa": {
    "label": "尿中5-HIAA高値",
    "type": "lab",
-   "base": 0.01
+   "base": 0.01,
+   "acq": {
+    "cost": 3,
+    "inv": 1,
+    "delay": 3,
+    "stage": "special"
+   }
   },
   "macroglossia": {
    "label": "巨舌（舌の腫大）",
@@ -411,7 +459,13 @@
   "catecholamine_high": {
    "label": "メタネフリン/カテコラミン高値",
    "type": "lab",
-   "base": 0.01
+   "base": 0.01,
+   "acq": {
+    "cost": 3,
+    "inv": 1,
+    "delay": 3,
+    "stage": "special"
+   }
   },
   "clubbing": {
    "label": "ばち指",
@@ -422,6 +476,22 @@
    "label": "立位で悪化する呼吸困難（platypnea）",
    "type": "symptom",
    "base": 0.01
+  },
+  "igg4": {
+   "acq": {
+    "cost": 3,
+    "inv": 1,
+    "delay": 3,
+    "stage": "special"
+   }
+  },
+  "autoantibodies": {
+   "acq": {
+    "cost": 3,
+    "inv": 1,
+    "delay": 3,
+    "stage": "special"
+   }
   }
  },
  "add_values": {
@@ -3603,6 +3673,57 @@
   },
   "gastric_smt_gist": {
    "label": "胃・食道粘膜下腫瘍（GIST/平滑筋腫など）"
+  },
+  "gastric_cancer": {
+   "label": "胃の腫瘍性病変（胃癌・MALTリンパ腫・GIST/粘膜下腫瘍・神経内分泌腫瘍・胃ポリープ）"
+  },
+  "small_bowel_tumor": {
+   "label": "小腸・消化管の腫瘍（腺癌・GIST・悪性リンパ腫・神経内分泌腫瘍）"
+  },
+  "pancreatic_cancer": {
+   "label": "膵腫瘍（膵癌・IPMN/MCN）"
+  },
+  "extrahepatic_cholangiocarcinoma": {
+   "label": "胆道の腫瘍性病変（胆管癌・胆嚢癌・乳頭部癌・胆嚢ポリープ/腺筋腫症）"
+  },
+  "gerd": {
+   "label": "胃食道逆流症・食道粘膜病変（逆流性食道炎・Barrett食道・好酸球性食道炎）"
+  },
+  "h_pylori_gastritis": {
+   "label": "慢性胃炎（H. pylori感染胃炎・自己免疫性胃炎）"
+  },
+  "fap": {
+   "label": "消化管ポリポーシス（家族性大腸腺腫症・Peutz-Jeghers症候群）"
+  },
+  "autoimmune_hepatitis": {
+   "label": "自己免疫性・代謝性肝疾患（自己免疫性肝炎・原発性胆汁性胆管炎・Wilson病・ヘモクロマトーシス）"
+  },
+  "drug_induced_enterocolitis": {
+   "label": "薬剤性腸炎・顕微鏡的大腸炎（NSAIDs腸症・ICI大腸炎・collagenous colitis等）"
+  },
+  "celiac_malabsorption": {
+   "label": "吸収不良症候群・胆汁酸性下痢（セリアック病・乳糖不耐症・SIBO等）"
+  },
+  "neuroendocrine_tumor_hormonal": {
+   "label": "ホルモン産生腫瘍（ガストリノーマ・カルチノイド症候群・VIPoma）"
+  },
+  "pan_mesenteric_vasculitis": {
+   "label": "膠原病・血管炎による腹部病変（SLE/ループス腸炎・PAN・EGPA/MPA）"
+  },
+  "acute_porphyria": {
+   "label": "急性ポルフィリン症・鉛中毒（ヘム合成障害）"
+  },
+  "hemolytic_anemia": {
+   "label": "溶血性貧血（AIHA・遺伝性球状赤血球症・PNH・鎌状赤血球症）"
+  },
+  "intestinal_behcet": {
+   "label": "非特異性小腸潰瘍（腸管ベーチェット/単純性潰瘍・CEAS）"
+  },
+  "autoimmune_pancreatitis": {
+   "label": "IgG4関連疾患（自己免疫性膵炎・IgG4関連硬化性胆管炎）"
+  },
+  "peritoneal_carcinomatosis": {
+   "label": "癌性腹膜炎・腹膜偽粘液腫"
   }
  },
  "add_diseases": {
@@ -4083,5 +4204,138 @@
    "to": "tumor_lower",
    "_why": "内視鏡の腫瘍所見を上部/下部に分けた（2026-09-27）"
   }
- ]
+ ],
+ "disease_groups": {
+  "gastric_cancer": {
+   "label": "胃の腫瘍性病変（胃癌・MALTリンパ腫・GIST/粘膜下腫瘍・神経内分泌腫瘍・胃ポリープ）",
+   "members": [
+    "gastric_malt_lymphoma",
+    "gastric_smt_gist",
+    "gastroduodenal_nen",
+    "gastric_polyp"
+   ],
+   "distinguished_by": "生検の病理"
+  },
+  "small_bowel_tumor": {
+   "label": "小腸・消化管の腫瘍（腺癌・GIST・悪性リンパ腫・神経内分泌腫瘍）",
+   "members": [
+    "gi_lymphoma_gist_small_bowel_tumor",
+    "gi_net_carcinoid"
+   ],
+   "distinguished_by": "病理"
+  },
+  "pancreatic_cancer": {
+   "label": "膵腫瘍（膵癌・IPMN/MCN）",
+   "members": [
+    "ipmn_mcn"
+   ],
+   "distinguished_by": "EUS下生検・切除標本の病理"
+  },
+  "extrahepatic_cholangiocarcinoma": {
+   "label": "胆道の腫瘍性病変（胆管癌・胆嚢癌・乳頭部癌・胆嚢ポリープ/腺筋腫症）",
+   "members": [
+    "gallbladder_cancer",
+    "gallbladder_polyp"
+   ],
+   "distinguished_by": "病理"
+  },
+  "gerd": {
+   "label": "胃食道逆流症・食道粘膜病変（逆流性食道炎・Barrett食道・好酸球性食道炎）",
+   "members": [
+    "barrett",
+    "eosinophilic_esophagitis"
+   ],
+   "distinguished_by": "生検の病理"
+  },
+  "h_pylori_gastritis": {
+   "label": "慢性胃炎（H. pylori感染胃炎・自己免疫性胃炎）",
+   "members": [
+    "autoimmune_gastritis"
+   ],
+   "distinguished_by": "抗壁細胞抗体・ビタミンB12・ガストリン、生検"
+  },
+  "fap": {
+   "label": "消化管ポリポーシス（家族性大腸腺腫症・Peutz-Jeghers症候群）",
+   "members": [
+    "peutz_jeghers"
+   ],
+   "distinguished_by": "ポリープの病理・遺伝学的検査"
+  },
+  "autoimmune_hepatitis": {
+   "label": "自己免疫性・代謝性肝疾患（自己免疫性肝炎・原発性胆汁性胆管炎・Wilson病・ヘモクロマトーシス）",
+   "members": [
+    "pbc",
+    "wilson_disease",
+    "hemochromatosis"
+   ],
+   "distinguished_by": "抗核抗体/抗ミトコンドリア抗体・セルロプラスミン・鉄代謝、肝生検"
+  },
+  "drug_induced_enterocolitis": {
+   "label": "薬剤性腸炎・顕微鏡的大腸炎（NSAIDs腸症・ICI大腸炎・collagenous colitis等）",
+   "members": [
+    "drug_colitis_other",
+    "microscopic_colitis",
+    "nsaid_enteropathy"
+   ],
+   "distinguished_by": "大腸/小腸生検の病理"
+  },
+  "celiac_malabsorption": {
+   "label": "吸収不良症候群・胆汁酸性下痢（セリアック病・乳糖不耐症・SIBO等）",
+   "members": [
+    "bile_acid_diarrhea"
+   ],
+   "distinguished_by": "抗tTG抗体・呼気試験・SeHCAT、小腸生検"
+  },
+  "neuroendocrine_tumor_hormonal": {
+   "label": "ホルモン産生腫瘍（ガストリノーマ・カルチノイド症候群・VIPoma）",
+   "members": [
+    "gastrinoma_zes"
+   ],
+   "distinguished_by": "ガストリン・5-HIAA・VIP、病理"
+  },
+  "pan_mesenteric_vasculitis": {
+   "label": "膠原病・血管炎による腹部病変（SLE/ループス腸炎・PAN・EGPA/MPA）",
+   "members": [
+    "sle_vasculitis_serositis"
+   ],
+   "distinguished_by": "抗dsDNA・補体・ANCA、生検"
+  },
+  "acute_porphyria": {
+   "label": "急性ポルフィリン症・鉛中毒（ヘム合成障害）",
+   "members": [
+    "lead_poisoning"
+   ],
+   "distinguished_by": "尿中ポルホビリノーゲン・血中鉛"
+  },
+  "hemolytic_anemia": {
+   "label": "溶血性貧血（AIHA・遺伝性球状赤血球症・PNH・鎌状赤血球症）",
+   "members": [
+    "sickle_cell_crisis"
+   ],
+   "distinguished_by": "Coombs試験・フローサイトメトリー・ヘモグロビン分析"
+  },
+  "intestinal_behcet": {
+   "label": "非特異性小腸潰瘍（腸管ベーチェット/単純性潰瘍・CEAS）",
+   "members": [
+    "ceas"
+   ],
+   "distinguished_by": "病理・遺伝学的検査"
+  },
+  "autoimmune_pancreatitis": {
+   "label": "IgG4関連疾患（自己免疫性膵炎・IgG4関連硬化性胆管炎）",
+   "members": [
+    "igg4_sclerosing_cholangitis"
+   ],
+   "distinguished_by": "血清IgG4・病理"
+  },
+  "peritoneal_carcinomatosis": {
+   "label": "癌性腹膜炎・腹膜偽粘液腫",
+   "members": [
+    "pseudomyxoma"
+   ],
+   "distinguished_by": "腹水細胞診・病理"
+  }
+ },
+ "disease_groups_doc": "病理（生検・切除標本）または特殊な血液検査でしか確定できない疾患は区別せず、1つの疾患群として扱う（2026-09-27 オーナー指定）。ルーチンの情報（問診・診察・一般採血・画像・内視鏡の肉眼所見）で区別できるものは別疾患のまま",
+ "special_tests_doc": "特殊な血液・尿検査（外注・結果待ちが長い）。疾患群の中の区別には使わず、次に調べる候補でも一般検査の後ろに並ぶ"
 }

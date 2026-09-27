@@ -4,6 +4,15 @@
 import json, os, subprocess
 BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 P = json.load(open(os.path.join(BASE, 'tools', 'prevalence.json'), encoding='utf-8'))
+# 疾患群: 統合された疾患の発症数は統合先に合算する（tools/disease_alias.json）
+ALIAS = json.load(open(os.path.join(BASE, 'tools', 'disease_alias.json'), encoding='utf-8'))
+def canon(x):
+    seen = set()
+    while x in ALIAS and x not in seen: seen.add(x); x = ALIAS[x]
+    return x
+inc = {}
+for i, v in P['inc'].items(): inc[canon(i)] = inc.get(canon(i), 0) + v
+P['inc'] = {k: round(v, 3) for k, v in inc.items()}
 ids = json.loads(subprocess.check_output(['node', '-e', "require('./build/10_kb.js');require('./build/11_kb_abd_ext.js');console.log(JSON.stringify(globalThis.DDX.KB.diseases.map(d=>[d.id,!!d.ext])))"], cwd=BASE))
 missing = [i for i, ext in ids if ext and i not in P['inc'] and i not in P['fixed']]
 unknown = [i for i in list(P['inc']) + list(P['fixed']) if i not in {x for x, _ in ids}]
