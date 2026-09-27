@@ -85,9 +85,16 @@
   }
   function quickAnswerHtml(feature_id) {
     const f = KB().feature[feature_id];
-    if (!f.values) return `<div class="qa"><button data-qa="${feature_id}|present">あり</button><button data-qa="${feature_id}|absent">なし</button><button data-qa="${feature_id}|unknown">不明</button></div>`;
-    if (f.values.length <= 6) return `<div class="qa">${f.values.map(v => `<button data-qa="${feature_id}|present|${v.code}">${esc(v.label)}</button>`).join('')}<button data-qa="${feature_id}|not_assessed">実施不可</button></div>`;
-    return `<div class="qa"><button data-ins="${esc(base(f))} ">入力欄に書く</button><button data-qa="${feature_id}|not_assessed">実施不可</button></div>`;
+    // 問診系(症状/主訴/既往)は「不明」、検査系(バイタル/診察/検査/画像)は「実施不可」で未取得扱いにする
+    const askType = f.type === 'symptom' || f.type === 'chief_complaint' || f.type === 'history' || f.type === 'context';
+    const naBtn = askType ? `<button data-qa="${feature_id}|unknown">不明</button>` : `<button data-qa="${feature_id}|not_assessed">実施不可</button>`;
+    if (!f.values) return `<div class="qa"><button data-qa="${feature_id}|present">あり</button><button data-qa="${feature_id}|absent">なし</button>${naBtn}</div>`;
+    // 選択肢に「なし/正常/陰性」が無い項目(黒色便・血便, 嘔吐の性状 等)は、否定回答 = absent ボタンを補う
+    const hasNeg = f.values.some(v => /^(normal|none|neg|absent|no)$/.test(v.code) || /^(なし|正常|陰性|異常なし)$/.test(v.label));
+    const noNeg = f.id === 'pain_onset_char'; // 発症様式など「なし」が意味を持たない項目
+    const negBtn = (hasNeg || noNeg || !(askType || f.type === 'exam')) ? '' : `<button data-qa="${feature_id}|absent">なし</button>`;
+    if (f.values.length <= 6) return `<div class="qa">${f.values.map(v => `<button data-qa="${feature_id}|present|${v.code}">${esc(v.label)}</button>`).join('')}${negBtn}${naBtn}</div>`;
+    return `<div class="qa"><button data-ins="${esc(base(f))} ">入力欄に書く</button>${negBtn}${naBtn}</div>`;
     function base(f) { return f.label.replace(/（.*?）|\s*\(.*?\)/g, ''); }
   }
   function evidenceHtml(x) {
