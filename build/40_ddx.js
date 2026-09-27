@@ -5,8 +5,9 @@
 (function (g) {
   const DDX = g.DDX = g.DDX || {};
   const KB = () => DDX.KB;
-  const CLAMP = 3.5;
-  const clamp = x => Math.max(-CLAMP, Math.min(CLAMP, x));
+  const CLAMP = 3.5;       // 陰性側（なし）の上限: LR 1/33
+  const CLAMP_POS = 4.6;   // 陽性側の上限: LR 100（内視鏡・画像・特異的検査の決め手が事前確率の差を覆せるように。2026-09-27）
+  const clamp = x => Math.max(-CLAMP, Math.min(CLAMP_POS, x));
   const lnLRpos = r => clamp(Math.log(r.sens / (1 - r.spec)));
   const lnLRneg = r => clamp(Math.log((1 - r.sens) / r.spec));
 

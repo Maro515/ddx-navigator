@@ -198,6 +198,43 @@ check('入力順序不変性 (Top10/Next5/hash 同一)', orderFail === 0, `${ord
   const e = D.Extract.local('CTで大動脈と上腸間膜動脈の角が狭小、十二指腸の圧排あり。');
   check('画像: SMA症候群の CT 所見 → ct duodenal_compression（虚血ではない）', e.items.some(i => i.feature_id === 'ct' && i.value_code === 'duodenal_compression') && !e.items.some(i => i.value_code === 'ischemia'), JSON.stringify(e.items.map(i => i.feature_id + ':' + i.value_code)));
   {
+    // ---- 症例問題集での改善（2026-09-27）: 否定・上書き・定性表現・画像/内視鏡の語彙・統合 ----
+    const fmt = it => it.feature_id + (it.value_code ? ':' + it.value_code : '') + (it.status === 'absent' ? '(absent)' : '');
+    const hasT = (arr, t) => arr.some(x => x === t || x.startsWith(t + ':') || x.startsWith(t + '('));
+    const V = [
+      ['心窩部に軽い圧痛があるが腹膜刺激徴候はない。', ['rebound_guarding(absent)'], ['rebound_guarding:']],
+      ['体重減少や貧血はなく、発熱もない。', ['weight_loss(absent)', 'hb:low(absent)'], []],
+      ['超音波で胆管拡張や腫瘤はなく、肝生検を行った。', [], ['us:cbd_dilated']],
+      ['数週間続く血性下痢がある。', ['diarrhea:bloody'], ['diarrhea:watery']],
+      ['飲酒後に嘔吐を繰り返し、鮮血を吐いた。', ['vomiting:hematemesis', 'alcohol_heavy', 'forceful_vomiting_prior'], ['vomiting:nonbilious']],
+      ['白血球とCRPが高い。乳酸値が上昇。', ['wbc:10_15', 'crp:5_10', 'lactate:2_4'], []],
+      ['血圧低下と頻脈を認める。38.6℃の発熱。', ['sbp:lt90', 'hr:100_120', 'temp:38_39'], []],
+      ['CTで空腸に壁肥厚を伴う腫瘤、大腸内視鏡には異常がない。', ['ct:bowel_mass', 'endoscopy:normal'], []],
+      ['上部内視鏡で正常粘膜に覆われた隆起を認める。', ['endoscopy:smt'], ['endoscopy:normal', 'endoscopy:tumor']],
+      ['大腸内視鏡で直腸から連続するびまん性炎症を認める。', ['endoscopy:uc_continuous'], []],
+      ['CA19-9高値、CEA上昇。HCV抗体陽性。抗核抗体陽性。', ['tumor_marker:ca199_high', 'tumor_marker:cea_high', 'hepatitis_serology:hcv_pos', 'autoantibodies:ana_asma_pos'], []],
+      ['CTで穿孔や虫垂炎はない。', [], ['ct:appendicitis']],
+      ['腹部は軟で圧痛はない。', ['tender_ruq(absent)', 'tender_rlq(absent)'], []],
+      ['突然大量の吐血があった。', ['vomiting:hematemesis'], ['pain_onset_char']],
+      ['口腔内灼熱感と嚥下痛がある。', [], ['fever_sub']],
+      ['CTで脾臓に楔状の造影欠損を認める。', ['ct:splenic_infarct'], ['ct:ischemia']],
+      ['造影CTで閉鎖係蹄と腸管壁の造影不良を認める。', ['ct:closed_loop', 'ct:ischemia'], []],
+      ['超音波で同心円状のtarget signを認める。', ['us:target'], []],
+      ['心電図でテント状T波とQRS幅拡大。', ['ecg:peaked_t'], ['ecg:ischemic']],
+      ['造影CTで辺縁から結節状に濃染する肝腫瘤。', ['ct:hemangioma_pattern', 'ct:liver_mass'], []]
+    ];
+    const bad = [];
+    for (const [text, must, mustNot] of V) { const got = D.Extract.local(text).items.map(fmt); if (!must.every(t => hasT(got, t)) || mustNot.some(t => hasT(got, t))) bad.push(text + ' → ' + got.join(', ')); }
+    check('語彙: 否定・同じ文の上書き・定性的な検査/バイタル・内視鏡/画像の所見', !bad.length, bad.join(' | '));
+    const merged = ['acute_hepatitis', 'fatty_liver', 'hcc_rupture', 'acute_portal_vein_thrombosis', 'amyloidosis_gi', 'uremia_renal_failure', 'thyroid_storm', 'intestinal_tb', 'fecal_impaction', 'hiatal_diaphragmatic_hernia'];
+    check('統合: 重複していた疾患 10 組が1つにまとまっている', merged.every(x => !KB.disease[x]), merged.filter(x => KB.disease[x]).join(','));
+    // 決め手の所見は事前確率の差を覆せる（陽性側の上限 LR 100）
+    const s = new D.ClinicalState({ context: { age_band: '60-69', sex: 'male' } });
+    for (const it of D.Extract.local('突然大量の吐血と心窩部不快感。血圧低下とHb低下。上部内視鏡で胃体上部のほぼ正常な粘膜から太い動脈が露出し、拍動性出血を認める。').items) s.add(it);
+    const rk = D.runSync(s).ddx.items.filter(x => !x.d.comorbid).sort((a, b) => b.p - a.p).findIndex(x => x.id === 'dieulafoy') + 1;
+    check('上限: 内視鏡の露出血管で Dieulafoy 病変が Top3 に入る', rk > 0 && rk <= 3, 'rank ' + rk);
+  }
+  {
     // ---- 項目重複の統合（docs/feature_dedup_candidates.md、2026-09-27 承認分）----
     const gone = ['ct_other', 'ct_wall_mass', 'hb_imaging', 'steatorrhea', 'hepatotoxic_drug_supplement', 'painless_bleed', 'extraintestinal', 'ck_ldh', 'ldh_sil2r', 'mononeuritis', 'paralysis_weakness'];
     check('統合: 統合元の項目が KB に残っていない', gone.every(f => !KB.feature[f]), gone.filter(f => KB.feature[f]).join(','));

@@ -56,6 +56,7 @@ def self_value_map(fid):
     return None
 
 SENS = {'high': 0.80, 'mid': 0.50, 'low': 0.20}
+SPECIFIC_LABS = {'hepatitis_serology', 'autoantibodies', 'endocrine_lab', 'igg4', 'paracentesis', 'stool_test', 'hcg', 'electrolyte', 'ingestion_event', 'skin_finding'}
 PRIOR = {'common': 0.03, 'uncommon': 0.008, 'rare': 0.002}
 TYPE_CAT = {'chief_complaint': 'cc', 'symptom': 'cc', 'history': 'hx', 'exam': 'exam', 'vital': 'vital', 'lab': 'lab', 'imaging': 'img'}
 ANCHOR = {'chief_complaint': 'onset', 'symptom': 'onset', 'history': 'history', 'exam': 'observation', 'vital': 'observation', 'lab': 'collection', 'imaging': 'imaging'}
@@ -102,9 +103,15 @@ for it in items:
                 if c not in have: cur.append([c, l]); have.add(c)
             new_features[fid]['values'] = cur or None
     key = did
-    if key in diseases:  # merge findings
-        diseases[key]['findings'].extend(it.get('findings', []))
-        diseases[key].setdefault('source_files', []).extend(it.get('source_files', []))
+    if key in diseases:  # merge findings（重複疾患の統合: 見逃し注意・緊急度・頻度は重いほうを採る）
+        cur = diseases[key]
+        cur['findings'].extend(it.get('findings', []))
+        cur.setdefault('source_files', []).extend(it.get('source_files', []))
+        cur['mnm'] = bool(cur.get('mnm')) or bool(it.get('mnm'))
+        UO = ['routine', 'semi_urgent', 'urgent', 'emergent']
+        if UO.index(it.get('urgency', 'routine') if it.get('urgency') in UO else 'routine') > UO.index(cur.get('urgency', 'routine') if cur.get('urgency') in UO else 'routine'): cur['urgency'] = it['urgency']
+        PO = ['rare', 'uncommon', 'common']
+        if it.get('prevalence') in PO and PO.index(it['prevalence']) > PO.index(cur.get('prevalence', 'rare') if cur.get('prevalence') in PO else 'rare'): cur['prevalence'] = it['prevalence']
         continue
     it['_id'] = did; diseases[key] = it
 
@@ -166,6 +173,9 @@ for key, it in diseases.items():
             sens = SENS.get(f.get('freq', 'mid'), 0.5) if sup else 0.05
             base = fdef.get('base', 0.15) or 0.15
             spec = 0.85 if vals else max(0.55, min(0.95, 1 - base))
+            # 特異的な所見は特異度を上げる（頻度語からの一律 0.85 では、画像の決め手や陽性の血清学が弱すぎる）
+            if vals and fdef['type'] == 'imaging' and any(v != 'normal' for v in vals): spec = 0.97
+            elif vals and fid in SPECIFIC_LABS and any(v not in ('normal', 'neg') for v in vals): spec = 0.95
             if not sup: spec = max(0.55, min(0.9, 1 - base))
             if sup and s_o is not None: sens = s_o
             if sup and p_o is not None: spec = p_o
@@ -189,14 +199,22 @@ for key, it in diseases.items():
             for r in rels:
                 if r['sens'] >= 0.8 and r['type'] in ('lab', 'imaging', 'exam') and len(clear) < 4: r['key'] = True; clear.append(r['fid'])
             clear = list(dict.fromkeys(clear))
-        lines.append(f"  KB.addDisease('{did}', {js(it['name_ja'])}, {{ urgency: '{urg}', mnm: {'true' if mnm else 'false'}, prior: {prior}, onset: {js(onset)}, requires: {js(req)}, mult: {js(mult)}, clear: {js(clear)}, category: {js(it.get('category', ''))}, note: {js(it.get('discriminators', ''))}, ext: true }});")
+        dlabel = FDEFS.get('diseases', {}).get(did, {}).get('label', it['name_ja'])
+        lines.append(f"  KB.addDisease('{did}', {js(dlabel)}, {{ urgency: '{urg}', mnm: {'true' if mnm else 'false'}, prior: {prior}, onset: {js(onset)}, requires: {js(req)}, mult: {js(mult)}, clear: {js(clear)}, category: {js(it.get('category', ''))}, note: {js(it.get('discriminators', ''))}, ext: true }});")
         n_new += 1
     refs[did] = sorted(set(it.get('source_files', []) or []))
     for r in rels:
         lines.append(f"  KB.addRelation('{did}', '{r['fid']}', {js(r['vals'])}, {r['sens']:.2f}, {r['spec']:.2f}{', { key: true }' if r['key'] else ''});")
         n_rel += 1
+# 資料の鑑別表に無かった疾患（症例問題集の検討で不足が判明したもの）。所見は add_relations で付ける
+for did, dd in FDEFS.get('add_diseases', {}).items():
+    if did in KD or did in {it['_id'] for it in diseases.values()}: continue
+    onset = dict(dd.get('onset', {'minutes': 0.3, 'hours': 0.6, 'days': 1, 'weeks': 1, 'months': 1})); onset['unknown'] = 0.7
+    lines.append(f"  KB.addDisease('{did}', {js(dd['label'])}, {{ urgency: '{dd.get('urgency', 'routine')}', mnm: false, prior: {dd.get('prior', 0.002)}, onset: {js(onset)}, requires: {js(dd.get('requires', {}))}, mult: [], clear: [], category: {js(dd.get('category', ''))}, note: {js(dd.get('note', ''))}, ext: true }});")
+    n_new += 1
+EXTRA_D = set(FDEFS.get('add_diseases', {}).keys())
 for r in FDEFS.get('add_relations', []):
-    if r['d'] not in KD and r['d'] not in {it['_id'] for it in diseases.values()}: print('add_relations: unknown disease', r['d']); continue
+    if r['d'] not in KD and r['d'] not in EXTRA_D and r['d'] not in {it['_id'] for it in diseases.values()}: print('add_relations: unknown disease', r['d']); continue
     if r['f'] not in KF: print('add_relations: unknown feature', r['f']); continue
     lines.append(f"  KB.addRelation('{r['d']}', '{r['f']}', {js(r.get('values'))}, {r['sens']:.2f}, {r['spec']:.2f});"); n_rel += 1
 lines.append("  KB.reindex();")

@@ -50,7 +50,7 @@
     ],
     [
      "achalasia",
-     "食道拡張・残渣貯留"
+     "食道拡張・残渣/LES弛緩不全（造影・内圧検査含む）"
     ],
     [
      "candida_ulcer",
@@ -289,6 +289,139 @@
    "label": "免疫チェックポイント阻害薬の使用（現在/過去1年）",
    "type": "history",
    "base": 0.02
+  },
+  "tumor_marker": {
+   "label": "腫瘍マーカー",
+   "type": "lab",
+   "multi": true,
+   "values": [
+    [
+     "cea_high",
+     "CEA上昇"
+    ],
+    [
+     "ca199_high",
+     "CA19-9上昇"
+    ],
+    [
+     "afp_pivka_high",
+     "AFP/PIVKA-II上昇"
+    ],
+    [
+     "ca125_high",
+     "CA125上昇"
+    ]
+   ]
+  },
+  "iron_overload": {
+   "label": "フェリチン/トランスフェリン飽和度上昇",
+   "type": "lab",
+   "base": 0.05
+  },
+  "ceruloplasmin_low": {
+   "label": "セルロプラスミン低値",
+   "type": "lab",
+   "base": 0.02
+  },
+  "gastrin_high": {
+   "label": "高ガストリン血症",
+   "type": "lab",
+   "base": 0.03
+  },
+  "b12_low": {
+   "label": "ビタミンB12低値/大球性貧血",
+   "type": "lab",
+   "base": 0.05
+  },
+  "porphyrin_urine": {
+   "label": "尿中ポルホビリノーゲン/ALA高値",
+   "type": "lab",
+   "base": 0.01
+  },
+  "stool_a1at": {
+   "label": "便中α1-アンチトリプシンクリアランス上昇",
+   "type": "lab",
+   "base": 0.01
+  },
+  "gastrectomy_hx": {
+   "label": "胃切除後",
+   "type": "history",
+   "base": 0.03
+  },
+  "dyspareunia": {
+   "label": "性交痛",
+   "type": "symptom",
+   "base": 0.05
+  },
+  "heart_failure_hx": {
+   "label": "心不全の既往",
+   "type": "history",
+   "base": 0.08
+  },
+  "jvd": {
+   "label": "頸静脈怒張",
+   "type": "exam",
+   "base": 0.05
+  },
+  "abd_bruit": {
+   "label": "腹部血管雑音",
+   "type": "exam",
+   "base": 0.03
+  },
+  "succussion_splash": {
+   "label": "振水音",
+   "type": "exam",
+   "base": 0.02
+  },
+  "pulse_deficit": {
+   "label": "上肢の血圧/脈拍の左右差",
+   "type": "exam",
+   "base": 0.02
+  },
+  "hp_positive": {
+   "label": "Helicobacter pylori 陽性",
+   "type": "lab",
+   "base": 0.3
+  },
+  "urine_5hiaa": {
+   "label": "尿中5-HIAA高値",
+   "type": "lab",
+   "base": 0.01
+  },
+  "macroglossia": {
+   "label": "巨舌（舌の腫大）",
+   "type": "exam",
+   "base": 0.01
+  },
+  "proteinuria": {
+   "label": "蛋白尿",
+   "type": "lab",
+   "base": 0.1
+  },
+  "estrogen_use": {
+   "label": "経口避妊薬/エストロゲン製剤の使用",
+   "type": "history",
+   "base": 0.05
+  },
+  "palpitations": {
+   "label": "動悸",
+   "type": "symptom",
+   "base": 0.1
+  },
+  "catecholamine_high": {
+   "label": "メタネフリン/カテコラミン高値",
+   "type": "lab",
+   "base": 0.01
+  },
+  "clubbing": {
+   "label": "ばち指",
+   "type": "exam",
+   "base": 0.02
+  },
+  "platypnea": {
+   "label": "立位で悪化する呼吸困難（platypnea）",
+   "type": "symptom",
+   "base": 0.01
   }
  },
  "add_values": {
@@ -388,6 +521,236 @@
    [
     "internal_hernia",
     "内ヘルニア（closed loop/beak）"
+   ],
+   [
+    "closed_loop",
+    "閉鎖係蹄（closed loop）"
+   ],
+   [
+    "visceral_aneurysm",
+    "内臓動脈瘤（脾・腹腔・腸間膜ほか）"
+   ],
+   [
+    "mesenteric_comb",
+    "腸間膜血管の櫛状濃染/小腸壁のびまん性浮腫"
+   ],
+   [
+    "liver_capsule",
+    "肝被膜の早期濃染"
+   ],
+   [
+    "celiac_stenosis",
+    "腹腔動脈起始部の狭窄"
+   ],
+   [
+    "intrahepatic_stones",
+    "肝内胆管結石"
+   ],
+   [
+    "pbm",
+    "膵胆管合流異常（長い共通管）"
+   ],
+   [
+    "ivc_dilated",
+    "肝静脈/下大静脈の拡張・造影剤逆流"
+   ],
+   [
+    "colon_dilated",
+    "結腸の拡張"
+   ],
+   [
+    "peritoneal_thick",
+    "腹膜肥厚/腹膜結節（播種）"
+   ],
+   [
+    "vascular_lesion",
+    "異常血管/造影剤漏出（活動性出血）"
+   ],
+   [
+    "gastric_dilation",
+    "胃の著明な拡張"
+   ],
+   [
+    "hepatic_vein_occlusion",
+    "肝静脈/肝部下大静脈の閉塞"
+   ],
+   [
+    "pneumobilia",
+    "胆道気腫"
+   ],
+   [
+    "bowel_stone",
+    "腸管内の結石（胆石）"
+   ],
+   [
+    "gastric_volvulus",
+    "胃の軸捻転"
+   ],
+   [
+    "pancreas_divisum",
+    "膵管癒合不全（背側膵管優位）"
+   ],
+   [
+    "appendiceal_mucocele",
+    "虫垂の嚢胞状拡張（粘液貯留）"
+   ],
+   [
+    "pseudomyxoma",
+    "粘液性腹水/肝表面のscalloping"
+   ],
+   [
+    "adrenal_mass",
+    "副腎腫瘤"
+   ],
+   [
+    "visceral_artery_stenosis",
+    "腹腔動脈/上腸間膜動脈の動脈硬化性狭窄"
+   ],
+   [
+    "bowel_edema",
+    "小腸壁のびまん性浮腫"
+   ],
+   [
+    "hemangioma_pattern",
+    "辺縁結節状濃染→遅延相で中心へ充填"
+   ],
+   [
+    "arterial_enhancement",
+    "動脈相の濃染（多血性腫瘤）"
+   ],
+   [
+    "washout",
+    "門脈相/後期相のwashout"
+   ],
+   [
+    "ring_enhancement",
+    "辺縁（リング状）造影を示す腫瘤"
+   ],
+   [
+    "cystic_calcified",
+    "嚢胞と石灰化を含む浸潤性腫瘤"
+   ],
+   [
+    "mucinous_cyst",
+    "粘液性膵嚢胞の所見（膵管交通・壁在結節・厚い被膜）"
+   ]
+  ],
+  "us": [
+   [
+    "target",
+    "腸重積像（target sign）"
+   ],
+   [
+    "liver_mass",
+    "肝腫瘤/肝膿瘍"
+   ],
+   [
+    "gb_polyp",
+    "胆嚢ポリープ/壁内小嚢胞（コメット様）"
+   ],
+   [
+    "uterine",
+    "子宮腫大/子宮内の腫瘤・嚢胞状エコー"
+   ],
+   [
+    "lymph_nodes",
+    "腸間膜/回盲部リンパ節腫大"
+   ]
+  ],
+  "xray": [
+   [
+    "colon_dilated",
+    "結腸の著明な拡張"
+   ],
+   [
+    "coffee_bean",
+    "コーヒー豆徴候"
+   ]
+  ],
+  "glucose": [
+   [
+    "lt70",
+    "<70（低血糖）"
+   ]
+  ],
+  "acidosis": [
+   [
+    "alkalosis",
+    "代謝性アルカローシス（低Cl）"
+   ]
+  ],
+  "pain_char": [
+   [
+    "relief_defecation",
+    "排便で軽快"
+   ]
+  ],
+  "autoantibodies": [
+   [
+    "sle_serology",
+    "抗dsDNA抗体陽性/補体低下"
+   ],
+   [
+    "ttg_pos",
+    "抗tTG/抗EMA抗体陽性"
+   ],
+   [
+    "parietal_pos",
+    "抗壁細胞/抗内因子抗体陽性"
+   ],
+   [
+    "anca_pos",
+    "ANCA陽性"
+   ]
+  ],
+  "endoscopy": [
+   [
+    "giant_folds",
+    "巨大皺襞"
+   ],
+   [
+    "gastric_polyp",
+    "胃ポリープ"
+   ],
+   [
+    "polyposis",
+    "消化管ポリポーシス（多発ポリープ）"
+   ],
+   [
+    "barrett",
+    "Barrett上皮（食道の円柱上皮化生）"
+   ],
+   [
+    "dieulafoy",
+    "露出血管（潰瘍を伴わない）"
+   ],
+   [
+    "chronic_gastritis",
+    "慢性（萎縮性）胃炎"
+   ]
+  ],
+  "ecg": [
+   [
+    "peaked_t",
+    "テント状T波/QRS幅拡大"
+   ]
+  ],
+  "paracentesis": [
+   [
+    "lymph_ada",
+    "リンパ球優位/ADA高値"
+   ]
+  ],
+  "stool_test": [
+   [
+    "parasite",
+    "寄生虫/原虫・虫卵の検出"
+   ]
+  ],
+  "anal_sx": [
+   [
+    "rectal_prolapse",
+    "直腸の全層性脱出（同心円状ひだ）"
    ]
   ]
  },
@@ -415,6 +778,2702 @@
    "sens": 0.5,
    "spec": 0.85,
    "_why": "長期臥床項目から慢性便秘を分離した分"
+  },
+  {
+   "d": "colorectal_cancer",
+   "f": "tumor_marker",
+   "values": [
+    "cea_high"
+   ],
+   "sens": 0.45,
+   "spec": 0.9,
+   "_why": "症例問題集の改善用で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "liver_metastases",
+   "f": "tumor_marker",
+   "values": [
+    "cea_high"
+   ],
+   "sens": 0.6,
+   "spec": 0.9,
+   "_why": "症例問題集の改善用で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "liver_metastases",
+   "f": "tumor_marker",
+   "values": [
+    "ca199_high"
+   ],
+   "sens": 0.4,
+   "spec": 0.88,
+   "_why": "症例問題集の改善用で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "gastric_cancer",
+   "f": "tumor_marker",
+   "values": [
+    "cea_high"
+   ],
+   "sens": 0.3,
+   "spec": 0.9,
+   "_why": "症例問題集の改善用で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "gastric_cancer",
+   "f": "tumor_marker",
+   "values": [
+    "ca199_high"
+   ],
+   "sens": 0.3,
+   "spec": 0.88,
+   "_why": "症例問題集の改善用で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "pancreatic_cancer",
+   "f": "tumor_marker",
+   "values": [
+    "ca199_high"
+   ],
+   "sens": 0.8,
+   "spec": 0.85,
+   "_why": "症例問題集の改善用で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "pancreatic_cancer",
+   "f": "tumor_marker",
+   "values": [
+    "cea_high"
+   ],
+   "sens": 0.4,
+   "spec": 0.9,
+   "_why": "症例問題集の改善用で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "extrahepatic_cholangiocarcinoma",
+   "f": "tumor_marker",
+   "values": [
+    "ca199_high"
+   ],
+   "sens": 0.7,
+   "spec": 0.85,
+   "_why": "症例問題集の改善用で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "gallbladder_cancer",
+   "f": "tumor_marker",
+   "values": [
+    "ca199_high"
+   ],
+   "sens": 0.6,
+   "spec": 0.85,
+   "_why": "症例問題集の改善用で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "intrahepatic_cholangiocarcinoma",
+   "f": "tumor_marker",
+   "values": [
+    "ca199_high"
+   ],
+   "sens": 0.65,
+   "spec": 0.85,
+   "_why": "症例問題集の改善用で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "intrahepatic_cholangiocarcinoma",
+   "f": "tumor_marker",
+   "values": [
+    "cea_high"
+   ],
+   "sens": 0.3,
+   "spec": 0.9,
+   "_why": "症例問題集の改善用で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "hcc",
+   "f": "tumor_marker",
+   "values": [
+    "afp_pivka_high"
+   ],
+   "sens": 0.7,
+   "spec": 0.9,
+   "_why": "症例問題集の改善用で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "ovarian_tumor",
+   "f": "tumor_marker",
+   "values": [
+    "ca125_high"
+   ],
+   "sens": 0.8,
+   "spec": 0.85,
+   "_why": "症例問題集の改善用で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "endometriosis_adenomyosis",
+   "f": "tumor_marker",
+   "values": [
+    "ca125_high"
+   ],
+   "sens": 0.5,
+   "spec": 0.8,
+   "_why": "症例問題集の改善用で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "peritoneal_carcinomatosis",
+   "f": "tumor_marker",
+   "values": [
+    "ca125_high"
+   ],
+   "sens": 0.5,
+   "spec": 0.85,
+   "_why": "症例問題集の改善用で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "peritoneal_carcinomatosis",
+   "f": "tumor_marker",
+   "values": [
+    "cea_high"
+   ],
+   "sens": 0.4,
+   "spec": 0.9,
+   "_why": "症例問題集の改善用で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "small_bowel_tumor",
+   "f": "tumor_marker",
+   "values": [
+    "cea_high"
+   ],
+   "sens": 0.3,
+   "spec": 0.9,
+   "_why": "症例問題集の改善用で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "ipmn_mcn",
+   "f": "tumor_marker",
+   "values": [
+    "ca199_high"
+   ],
+   "sens": 0.2,
+   "spec": 0.88,
+   "_why": "症例問題集の改善用で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "hemochromatosis",
+   "f": "iron_overload",
+   "values": null,
+   "sens": 0.95,
+   "spec": 0.9,
+   "_why": "症例問題集の改善用で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "nafld_nash",
+   "f": "iron_overload",
+   "values": null,
+   "sens": 0.3,
+   "spec": 0.85,
+   "_why": "症例問題集の改善用で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "alcoholic_hepatitis",
+   "f": "iron_overload",
+   "values": null,
+   "sens": 0.4,
+   "spec": 0.85,
+   "_why": "症例問題集の改善用で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "wilson_disease",
+   "f": "ceruloplasmin_low",
+   "values": null,
+   "sens": 0.9,
+   "spec": 0.97,
+   "_why": "症例問題集の改善用で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "gastrinoma_zes",
+   "f": "gastrin_high",
+   "values": null,
+   "sens": 0.95,
+   "spec": 0.95,
+   "_why": "症例問題集の改善用で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "neuroendocrine_tumor_hormonal",
+   "f": "gastrin_high",
+   "values": null,
+   "sens": 0.4,
+   "spec": 0.95,
+   "_why": "症例問題集の改善用で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "autoimmune_gastritis",
+   "f": "gastrin_high",
+   "values": null,
+   "sens": 0.8,
+   "spec": 0.95,
+   "_why": "症例問題集の改善用で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "gastroduodenal_nen",
+   "f": "gastrin_high",
+   "values": null,
+   "sens": 0.5,
+   "spec": 0.95,
+   "_why": "症例問題集の改善用で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "autoimmune_gastritis",
+   "f": "b12_low",
+   "values": null,
+   "sens": 0.7,
+   "spec": 0.95,
+   "_why": "症例問題集の改善用で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "celiac_malabsorption",
+   "f": "b12_low",
+   "values": null,
+   "sens": 0.3,
+   "spec": 0.95,
+   "_why": "症例問題集の改善用で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "postgastrectomy_syndrome",
+   "f": "b12_low",
+   "values": null,
+   "sens": 0.3,
+   "spec": 0.95,
+   "_why": "症例問題集の改善用で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "acute_porphyria",
+   "f": "porphyrin_urine",
+   "values": null,
+   "sens": 0.95,
+   "spec": 0.99,
+   "_why": "症例問題集の改善用で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "lead_poisoning",
+   "f": "porphyrin_urine",
+   "values": null,
+   "sens": 0.3,
+   "spec": 0.97,
+   "_why": "症例問題集の改善用で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "protein_losing_enteropathy",
+   "f": "stool_a1at",
+   "values": null,
+   "sens": 0.9,
+   "spec": 0.99,
+   "_why": "症例問題集の改善用で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "postgastrectomy_syndrome",
+   "f": "gastrectomy_hx",
+   "values": null,
+   "sens": 0.95,
+   "spec": 0.98,
+   "_why": "症例問題集の改善用で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "internal_hernia",
+   "f": "gastrectomy_hx",
+   "values": null,
+   "sens": 0.3,
+   "spec": 0.95,
+   "_why": "症例問題集の改善用で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "endometriosis_adenomyosis",
+   "f": "dyspareunia",
+   "values": null,
+   "sens": 0.5,
+   "spec": 0.95,
+   "_why": "症例問題集の改善用で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "pid",
+   "f": "dyspareunia",
+   "values": null,
+   "sens": 0.3,
+   "spec": 0.93,
+   "_why": "症例問題集の改善用で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "heart_failure_congestive_hepatopathy",
+   "f": "heart_failure_hx",
+   "values": null,
+   "sens": 0.85,
+   "spec": 0.93,
+   "_why": "症例問題集の改善用で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "mesenteric_ischemia",
+   "f": "heart_failure_hx",
+   "values": null,
+   "sens": 0.3,
+   "spec": 0.9,
+   "_why": "症例問題集の改善用で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "heart_failure_congestive_hepatopathy",
+   "f": "jvd",
+   "values": null,
+   "sens": 0.6,
+   "spec": 0.97,
+   "_why": "症例問題集の改善用で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "pericarditis",
+   "f": "jvd",
+   "values": null,
+   "sens": 0.3,
+   "spec": 0.97,
+   "_why": "症例問題集の改善用で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "pulmonary_embolism",
+   "f": "jvd",
+   "values": null,
+   "sens": 0.3,
+   "spec": 0.95,
+   "_why": "症例問題集の改善用で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "tension_pneumothorax_esophageal",
+   "f": "jvd",
+   "values": null,
+   "sens": 0.3,
+   "spec": 0.97,
+   "_why": "症例問題集の改善用で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "malas",
+   "f": "abd_bruit",
+   "values": null,
+   "sens": 0.6,
+   "spec": 0.95,
+   "_why": "症例問題集の改善用で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "gastric_outlet_obstruction",
+   "f": "succussion_splash",
+   "values": null,
+   "sens": 0.6,
+   "spec": 0.98,
+   "_why": "症例問題集の改善用で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "gastroparesis",
+   "f": "succussion_splash",
+   "values": null,
+   "sens": 0.3,
+   "spec": 0.97,
+   "_why": "症例問題集の改善用で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "aortic_dissection",
+   "f": "pulse_deficit",
+   "values": null,
+   "sens": 0.3,
+   "spec": 0.98,
+   "_why": "症例問題集の改善用で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "strangulated_obstruction",
+   "f": "ct",
+   "values": [
+    "closed_loop"
+   ],
+   "sens": 0.7,
+   "spec": 0.97,
+   "_why": "症例問題集の改善用で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "internal_hernia",
+   "f": "ct",
+   "values": [
+    "closed_loop"
+   ],
+   "sens": 0.6,
+   "spec": 0.97,
+   "_why": "症例問題集の改善用で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "sigmoid_volvulus",
+   "f": "ct",
+   "values": [
+    "closed_loop"
+   ],
+   "sens": 0.4,
+   "spec": 0.97,
+   "_why": "症例問題集の改善用で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "incarcerated_hernia",
+   "f": "ct",
+   "values": [
+    "closed_loop"
+   ],
+   "sens": 0.3,
+   "spec": 0.97,
+   "_why": "症例問題集の改善用で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "visceral_aneurysm_rupture",
+   "f": "ct",
+   "values": [
+    "visceral_aneurysm"
+   ],
+   "sens": 0.9,
+   "spec": 0.99,
+   "_why": "症例問題集の改善用で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "splenic_infarct_rupture",
+   "f": "ct",
+   "values": [
+    "visceral_aneurysm"
+   ],
+   "sens": 0.4,
+   "spec": 0.98,
+   "_why": "症例問題集の改善用で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "pan_mesenteric_vasculitis",
+   "f": "ct",
+   "values": [
+    "visceral_aneurysm"
+   ],
+   "sens": 0.4,
+   "spec": 0.99,
+   "_why": "症例問題集の改善用で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "sle_vasculitis_serositis",
+   "f": "ct",
+   "values": [
+    "mesenteric_comb"
+   ],
+   "sens": 0.7,
+   "spec": 0.97,
+   "_why": "症例問題集の改善用で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "pan_mesenteric_vasculitis",
+   "f": "ct",
+   "values": [
+    "mesenteric_comb"
+   ],
+   "sens": 0.3,
+   "spec": 0.97,
+   "_why": "症例問題集の改善用で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "iga_vasculitis",
+   "f": "ct",
+   "values": [
+    "mesenteric_comb"
+   ],
+   "sens": 0.3,
+   "spec": 0.95,
+   "_why": "症例問題集の改善用で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "fitz_hugh_curtis",
+   "f": "ct",
+   "values": [
+    "liver_capsule"
+   ],
+   "sens": 0.7,
+   "spec": 0.99,
+   "_why": "症例問題集の改善用で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "malas",
+   "f": "ct",
+   "values": [
+    "celiac_stenosis"
+   ],
+   "sens": 0.9,
+   "spec": 0.99,
+   "_why": "症例問題集の改善用で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "hepatolithiasis",
+   "f": "ct",
+   "values": [
+    "intrahepatic_stones"
+   ],
+   "sens": 0.9,
+   "spec": 0.99,
+   "_why": "症例問題集の改善用で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "pancreaticobiliary_maljunction",
+   "f": "ct",
+   "values": [
+    "pbm"
+   ],
+   "sens": 0.9,
+   "spec": 0.995,
+   "_why": "症例問題集の改善用で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "heart_failure_congestive_hepatopathy",
+   "f": "ct",
+   "values": [
+    "ivc_dilated"
+   ],
+   "sens": 0.8,
+   "spec": 0.98,
+   "_why": "症例問題集の改善用で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "pericarditis",
+   "f": "ct",
+   "values": [
+    "ivc_dilated"
+   ],
+   "sens": 0.3,
+   "spec": 0.97,
+   "_why": "症例問題集の改善用で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "ipmn_mcn",
+   "f": "ct",
+   "values": [
+    "pancreatic_mass"
+   ],
+   "sens": 0.4,
+   "spec": 0.9,
+   "_why": "症例問題集の改善用で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "endometriosis_adenomyosis",
+   "f": "ct",
+   "values": [
+    "adnexal"
+   ],
+   "sens": 0.5,
+   "spec": 0.9,
+   "_why": "症例問題集の改善用で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "sle_vasculitis_serositis",
+   "f": "ct",
+   "values": [
+    "wall_thick"
+   ],
+   "sens": 0.5,
+   "spec": 0.9,
+   "_why": "症例問題集の改善用で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "intussusception_adult",
+   "f": "us",
+   "values": [
+    "target"
+   ],
+   "sens": 0.9,
+   "spec": 0.99,
+   "_why": "症例問題集の改善用で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "hcc",
+   "f": "us",
+   "values": [
+    "liver_mass"
+   ],
+   "sens": 0.7,
+   "spec": 0.95,
+   "_why": "症例問題集の改善用で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "liver_metastases",
+   "f": "us",
+   "values": [
+    "liver_mass"
+   ],
+   "sens": 0.7,
+   "spec": 0.95,
+   "_why": "症例問題集の改善用で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "liver_abscess",
+   "f": "us",
+   "values": [
+    "liver_mass"
+   ],
+   "sens": 0.8,
+   "spec": 0.95,
+   "_why": "症例問題集の改善用で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "benign_liver_tumor",
+   "f": "us",
+   "values": [
+    "liver_mass"
+   ],
+   "sens": 0.8,
+   "spec": 0.95,
+   "_why": "症例問題集の改善用で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "echinococcosis",
+   "f": "us",
+   "values": [
+    "liver_mass"
+   ],
+   "sens": 0.8,
+   "spec": 0.95,
+   "_why": "症例問題集の改善用で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "intrahepatic_cholangiocarcinoma",
+   "f": "us",
+   "values": [
+    "liver_mass"
+   ],
+   "sens": 0.7,
+   "spec": 0.95,
+   "_why": "症例問題集の改善用で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "gallbladder_polyp",
+   "f": "us",
+   "values": [
+    "gb_polyp"
+   ],
+   "sens": 0.9,
+   "spec": 0.98,
+   "_why": "症例問題集の改善用で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "gallbladder_cancer",
+   "f": "us",
+   "values": [
+    "gb_polyp"
+   ],
+   "sens": 0.5,
+   "spec": 0.97,
+   "_why": "症例問題集の改善用で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "uterine_fibroid",
+   "f": "us",
+   "values": [
+    "uterine"
+   ],
+   "sens": 0.85,
+   "spec": 0.95,
+   "_why": "症例問題集の改善用で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "endometriosis_adenomyosis",
+   "f": "us",
+   "values": [
+    "uterine"
+   ],
+   "sens": 0.4,
+   "spec": 0.93,
+   "_why": "症例問題集の改善用で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "molar_pregnancy",
+   "f": "us",
+   "values": [
+    "uterine"
+   ],
+   "sens": 0.8,
+   "spec": 0.97,
+   "_why": "症例問題集の改善用で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "uterine_cancer_hematometra",
+   "f": "us",
+   "values": [
+    "uterine"
+   ],
+   "sens": 0.5,
+   "spec": 0.95,
+   "_why": "症例問題集の改善用で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "mesenteric_adenitis_ileitis",
+   "f": "us",
+   "values": [
+    "lymph_nodes"
+   ],
+   "sens": 0.8,
+   "spec": 0.95,
+   "_why": "症例問題集の改善用で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "gi_lymphoma_gist_small_bowel_tumor",
+   "f": "us",
+   "values": [
+    "lymph_nodes"
+   ],
+   "sens": 0.4,
+   "spec": 0.95,
+   "_why": "症例問題集の改善用で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "intestinal_tuberculosis_peritonitis",
+   "f": "us",
+   "values": [
+    "lymph_nodes"
+   ],
+   "sens": 0.3,
+   "spec": 0.95,
+   "_why": "症例問題集の改善用で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "enteric_fever_yersinia",
+   "f": "us",
+   "values": [
+    "lymph_nodes"
+   ],
+   "sens": 0.4,
+   "spec": 0.95,
+   "_why": "症例問題集の改善用で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "toxic_megacolon",
+   "f": "xray",
+   "values": [
+    "colon_dilated"
+   ],
+   "sens": 0.85,
+   "spec": 0.95,
+   "_why": "症例問題集の改善用で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "paralytic_ileus_pseudoobstruction",
+   "f": "xray",
+   "values": [
+    "colon_dilated"
+   ],
+   "sens": 0.8,
+   "spec": 0.93,
+   "_why": "症例問題集の改善用で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "sigmoid_volvulus",
+   "f": "xray",
+   "values": [
+    "colon_dilated"
+   ],
+   "sens": 0.8,
+   "spec": 0.93,
+   "_why": "症例問題集の改善用で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "colorectal_cancer",
+   "f": "xray",
+   "values": [
+    "colon_dilated"
+   ],
+   "sens": 0.3,
+   "spec": 0.93,
+   "_why": "症例問題集の改善用で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "sigmoid_volvulus",
+   "f": "xray",
+   "values": [
+    "coffee_bean"
+   ],
+   "sens": 0.7,
+   "spec": 0.99,
+   "_why": "症例問題集の改善用で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "postgastrectomy_syndrome",
+   "f": "glucose",
+   "values": [
+    "lt70"
+   ],
+   "sens": 0.4,
+   "spec": 0.97,
+   "_why": "症例問題集の改善用で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "adrenal_insufficiency",
+   "f": "glucose",
+   "values": [
+    "lt70"
+   ],
+   "sens": 0.3,
+   "spec": 0.97,
+   "_why": "症例問題集の改善用で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "acute_liver_failure",
+   "f": "glucose",
+   "values": [
+    "lt70"
+   ],
+   "sens": 0.3,
+   "spec": 0.97,
+   "_why": "症例問題集の改善用で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "aflp_hellp",
+   "f": "glucose",
+   "values": [
+    "lt70"
+   ],
+   "sens": 0.4,
+   "spec": 0.97,
+   "_why": "症例問題集の改善用で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "sepsis_nonabdominal",
+   "f": "glucose",
+   "values": [
+    "lt70"
+   ],
+   "sens": 0.1,
+   "spec": 0.97,
+   "_why": "症例問題集の改善用で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "gastric_outlet_obstruction",
+   "f": "acidosis",
+   "values": [
+    "alkalosis"
+   ],
+   "sens": 0.5,
+   "spec": 0.97,
+   "_why": "症例問題集の改善用で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "hyperemesis_gravidarum",
+   "f": "acidosis",
+   "values": [
+    "alkalosis"
+   ],
+   "sens": 0.3,
+   "spec": 0.97,
+   "_why": "症例問題集の改善用で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "hypokalemia_ileus",
+   "f": "acidosis",
+   "values": [
+    "alkalosis"
+   ],
+   "sens": 0.3,
+   "spec": 0.95,
+   "_why": "症例問題集の改善用で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "ibs",
+   "f": "pain_char",
+   "values": [
+    "relief_defecation"
+   ],
+   "sens": 0.8,
+   "spec": 0.9,
+   "_why": "症例問題集の改善用で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "chronic_constipation_impaction",
+   "f": "pain_char",
+   "values": [
+    "relief_defecation"
+   ],
+   "sens": 0.3,
+   "spec": 0.9,
+   "_why": "症例問題集の改善用で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "sle_vasculitis_serositis",
+   "f": "autoantibodies",
+   "values": [
+    "sle_serology"
+   ],
+   "sens": 0.85,
+   "spec": 0.98,
+   "_why": "症例問題集の改善用で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "celiac_malabsorption",
+   "f": "autoantibodies",
+   "values": [
+    "ttg_pos"
+   ],
+   "sens": 0.9,
+   "spec": 0.99,
+   "_why": "症例問題集の改善用で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "autoimmune_gastritis",
+   "f": "autoantibodies",
+   "values": [
+    "parietal_pos"
+   ],
+   "sens": 0.9,
+   "spec": 0.98,
+   "_why": "症例問題集の改善用で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "pan_mesenteric_vasculitis",
+   "f": "autoantibodies",
+   "values": [
+    "anca_pos"
+   ],
+   "sens": 0.5,
+   "spec": 0.98,
+   "_why": "症例問題集の改善用で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "protein_losing_enteropathy",
+   "f": "endoscopy",
+   "values": [
+    "giant_folds"
+   ],
+   "sens": 0.5,
+   "spec": 0.99,
+   "_why": "症例問題集の改善用で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "gastric_cancer",
+   "f": "endoscopy",
+   "values": [
+    "giant_folds"
+   ],
+   "sens": 0.2,
+   "spec": 0.97,
+   "_why": "症例問題集の改善用で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "gastric_malt_lymphoma",
+   "f": "endoscopy",
+   "values": [
+    "giant_folds"
+   ],
+   "sens": 0.2,
+   "spec": 0.97,
+   "_why": "症例問題集の改善用で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "gastric_polyp",
+   "f": "endoscopy",
+   "values": [
+    "gastric_polyp"
+   ],
+   "sens": 0.9,
+   "spec": 0.98,
+   "_why": "症例問題集の改善用で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "hemochromatosis",
+   "f": "skin_finding",
+   "values": [
+    "pigmentation"
+   ],
+   "sens": 0.7,
+   "spec": 0.95,
+   "_why": "症例問題集の改善用で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "hemochromatosis",
+   "f": "hepatomegaly",
+   "values": null,
+   "sens": 0.8,
+   "spec": 0.9,
+   "_why": "症例問題集の改善用で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "sle_vasculitis_serositis",
+   "f": "autoimmune_hx",
+   "values": null,
+   "sens": 0.8,
+   "spec": 0.95,
+   "_why": "症例問題集の改善用で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "sle_vasculitis_serositis",
+   "f": "arthralgia",
+   "values": null,
+   "sens": 0.6,
+   "spec": 0.9,
+   "_why": "症例問題集の改善用で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "microscopic_colitis",
+   "f": "nsaid_aspirin",
+   "values": null,
+   "sens": 0.4,
+   "spec": 0.8,
+   "_why": "症例問題集の改善用で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "portal_vein_thrombosis",
+   "f": "thrombophilia_hx",
+   "values": null,
+   "sens": 0.4,
+   "spec": 0.97,
+   "_why": "症例問題集の改善用で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "meckel_diverticulum",
+   "f": "hb",
+   "values": [
+    "low"
+   ],
+   "sens": 0.5,
+   "spec": 0.85,
+   "_why": "症例問題集の改善用で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "celiac_malabsorption",
+   "f": "chronic_liver_labs",
+   "values": [
+    "alb_low"
+   ],
+   "sens": 0.5,
+   "spec": 0.85,
+   "_why": "症例問題集の改善用で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "hypothyroidism",
+   "f": "temp",
+   "values": [
+    "lt36"
+   ],
+   "sens": 0.3,
+   "spec": 0.97,
+   "_why": "症例問題集の改善用で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "hypothyroidism",
+   "f": "consciousness",
+   "values": [
+    "altered"
+   ],
+   "sens": 0.2,
+   "spec": 0.9,
+   "_why": "症例問題集の改善用で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "paralytic_ileus_pseudoobstruction",
+   "f": "ct",
+   "values": [
+    "colon_dilated"
+   ],
+   "sens": 0.8,
+   "spec": 0.95,
+   "_why": "症例問題集の検討で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "toxic_megacolon",
+   "f": "ct",
+   "values": [
+    "colon_dilated"
+   ],
+   "sens": 0.8,
+   "spec": 0.95,
+   "_why": "症例問題集の検討で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "sigmoid_volvulus",
+   "f": "ct",
+   "values": [
+    "colon_dilated"
+   ],
+   "sens": 0.8,
+   "spec": 0.93,
+   "_why": "症例問題集の検討で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "colorectal_cancer",
+   "f": "ct",
+   "values": [
+    "colon_dilated"
+   ],
+   "sens": 0.4,
+   "spec": 0.93,
+   "_why": "症例問題集の検討で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "peritoneal_carcinomatosis",
+   "f": "ct",
+   "values": [
+    "peritoneal_thick"
+   ],
+   "sens": 0.8,
+   "spec": 0.97,
+   "_why": "症例問題集の検討で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "intestinal_tuberculosis_peritonitis",
+   "f": "ct",
+   "values": [
+    "peritoneal_thick"
+   ],
+   "sens": 0.6,
+   "spec": 0.97,
+   "_why": "症例問題集の検討で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "angiodysplasia",
+   "f": "ct",
+   "values": [
+    "vascular_lesion"
+   ],
+   "sens": 0.7,
+   "spec": 0.98,
+   "_why": "症例問題集の検討で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "diverticular_bleeding",
+   "f": "ct",
+   "values": [
+    "vascular_lesion"
+   ],
+   "sens": 0.4,
+   "spec": 0.97,
+   "_why": "症例問題集の検討で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "visceral_aneurysm_rupture",
+   "f": "ct",
+   "values": [
+    "vascular_lesion"
+   ],
+   "sens": 0.4,
+   "spec": 0.97,
+   "_why": "症例問題集の検討で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "splenic_infarct_rupture",
+   "f": "ct",
+   "values": [
+    "vascular_lesion"
+   ],
+   "sens": 0.3,
+   "spec": 0.97,
+   "_why": "症例問題集の検討で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "gastric_outlet_obstruction",
+   "f": "ct",
+   "values": [
+    "gastric_dilation"
+   ],
+   "sens": 0.8,
+   "spec": 0.98,
+   "_why": "症例問題集の検討で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "gastroparesis",
+   "f": "ct",
+   "values": [
+    "gastric_dilation"
+   ],
+   "sens": 0.4,
+   "spec": 0.97,
+   "_why": "症例問題集の検討で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "sma_syndrome",
+   "f": "ct",
+   "values": [
+    "gastric_dilation"
+   ],
+   "sens": 0.5,
+   "spec": 0.97,
+   "_why": "症例問題集の検討で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "budd_chiari",
+   "f": "ct",
+   "values": [
+    "hepatic_vein_occlusion"
+   ],
+   "sens": 0.9,
+   "spec": 0.99,
+   "_why": "症例問題集の検討で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "ovarian_tumor",
+   "f": "ct",
+   "values": [
+    "adnexal"
+   ],
+   "sens": 0.8,
+   "spec": 0.97,
+   "_why": "症例問題集の検討で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "gastrinoma_zes",
+   "f": "ct",
+   "values": [
+    "pancreatic_mass"
+   ],
+   "sens": 0.4,
+   "spec": 0.97,
+   "_why": "症例問題集の検討で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "internal_hernia",
+   "f": "ct",
+   "values": [
+    "volvulus"
+   ],
+   "sens": 0.4,
+   "spec": 0.97,
+   "_why": "症例問題集の検討で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "gi_net_carcinoid",
+   "f": "ct",
+   "values": [
+    "liver_mass"
+   ],
+   "sens": 0.5,
+   "spec": 0.97,
+   "_why": "症例問題集の検討で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "gastric_cancer",
+   "f": "ct",
+   "values": [
+    "gastric_wall_thick"
+   ],
+   "sens": 0.6,
+   "spec": 0.97,
+   "_why": "症例問題集の検討で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "hyperkalemia",
+   "f": "ecg",
+   "values": [
+    "peaked_t"
+   ],
+   "sens": 0.8,
+   "spec": 0.99,
+   "_why": "症例問題集の検討で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "uremia_aki",
+   "f": "ecg",
+   "values": [
+    "peaked_t"
+   ],
+   "sens": 0.3,
+   "spec": 0.98,
+   "_why": "症例問題集の検討で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "rhabdomyolysis",
+   "f": "ecg",
+   "values": [
+    "peaked_t"
+   ],
+   "sens": 0.2,
+   "spec": 0.98,
+   "_why": "症例問題集の検討で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "adrenal_insufficiency",
+   "f": "ecg",
+   "values": [
+    "peaked_t"
+   ],
+   "sens": 0.2,
+   "spec": 0.98,
+   "_why": "症例問題集の検討で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "intestinal_tuberculosis_peritonitis",
+   "f": "paracentesis",
+   "values": [
+    "lymph_ada"
+   ],
+   "sens": 0.8,
+   "spec": 0.98,
+   "_why": "症例問題集の検討で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "peritoneal_carcinomatosis",
+   "f": "paracentesis",
+   "values": [
+    "lymph_ada"
+   ],
+   "sens": 0.2,
+   "spec": 0.9,
+   "_why": "症例問題集の検討で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "parasitic_enteritis",
+   "f": "stool_test",
+   "values": [
+    "parasite"
+   ],
+   "sens": 0.8,
+   "spec": 0.99,
+   "_why": "症例問題集の検討で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "liver_abscess",
+   "f": "stool_test",
+   "values": [
+    "parasite"
+   ],
+   "sens": 0.2,
+   "spec": 0.99,
+   "_why": "症例問題集の検討で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "rectal_prolapse_mps",
+   "f": "anal_sx",
+   "values": [
+    "rectal_prolapse"
+   ],
+   "sens": 0.8,
+   "spec": 0.99,
+   "_why": "症例問題集の検討で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "anorectal_cancer_prolapse",
+   "f": "anal_sx",
+   "values": [
+    "rectal_prolapse"
+   ],
+   "sens": 0.3,
+   "spec": 0.98,
+   "_why": "症例問題集の検討で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "gi_net_carcinoid",
+   "f": "urine_5hiaa",
+   "values": null,
+   "sens": 0.9,
+   "spec": 0.99,
+   "_why": "症例問題集の検討で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "neuroendocrine_tumor_hormonal",
+   "f": "urine_5hiaa",
+   "values": null,
+   "sens": 0.8,
+   "spec": 0.99,
+   "_why": "症例問題集の検討で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "neuroendocrine_tumor_hormonal",
+   "f": "flushing",
+   "values": null,
+   "sens": 0.5,
+   "spec": 0.95,
+   "_why": "症例問題集の検討で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "gi_amyloidosis",
+   "f": "macroglossia",
+   "values": null,
+   "sens": 0.2,
+   "spec": 0.995,
+   "_why": "症例問題集の検討で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "gi_amyloidosis",
+   "f": "proteinuria",
+   "values": null,
+   "sens": 0.6,
+   "spec": 0.9,
+   "_why": "症例問題集の検討で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "sle_vasculitis_serositis",
+   "f": "proteinuria",
+   "values": null,
+   "sens": 0.5,
+   "spec": 0.9,
+   "_why": "症例問題集の検討で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "pan_mesenteric_vasculitis",
+   "f": "proteinuria",
+   "values": null,
+   "sens": 0.5,
+   "spec": 0.9,
+   "_why": "症例問題集の検討で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "iga_vasculitis",
+   "f": "proteinuria",
+   "values": null,
+   "sens": 0.4,
+   "spec": 0.9,
+   "_why": "症例問題集の検討で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "aflp_hellp",
+   "f": "proteinuria",
+   "values": null,
+   "sens": 0.5,
+   "spec": 0.9,
+   "_why": "症例問題集の検討で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "benign_liver_tumor",
+   "f": "estrogen_use",
+   "values": null,
+   "sens": 0.5,
+   "spec": 0.95,
+   "_why": "症例問題集の検討で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "budd_chiari",
+   "f": "estrogen_use",
+   "values": null,
+   "sens": 0.2,
+   "spec": 0.95,
+   "_why": "症例問題集の検討で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "smv_thrombosis",
+   "f": "estrogen_use",
+   "values": null,
+   "sens": 0.2,
+   "spec": 0.95,
+   "_why": "症例問題集の検討で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "pulmonary_embolism",
+   "f": "estrogen_use",
+   "values": null,
+   "sens": 0.2,
+   "spec": 0.95,
+   "_why": "症例問題集の検討で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "budd_chiari",
+   "f": "thrombophilia_hx",
+   "values": null,
+   "sens": 0.4,
+   "spec": 0.97,
+   "_why": "症例問題集の検討で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "budd_chiari",
+   "f": "pregnancy_status",
+   "values": [
+    "postpartum",
+    "late"
+   ],
+   "sens": 0.2,
+   "spec": 0.97,
+   "_why": "症例問題集の検討で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "pud_gastritis",
+   "f": "hp_positive",
+   "values": null,
+   "sens": 0.7,
+   "spec": 0.6,
+   "_why": "症例問題集の検討で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "gastric_cancer",
+   "f": "hp_positive",
+   "values": null,
+   "sens": 0.9,
+   "spec": 0.55,
+   "_why": "症例問題集の検討で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "gastric_malt_lymphoma",
+   "f": "hp_positive",
+   "values": null,
+   "sens": 0.9,
+   "spec": 0.6,
+   "_why": "症例問題集の検討で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "hyperthyroidism",
+   "f": "palpitations",
+   "values": null,
+   "sens": 0.7,
+   "spec": 0.9,
+   "_why": "症例問題集の検討で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "postgastrectomy_syndrome",
+   "f": "palpitations",
+   "values": null,
+   "sens": 0.5,
+   "spec": 0.9,
+   "_why": "症例問題集の検討で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "anaphylaxis",
+   "f": "palpitations",
+   "values": null,
+   "sens": 0.3,
+   "spec": 0.9,
+   "_why": "症例問題集の検討で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "perforation",
+   "f": "ingestion_event",
+   "values": [
+    "endoscopy_recent"
+   ],
+   "sens": 0.2,
+   "spec": 0.97,
+   "_why": "症例問題集の検討で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "gastric_cancer",
+   "f": "endoscopy",
+   "values": [
+    "chronic_gastritis"
+   ],
+   "sens": 0.5,
+   "spec": 0.9,
+   "_why": "症例問題集の検討で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "pud_gastritis",
+   "f": "endoscopy",
+   "values": [
+    "chronic_gastritis"
+   ],
+   "sens": 0.4,
+   "spec": 0.9,
+   "_why": "症例問題集の検討で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "autoimmune_gastritis",
+   "f": "endoscopy",
+   "values": [
+    "chronic_gastritis"
+   ],
+   "sens": 0.3,
+   "spec": 0.95,
+   "_why": "症例問題集の検討で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "fap",
+   "f": "fhx_polyposis",
+   "values": null,
+   "sens": 0.8,
+   "spec": 0.95,
+   "_why": "症例問題集の検討で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "fap",
+   "f": "endoscopy",
+   "values": [
+    "polyposis"
+   ],
+   "sens": 0.9,
+   "spec": 0.995,
+   "_why": "症例問題集の検討で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "fap",
+   "f": "gi_bleed",
+   "values": [
+    "hematochezia"
+   ],
+   "sens": 0.4,
+   "spec": 0.85,
+   "_why": "症例問題集の検討で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "fap",
+   "f": "abd_pain",
+   "values": [
+    "diffuse",
+    "llq",
+    "supra"
+   ],
+   "sens": 0.3,
+   "spec": 0.85,
+   "_why": "症例問題集の検討で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "peutz_jeghers",
+   "f": "endoscopy",
+   "values": [
+    "polyposis"
+   ],
+   "sens": 0.8,
+   "spec": 0.995,
+   "_why": "症例問題集の検討で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "peutz_jeghers",
+   "f": "skin_finding",
+   "values": [
+    "pigmentation"
+   ],
+   "sens": 0.9,
+   "spec": 0.95,
+   "_why": "症例問題集の検討で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "peutz_jeghers",
+   "f": "ct",
+   "values": [
+    "intussusception"
+   ],
+   "sens": 0.4,
+   "spec": 0.97,
+   "_why": "症例問題集の検討で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "peutz_jeghers",
+   "f": "us",
+   "values": [
+    "target"
+   ],
+   "sens": 0.3,
+   "spec": 0.99,
+   "_why": "症例問題集の検討で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "peutz_jeghers",
+   "f": "pain_char",
+   "values": [
+    "colicky"
+   ],
+   "sens": 0.5,
+   "spec": 0.85,
+   "_why": "症例問題集の検討で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "peutz_jeghers",
+   "f": "gi_bleed",
+   "values": [
+    "hematochezia",
+    "melena"
+   ],
+   "sens": 0.4,
+   "spec": 0.85,
+   "_why": "症例問題集の検討で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "peutz_jeghers",
+   "f": "hb",
+   "values": [
+    "low"
+   ],
+   "sens": 0.4,
+   "spec": 0.85,
+   "_why": "症例問題集の検討で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "hepatopulmonary",
+   "f": "cirrhosis_hx",
+   "values": null,
+   "sens": 0.9,
+   "spec": 0.9,
+   "_why": "症例問題集の検討で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "hepatopulmonary",
+   "f": "spo2",
+   "values": [
+    "lt94"
+   ],
+   "sens": 0.8,
+   "spec": 0.95,
+   "_why": "症例問題集の検討で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "hepatopulmonary",
+   "f": "platypnea",
+   "values": null,
+   "sens": 0.8,
+   "spec": 0.995,
+   "_why": "症例問題集の検討で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "hepatopulmonary",
+   "f": "clubbing",
+   "values": null,
+   "sens": 0.5,
+   "spec": 0.97,
+   "_why": "症例問題集の検討で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "hepatopulmonary",
+   "f": "chest_sx",
+   "values": null,
+   "sens": 0.7,
+   "spec": 0.9,
+   "_why": "症例問題集の検討で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "hepatopulmonary",
+   "f": "ascites_exam",
+   "values": null,
+   "sens": 0.5,
+   "spec": 0.9,
+   "_why": "症例問題集の検討で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "pheochromocytoma",
+   "f": "sbp",
+   "values": [
+    "gt140"
+   ],
+   "sens": 0.8,
+   "spec": 0.85,
+   "_why": "症例問題集の検討で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "pheochromocytoma",
+   "f": "palpitations",
+   "values": null,
+   "sens": 0.7,
+   "spec": 0.9,
+   "_why": "症例問題集の検討で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "pheochromocytoma",
+   "f": "neuro_sx",
+   "values": [
+    "headache"
+   ],
+   "sens": 0.7,
+   "spec": 0.9,
+   "_why": "症例問題集の検討で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "pheochromocytoma",
+   "f": "chest_sx",
+   "values": null,
+   "sens": 0.5,
+   "spec": 0.9,
+   "_why": "症例問題集の検討で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "pheochromocytoma",
+   "f": "catecholamine_high",
+   "values": null,
+   "sens": 0.95,
+   "spec": 0.99,
+   "_why": "症例問題集の検討で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "pheochromocytoma",
+   "f": "ct",
+   "values": [
+    "adrenal_mass"
+   ],
+   "sens": 0.9,
+   "spec": 0.99,
+   "_why": "症例問題集の検討で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "pheochromocytoma",
+   "f": "glucose",
+   "values": [
+    "gt250"
+   ],
+   "sens": 0.3,
+   "spec": 0.9,
+   "_why": "症例問題集の検討で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "pheochromocytoma",
+   "f": "nausea",
+   "values": null,
+   "sens": 0.4,
+   "spec": 0.55,
+   "_why": "症例問題集の検討で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "barrett",
+   "f": "heartburn_regurg",
+   "values": null,
+   "sens": 0.9,
+   "spec": 0.9,
+   "_why": "症例問題集の検討で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "barrett",
+   "f": "endoscopy",
+   "values": [
+    "barrett"
+   ],
+   "sens": 0.9,
+   "spec": 0.995,
+   "_why": "症例問題集の検討で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "barrett",
+   "f": "dysphagia",
+   "values": null,
+   "sens": 0.2,
+   "spec": 0.9,
+   "_why": "症例問題集の検討で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "barrett",
+   "f": "abd_pain",
+   "values": [
+    "epi"
+   ],
+   "sens": 0.3,
+   "spec": 0.85,
+   "_why": "症例問題集の検討で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "h_pylori_gastritis",
+   "f": "hp_positive",
+   "values": null,
+   "sens": 0.99,
+   "spec": 0.6,
+   "_why": "症例問題集の検討で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "h_pylori_gastritis",
+   "f": "endoscopy",
+   "values": [
+    "chronic_gastritis"
+   ],
+   "sens": 0.8,
+   "spec": 0.95,
+   "_why": "症例問題集の検討で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "h_pylori_gastritis",
+   "f": "abd_pain",
+   "values": [
+    "epi"
+   ],
+   "sens": 0.5,
+   "spec": 0.85,
+   "_why": "症例問題集の検討で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "h_pylori_gastritis",
+   "f": "early_satiety_bloating",
+   "values": null,
+   "sens": 0.3,
+   "spec": 0.9,
+   "_why": "症例問題集の検討で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "chronic_mesenteric_ischemia",
+   "f": "pain_char",
+   "values": [
+    "postprandial"
+   ],
+   "sens": 0.9,
+   "spec": 0.85,
+   "_why": "症例問題集の検討で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "chronic_mesenteric_ischemia",
+   "f": "weight_loss",
+   "values": null,
+   "sens": 0.8,
+   "spec": 0.94,
+   "_why": "症例問題集の検討で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "chronic_mesenteric_ischemia",
+   "f": "abd_bruit",
+   "values": null,
+   "sens": 0.5,
+   "spec": 0.95,
+   "_why": "症例問題集の検討で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "chronic_mesenteric_ischemia",
+   "f": "cv_risk",
+   "values": null,
+   "sens": 0.8,
+   "spec": 0.65,
+   "_why": "症例問題集の検討で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "chronic_mesenteric_ischemia",
+   "f": "ct",
+   "values": [
+    "visceral_artery_stenosis"
+   ],
+   "sens": 0.9,
+   "spec": 0.99,
+   "_why": "症例問題集の検討で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "chronic_mesenteric_ischemia",
+   "f": "abd_pain",
+   "values": [
+    "epi",
+    "umb",
+    "diffuse"
+   ],
+   "sens": 0.8,
+   "spec": 0.85,
+   "_why": "症例問題集の検討で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "pancreas_divisum",
+   "f": "pancreatitis_hx",
+   "values": null,
+   "sens": 0.8,
+   "spec": 0.9,
+   "_why": "症例問題集の検討で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "pancreas_divisum",
+   "f": "similar_episodes",
+   "values": null,
+   "sens": 0.8,
+   "spec": 0.85,
+   "_why": "症例問題集の検討で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "pancreas_divisum",
+   "f": "abd_pain",
+   "values": [
+    "epi"
+   ],
+   "sens": 0.8,
+   "spec": 0.85,
+   "_why": "症例問題集の検討で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "pancreas_divisum",
+   "f": "lipase",
+   "values": [
+    "lt3x",
+    "ge3x"
+   ],
+   "sens": 0.6,
+   "spec": 0.85,
+   "_why": "症例問題集の検討で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "pancreas_divisum",
+   "f": "ct",
+   "values": [
+    "pancreas_divisum"
+   ],
+   "sens": 0.9,
+   "spec": 0.995,
+   "_why": "症例問題集の検討で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "pancreas_divisum",
+   "f": "alcohol_heavy",
+   "values": null,
+   "sens": 0.05,
+   "spec": 0.9,
+   "_why": "症例問題集の検討で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "pancreas_divisum",
+   "f": "gallstone_hx",
+   "values": null,
+   "sens": 0.05,
+   "spec": 0.9,
+   "_why": "症例問題集の検討で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "dieulafoy",
+   "f": "vomiting",
+   "values": [
+    "hematemesis"
+   ],
+   "sens": 0.7,
+   "spec": 0.85,
+   "_why": "症例問題集の検討で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "dieulafoy",
+   "f": "gi_bleed",
+   "values": [
+    "melena"
+   ],
+   "sens": 0.5,
+   "spec": 0.85,
+   "_why": "症例問題集の検討で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "dieulafoy",
+   "f": "sbp",
+   "values": [
+    "lt90",
+    "90_100"
+   ],
+   "sens": 0.4,
+   "spec": 0.85,
+   "_why": "症例問題集の検討で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "dieulafoy",
+   "f": "hb",
+   "values": [
+    "low"
+   ],
+   "sens": 0.8,
+   "spec": 0.85,
+   "_why": "症例問題集の検討で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "dieulafoy",
+   "f": "endoscopy",
+   "values": [
+    "dieulafoy"
+   ],
+   "sens": 0.9,
+   "spec": 0.995,
+   "_why": "症例問題集の検討で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "dieulafoy",
+   "f": "abd_pain",
+   "values": null,
+   "sens": 0.1,
+   "spec": 0.55,
+   "_why": "症例問題集の検討で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "gallstone_ileus",
+   "f": "vomiting",
+   "values": null,
+   "sens": 0.8,
+   "spec": 0.6,
+   "_why": "症例問題集の検討で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "gallstone_ileus",
+   "f": "distension",
+   "values": null,
+   "sens": 0.7,
+   "spec": 0.85,
+   "_why": "症例問題集の検討で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "gallstone_ileus",
+   "f": "obstipation",
+   "values": null,
+   "sens": 0.7,
+   "spec": 0.88,
+   "_why": "症例問題集の検討で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "gallstone_ileus",
+   "f": "gallstone_hx",
+   "values": null,
+   "sens": 0.6,
+   "spec": 0.92,
+   "_why": "症例問題集の検討で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "gallstone_ileus",
+   "f": "ct",
+   "values": [
+    "sbo"
+   ],
+   "sens": 0.9,
+   "spec": 0.97,
+   "_why": "症例問題集の検討で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "gallstone_ileus",
+   "f": "ct",
+   "values": [
+    "pneumobilia"
+   ],
+   "sens": 0.8,
+   "spec": 0.99,
+   "_why": "症例問題集の検討で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "gallstone_ileus",
+   "f": "ct",
+   "values": [
+    "bowel_stone"
+   ],
+   "sens": 0.7,
+   "spec": 0.995,
+   "_why": "症例問題集の検討で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "gallstone_ileus",
+   "f": "bowel_sounds",
+   "values": [
+    "hyper"
+   ],
+   "sens": 0.5,
+   "spec": 0.85,
+   "_why": "症例問題集の検討で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "gallstone_ileus",
+   "f": "abd_pain",
+   "values": [
+    "diffuse",
+    "umb"
+   ],
+   "sens": 0.7,
+   "spec": 0.85,
+   "_why": "症例問題集の検討で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "gastric_volvulus",
+   "f": "abd_pain",
+   "values": [
+    "epi",
+    "luq"
+   ],
+   "sens": 0.9,
+   "spec": 0.85,
+   "_why": "症例問題集の検討で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "gastric_volvulus",
+   "f": "vomiting",
+   "values": null,
+   "sens": 0.6,
+   "spec": 0.6,
+   "_why": "症例問題集の検討で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "gastric_volvulus",
+   "f": "distension",
+   "values": null,
+   "sens": 0.6,
+   "spec": 0.85,
+   "_why": "症例問題集の検討で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "gastric_volvulus",
+   "f": "pain_onset_char",
+   "values": [
+    "sudden",
+    "rapid"
+   ],
+   "sens": 0.6,
+   "spec": 0.85,
+   "_why": "症例問題集の検討で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "gastric_volvulus",
+   "f": "ct",
+   "values": [
+    "gastric_volvulus"
+   ],
+   "sens": 0.9,
+   "spec": 0.995,
+   "_why": "症例問題集の検討で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "gastric_volvulus",
+   "f": "ct",
+   "values": [
+    "gastric_dilation"
+   ],
+   "sens": 0.6,
+   "spec": 0.97,
+   "_why": "症例問題集の検討で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "post_polypectomy",
+   "f": "ingestion_event",
+   "values": [
+    "endoscopy_recent"
+   ],
+   "sens": 0.95,
+   "spec": 0.97,
+   "_why": "症例問題集の検討で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "post_polypectomy",
+   "f": "fever_sub",
+   "values": null,
+   "sens": 0.6,
+   "spec": 0.7,
+   "_why": "症例問題集の検討で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "post_polypectomy",
+   "f": "abd_pain",
+   "values": [
+    "rlq",
+    "llq",
+    "supra",
+    "diffuse"
+   ],
+   "sens": 0.8,
+   "spec": 0.85,
+   "_why": "症例問題集の検討で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "post_polypectomy",
+   "f": "wbc",
+   "values": [
+    "10_15",
+    "gt15"
+   ],
+   "sens": 0.6,
+   "spec": 0.85,
+   "_why": "症例問題集の検討で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "post_polypectomy",
+   "f": "rebound_guarding",
+   "values": null,
+   "sens": 0.3,
+   "spec": 0.8,
+   "_why": "症例問題集の検討で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "post_polypectomy",
+   "f": "ct",
+   "values": [
+    "wall_thick"
+   ],
+   "sens": 0.6,
+   "spec": 0.97,
+   "_why": "症例問題集の検討で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "post_polypectomy",
+   "f": "ct",
+   "values": [
+    "free_air"
+   ],
+   "sens": 0.05,
+   "spec": 0.7,
+   "_why": "症例問題集の検討で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "lamn",
+   "f": "abd_pain",
+   "values": [
+    "rlq"
+   ],
+   "sens": 0.5,
+   "spec": 0.85,
+   "_why": "症例問題集の検討で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "lamn",
+   "f": "distension",
+   "values": null,
+   "sens": 0.3,
+   "spec": 0.85,
+   "_why": "症例問題集の検討で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "lamn",
+   "f": "ct",
+   "values": [
+    "appendiceal_mucocele"
+   ],
+   "sens": 0.9,
+   "spec": 0.995,
+   "_why": "症例問題集の検討で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "lamn",
+   "f": "abd_mass",
+   "values": null,
+   "sens": 0.2,
+   "spec": 0.9,
+   "_why": "症例問題集の検討で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "pseudomyxoma",
+   "f": "distension",
+   "values": null,
+   "sens": 0.9,
+   "spec": 0.85,
+   "_why": "症例問題集の検討で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "pseudomyxoma",
+   "f": "ascites_exam",
+   "values": null,
+   "sens": 0.7,
+   "spec": 0.9,
+   "_why": "症例問題集の検討で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "pseudomyxoma",
+   "f": "ct",
+   "values": [
+    "pseudomyxoma"
+   ],
+   "sens": 0.9,
+   "spec": 0.995,
+   "_why": "症例問題集の検討で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "pseudomyxoma",
+   "f": "ct",
+   "values": [
+    "peritoneal_thick"
+   ],
+   "sens": 0.5,
+   "spec": 0.97,
+   "_why": "症例問題集の検討で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "pseudomyxoma",
+   "f": "tumor_marker",
+   "values": [
+    "cea_high"
+   ],
+   "sens": 0.6,
+   "spec": 0.9,
+   "_why": "症例問題集の検討で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "pseudomyxoma",
+   "f": "tumor_marker",
+   "values": [
+    "ca199_high"
+   ],
+   "sens": 0.4,
+   "spec": 0.88,
+   "_why": "症例問題集の検討で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "pseudomyxoma",
+   "f": "cancer_hx",
+   "values": null,
+   "sens": 0.4,
+   "spec": 0.9,
+   "_why": "症例問題集の検討で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "clonorchiasis",
+   "f": "raw_fish_intake",
+   "values": null,
+   "sens": 0.7,
+   "spec": 0.95,
+   "_why": "症例問題集の検討で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "clonorchiasis",
+   "f": "fever_sub",
+   "values": null,
+   "sens": 0.5,
+   "spec": 0.7,
+   "_why": "症例問題集の検討で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "clonorchiasis",
+   "f": "abd_pain",
+   "values": [
+    "ruq"
+   ],
+   "sens": 0.6,
+   "spec": 0.85,
+   "_why": "症例問題集の検討で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "clonorchiasis",
+   "f": "jaundice_sub",
+   "values": null,
+   "sens": 0.4,
+   "spec": 0.95,
+   "_why": "症例問題集の検討で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "clonorchiasis",
+   "f": "ct",
+   "values": [
+    "biliary_dilation"
+   ],
+   "sens": 0.7,
+   "spec": 0.97,
+   "_why": "症例問題集の検討で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "clonorchiasis",
+   "f": "alp_ggt",
+   "values": [
+    "elevated"
+   ],
+   "sens": 0.5,
+   "spec": 0.85,
+   "_why": "症例問題集の検討で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "clonorchiasis",
+   "f": "eosinophilia",
+   "values": [
+    "elevated"
+   ],
+   "sens": 0.5,
+   "spec": 0.9,
+   "_why": "症例問題集の検討で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "clonorchiasis",
+   "f": "stool_test",
+   "values": [
+    "parasite"
+   ],
+   "sens": 0.8,
+   "spec": 0.99,
+   "_why": "症例問題集の検討で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "clonorchiasis",
+   "f": "similar_episodes",
+   "values": null,
+   "sens": 0.5,
+   "spec": 0.85,
+   "_why": "症例問題集の検討で不足が判明した古典的所見（ドラフト値）"
+  },
+  {
+   "d": "smv_thrombosis",
+   "f": "ct",
+   "values": [
+    "pvt"
+   ],
+   "sens": 0.8,
+   "spec": 0.97,
+   "_why": "症例問題集の検討で不足が判明（ドラフト値）"
+  },
+  {
+   "d": "smv_thrombosis",
+   "f": "ct",
+   "values": [
+    "bowel_edema"
+   ],
+   "sens": 0.6,
+   "spec": 0.95,
+   "_why": "症例問題集の検討で不足が判明（ドラフト値）"
+  },
+  {
+   "d": "sle_vasculitis_serositis",
+   "f": "ct",
+   "values": [
+    "bowel_edema"
+   ],
+   "sens": 0.6,
+   "spec": 0.95,
+   "_why": "症例問題集の検討で不足が判明（ドラフト値）"
+  },
+  {
+   "d": "anaphylaxis",
+   "f": "ct",
+   "values": [
+    "bowel_edema"
+   ],
+   "sens": 0.2,
+   "spec": 0.95,
+   "_why": "症例問題集の検討で不足が判明（ドラフト値）"
+  },
+  {
+   "d": "iga_vasculitis",
+   "f": "ct",
+   "values": [
+    "bowel_edema"
+   ],
+   "sens": 0.3,
+   "spec": 0.93,
+   "_why": "症例問題集の検討で不足が判明（ドラフト値）"
+  },
+  {
+   "d": "antibiotic_hemorrhagic_colitis",
+   "f": "endoscopy",
+   "values": [
+    "ischemic_left",
+    "hemorrhagic_diffuse"
+   ],
+   "sens": 0.6,
+   "spec": 0.97,
+   "_why": "症例問題集の検討で不足が判明（ドラフト値）"
+  },
+  {
+   "d": "gastric_smt_gist",
+   "f": "endoscopy",
+   "values": [
+    "tumor"
+   ],
+   "sens": 0.5,
+   "spec": 0.97,
+   "_why": "症例問題集の検討で不足が判明（ドラフト値）"
+  },
+  {
+   "d": "gastroduodenal_nen",
+   "f": "endoscopy",
+   "values": [
+    "tumor"
+   ],
+   "sens": 0.5,
+   "spec": 0.97,
+   "_why": "症例問題集の検討で不足が判明（ドラフト値）"
+  },
+  {
+   "d": "ehec_hus",
+   "f": "stool_test",
+   "values": [
+    "culture_pos"
+   ],
+   "sens": 0.7,
+   "spec": 0.97,
+   "_why": "症例問題集の検討で不足が判明（ドラフト値）"
+  },
+  {
+   "d": "ehec_hus",
+   "f": "chronic_liver_labs",
+   "values": [
+    "plt_low"
+   ],
+   "sens": 0.5,
+   "spec": 0.9,
+   "_why": "症例問題集の検討で不足が判明（ドラフト値）"
+  },
+  {
+   "d": "ehec_hus",
+   "f": "renal",
+   "values": [
+    "elevated"
+   ],
+   "sens": 0.5,
+   "spec": 0.85,
+   "_why": "症例問題集の検討で不足が判明（ドラフト値）"
+  },
+  {
+   "d": "herpes_zoster",
+   "f": "abd_pain",
+   "values": [
+    "epi",
+    "umb",
+    "rlq",
+    "llq",
+    "supra"
+   ],
+   "sens": 0.5,
+   "spec": 0.5,
+   "_why": "症例問題集の検討で不足が判明（ドラフト値）"
+  },
+  {
+   "d": "benign_liver_tumor",
+   "f": "ct",
+   "values": [
+    "hemangioma_pattern"
+   ],
+   "sens": 0.7,
+   "spec": 0.995,
+   "_why": "肝腫瘤/膵嚢胞の造影パターン（ドラフト値）"
+  },
+  {
+   "d": "hcc",
+   "f": "ct",
+   "values": [
+    "arterial_enhancement"
+   ],
+   "sens": 0.85,
+   "spec": 0.93,
+   "_why": "肝腫瘤/膵嚢胞の造影パターン（ドラフト値）"
+  },
+  {
+   "d": "benign_liver_tumor",
+   "f": "ct",
+   "values": [
+    "arterial_enhancement"
+   ],
+   "sens": 0.5,
+   "spec": 0.95,
+   "_why": "肝腫瘤/膵嚢胞の造影パターン（ドラフト値）"
+  },
+  {
+   "d": "liver_metastases",
+   "f": "ct",
+   "values": [
+    "arterial_enhancement"
+   ],
+   "sens": 0.2,
+   "spec": 0.95,
+   "_why": "肝腫瘤/膵嚢胞の造影パターン（ドラフト値）"
+  },
+  {
+   "d": "gi_net_carcinoid",
+   "f": "ct",
+   "values": [
+    "arterial_enhancement"
+   ],
+   "sens": 0.3,
+   "spec": 0.97,
+   "_why": "肝腫瘤/膵嚢胞の造影パターン（ドラフト値）"
+  },
+  {
+   "d": "hcc",
+   "f": "ct",
+   "values": [
+    "washout"
+   ],
+   "sens": 0.8,
+   "spec": 0.98,
+   "_why": "肝腫瘤/膵嚢胞の造影パターン（ドラフト値）"
+  },
+  {
+   "d": "liver_metastases",
+   "f": "ct",
+   "values": [
+    "ring_enhancement"
+   ],
+   "sens": 0.6,
+   "spec": 0.95,
+   "_why": "肝腫瘤/膵嚢胞の造影パターン（ドラフト値）"
+  },
+  {
+   "d": "liver_abscess",
+   "f": "ct",
+   "values": [
+    "ring_enhancement"
+   ],
+   "sens": 0.7,
+   "spec": 0.95,
+   "_why": "肝腫瘤/膵嚢胞の造影パターン（ドラフト値）"
+  },
+  {
+   "d": "intrahepatic_cholangiocarcinoma",
+   "f": "ct",
+   "values": [
+    "ring_enhancement"
+   ],
+   "sens": 0.5,
+   "spec": 0.95,
+   "_why": "肝腫瘤/膵嚢胞の造影パターン（ドラフト値）"
+  },
+  {
+   "d": "echinococcosis",
+   "f": "ct",
+   "values": [
+    "cystic_calcified"
+   ],
+   "sens": 0.8,
+   "spec": 0.995,
+   "_why": "肝腫瘤/膵嚢胞の造影パターン（ドラフト値）"
+  },
+  {
+   "d": "ipmn_mcn",
+   "f": "ct",
+   "values": [
+    "mucinous_cyst"
+   ],
+   "sens": 0.8,
+   "spec": 0.99,
+   "_why": "肝腫瘤/膵嚢胞の造影パターン（ドラフト値）"
   }
  ],
  "drop_relations": [
@@ -438,5 +3497,252 @@
    "f": "cv_risk",
    "_why": "糖尿病と二重計上。脂肪肝は糖尿病のほうを残す"
   }
- ]
+ ],
+ "diseases": {
+  "hcc": {
+   "label": "肝細胞癌（破裂含む）"
+  },
+  "hyperthyroidism": {
+   "label": "甲状腺機能亢進症/甲状腺クリーゼ"
+  },
+  "chronic_constipation_impaction": {
+   "label": "慢性便秘症/宿便（糞便塞栓）・宿便性潰瘍"
+  },
+  "hiatal_hernia": {
+   "label": "食道裂孔ヘルニア/横隔膜ヘルニア"
+  },
+  "portal_vein_thrombosis": {
+   "label": "門脈血栓症（急性/慢性）"
+  },
+  "uremia_aki": {
+   "label": "腎不全・尿毒症（AKI/CKD）"
+  },
+  "intestinal_tuberculosis_peritonitis": {
+   "label": "腸結核/結核性腹膜炎"
+  },
+  "nafld_nash": {
+   "label": "脂肪肝(NAFLD/MASLD)・MASH"
+  },
+  "acute_viral_hepatitis": {
+   "label": "急性ウイルス性肝炎(A/B/C/E, EBV/CMV)"
+  },
+  "gi_amyloidosis": {
+   "label": "消化管アミロイドーシス"
+  },
+  "gastric_smt_gist": {
+   "label": "胃・食道粘膜下腫瘍（GIST/平滑筋腫など）"
+  }
+ },
+ "add_diseases": {
+  "fap": {
+   "label": "家族性大腸腺腫症（FAP）",
+   "category": "下部消化管",
+   "urgency": "routine",
+   "prior": 0.002,
+   "onset": {
+    "minutes": 0.05,
+    "hours": 0.1,
+    "days": 0.4,
+    "weeks": 1,
+    "months": 1
+   },
+   "note": "症例問題集の検討で追加（ドラフト値）"
+  },
+  "peutz_jeghers": {
+   "label": "Peutz-Jeghers症候群",
+   "category": "下部消化管",
+   "urgency": "routine",
+   "prior": 0.002,
+   "onset": {
+    "minutes": 0.05,
+    "hours": 0.1,
+    "days": 0.4,
+    "weeks": 1,
+    "months": 1
+   },
+   "note": "症例問題集の検討で追加（ドラフト値）"
+  },
+  "hepatopulmonary": {
+   "label": "肝肺症候群",
+   "category": "肝胆膵",
+   "urgency": "urgent",
+   "prior": 0.002,
+   "onset": {
+    "minutes": 0.05,
+    "hours": 0.1,
+    "days": 0.4,
+    "weeks": 1,
+    "months": 1
+   },
+   "note": "症例問題集の検討で追加（ドラフト値）"
+  },
+  "pheochromocytoma": {
+   "label": "褐色細胞腫/パラガングリオーマ",
+   "category": "全身・代謝",
+   "urgency": "urgent",
+   "prior": 0.002,
+   "onset": {
+    "minutes": 0.05,
+    "hours": 0.1,
+    "days": 0.4,
+    "weeks": 1,
+    "months": 1
+   },
+   "note": "症例問題集の検討で追加（ドラフト値）"
+  },
+  "barrett": {
+   "label": "Barrett食道",
+   "category": "上部消化管",
+   "urgency": "routine",
+   "prior": 0.002,
+   "onset": {
+    "minutes": 0.05,
+    "hours": 0.1,
+    "days": 0.4,
+    "weeks": 1,
+    "months": 1
+   },
+   "note": "症例問題集の検討で追加（ドラフト値）"
+  },
+  "h_pylori_gastritis": {
+   "label": "Helicobacter pylori感染症（慢性活動性胃炎）",
+   "category": "上部消化管",
+   "urgency": "routine",
+   "prior": 0.008,
+   "onset": {
+    "minutes": 0.05,
+    "hours": 0.1,
+    "days": 0.4,
+    "weeks": 1,
+    "months": 1
+   },
+   "note": "症例問題集の検討で追加（ドラフト値）"
+  },
+  "chronic_mesenteric_ischemia": {
+   "label": "慢性腸間膜虚血（腹部アンギーナ）",
+   "category": "血管",
+   "urgency": "urgent",
+   "prior": 0.002,
+   "onset": {
+    "minutes": 0.05,
+    "hours": 0.1,
+    "days": 0.4,
+    "weeks": 1,
+    "months": 1
+   },
+   "note": "症例問題集の検討で追加（ドラフト値）"
+  },
+  "pancreas_divisum": {
+   "label": "膵管癒合不全（膵管分離症）",
+   "category": "肝胆膵",
+   "urgency": "routine",
+   "prior": 0.002,
+   "onset": {
+    "minutes": 0.05,
+    "hours": 0.1,
+    "days": 0.4,
+    "weeks": 1,
+    "months": 1
+   },
+   "note": "症例問題集の検討で追加（ドラフト値）"
+  },
+  "dieulafoy": {
+   "label": "Dieulafoy病変",
+   "category": "上部消化管",
+   "urgency": "emergent",
+   "prior": 0.002,
+   "onset": {
+    "minutes": 0.6,
+    "hours": 1,
+    "days": 0.6,
+    "weeks": 0.2,
+    "months": 0.1
+   },
+   "note": "症例問題集の検討で追加（ドラフト値）"
+  },
+  "gallstone_ileus": {
+   "label": "胆石イレウス",
+   "category": "下部消化管",
+   "urgency": "urgent",
+   "prior": 0.002,
+   "onset": {
+    "minutes": 0.6,
+    "hours": 1,
+    "days": 0.6,
+    "weeks": 0.2,
+    "months": 0.1
+   },
+   "note": "症例問題集の検討で追加（ドラフト値）"
+  },
+  "gastric_volvulus": {
+   "label": "胃軸捻転症",
+   "category": "上部消化管",
+   "urgency": "emergent",
+   "prior": 0.002,
+   "onset": {
+    "minutes": 0.6,
+    "hours": 1,
+    "days": 0.6,
+    "weeks": 0.2,
+    "months": 0.1
+   },
+   "note": "症例問題集の検討で追加（ドラフト値）"
+  },
+  "post_polypectomy": {
+   "label": "ポリペクトミー後症候群（凝固後症候群）",
+   "category": "下部消化管",
+   "urgency": "urgent",
+   "prior": 0.002,
+   "onset": {
+    "minutes": 0.6,
+    "hours": 1,
+    "days": 0.6,
+    "weeks": 0.2,
+    "months": 0.1
+   },
+   "note": "症例問題集の検討で追加（ドラフト値）"
+  },
+  "lamn": {
+   "label": "低異型度虫垂粘液性腫瘍（LAMN）/虫垂粘液嚢腫",
+   "category": "下部消化管",
+   "urgency": "routine",
+   "prior": 0.002,
+   "onset": {
+    "minutes": 0.05,
+    "hours": 0.1,
+    "days": 0.4,
+    "weeks": 1,
+    "months": 1
+   },
+   "note": "症例問題集の検討で追加（ドラフト値）"
+  },
+  "pseudomyxoma": {
+   "label": "腹膜偽粘液腫",
+   "category": "腹壁・腹膜",
+   "urgency": "routine",
+   "prior": 0.002,
+   "onset": {
+    "minutes": 0.05,
+    "hours": 0.1,
+    "days": 0.4,
+    "weeks": 1,
+    "months": 1
+   },
+   "note": "症例問題集の検討で追加（ドラフト値）"
+  },
+  "clonorchiasis": {
+   "label": "肝吸虫症",
+   "category": "肝胆膵",
+   "urgency": "routine",
+   "prior": 0.002,
+   "onset": {
+    "minutes": 0.05,
+    "hours": 0.1,
+    "days": 0.4,
+    "weeks": 1,
+    "months": 1
+   },
+   "note": "症例問題集の検討で追加（ドラフト値）"
+  }
+ }
 }

@@ -53,5 +53,15 @@
  "endometriosis": "endometriosis_adenomyosis",
  "anaphylaxis_gi": "anaphylaxis",
  "ovarian_cyst_rupture": "ovarian_cyst_rupture_hemorrhage",
- "biliary_cancer": "extrahepatic_cholangiocarcinoma"
+ "biliary_cancer": "extrahepatic_cholangiocarcinoma",
+ "acute_hepatitis": "acute_viral_hepatitis",
+ "fatty_liver": "nafld_nash",
+ "hcc_rupture": "hcc",
+ "acute_portal_vein_thrombosis": "portal_vein_thrombosis",
+ "amyloidosis_gi": "gi_amyloidosis",
+ "uremia_renal_failure": "uremia_aki",
+ "thyroid_storm": "hyperthyroidism",
+ "intestinal_tb": "intestinal_tuberculosis_peritonitis",
+ "fecal_impaction": "chronic_constipation_impaction",
+ "hiatal_diaphragmatic_hernia": "hiatal_hernia"
 }
