@@ -197,6 +197,14 @@ check('入力順序不変性 (Top10/Next5/hash 同一)', orderFail === 0, `${ord
   check('SMA症候群: 慢性心窩部痛＋胆汁性嘔吐＋体重減少＋食後増悪で Top5 に入る', rank > 0 && rank <= 5, 'rank ' + rank);
   const e = D.Extract.local('CTで大動脈と上腸間膜動脈の角が狭小、十二指腸の圧排あり。');
   check('画像: SMA症候群の CT 所見 → ct duodenal_compression（虚血ではない）', e.items.some(i => i.feature_id === 'ct' && i.value_code === 'duodenal_compression') && !e.items.some(i => i.value_code === 'ischemia'), JSON.stringify(e.items.map(i => i.feature_id + ':' + i.value_code)));
+  {
+    // 神経症状（拡張 multi 項目）: 値ごとの否定は他の値の relation に影響しない
+    const run = text => { const st = new D.ClinicalState({ context: { age_band: '40-49', sex: 'male' } }); for (const it of D.Extract.local(text).items) st.add(it); const dd = D.Differential.compute(st); const lp = dd.likely.find(x => x.id === 'lead_poisoning'); return { sup: (lp && lp.support || []).map(x => x.feature_id), ref: (lp && lp.refute || []).map(x => x.feature_id) }; };
+    const base = '臍周囲の疝痛が2週間続く。便秘あり。Hb 9.5。';
+    const a = run(base + '末梢神経障害あり。'), b = run(base + 'しびれあり。めまいなし。'), c = run(base + '頭痛なし。'), e2 = run(base + 'しびれなし。'), d = run(base + '神経症状なし。');
+    check('神経症状: 末梢神経障害/しびれ → 鉛中毒の支持所見に入る', a.sup.includes('neuro_sx') && b.sup.includes('neuro_sx'), JSON.stringify([a, b]));
+    check('神経症状: 「頭痛なし」は鉛中毒を否定せず、「しびれなし」「神経症状なし」は否定する', !c.ref.includes('neuro_sx') && !c.sup.includes('neuro_sx') && e2.ref.includes('neuro_sx') && d.ref.includes('neuro_sx'), JSON.stringify([c, e2, d]));
+  }
 }
 /* 10. Jev 障害時の fallback（remote が失敗しても Safety/baseline は継続） */
 (async () => {

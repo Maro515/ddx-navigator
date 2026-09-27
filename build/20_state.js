@@ -43,7 +43,8 @@
         note: o.note || null
       };
       if (!['present', 'absent', 'unknown', 'not_assessed', 'pending'].includes(obs.status)) obs.status = 'present';
-      if (obs.status !== 'present') obs.value_code = null;
+      // absent は値付き（「めまいなし」= その値だけ否定）も許す。値なし absent は項目全体の否定
+      if (obs.status !== 'present' && !(obs.status === 'absent' && f.values && obs.value_code && f.values.some(v => v.code === obs.value_code))) obs.value_code = null;
       if (f.values && obs.status === 'present' && !obs.value_code) obs.value_code = f.values[0].code;
       return obs;
     }
@@ -78,7 +79,9 @@
         if (f.multi) {
           // multi: 各 value ごとに最新。'normal' が最新なら異常所見は superseded
           const byV = {};
-          for (const o of list) { const k = o.status === 'present' ? o.value_code : o.status; const cur = byV[k]; if (!cur || newer(o, cur)) byV[k] = o; }
+          for (const o of list) { const k = o.status === 'present' ? o.value_code : o.status + (o.value_code ? ':' + o.value_code : ''); const cur = byV[k]; if (!cur || newer(o, cur)) byV[k] = o; }
+          // 同じ値の present と absent は新しい方だけ残す
+          for (const k in byV) { const o = byV[k]; if (o.status === 'absent' && o.value_code) { const p = byV[o.value_code]; if (p && newer(p, o)) delete byV[k]; else if (p) delete byV[o.value_code]; } }
           const vals = Object.values(byV);
           const normal = vals.find(o => o.value_code === 'normal');
           for (const o of vals) { if (normal && o !== normal && o.status === 'present' && newer(normal, o)) continue; out.push(o); }

@@ -132,5 +132,17 @@
  },
  "vaginal_discharge": {
   "to": "vaginal_discharge"
+ },
+ "mononeuritis": {
+  "to": "neuro_sx",
+  "values": {
+   "*": "paresthesia_weakness"
+  }
+ },
+ "paralysis_weakness": {
+  "to": "neuro_sx",
+  "values": {
+   "*": "paresthesia_weakness"
+  }
  }
 }

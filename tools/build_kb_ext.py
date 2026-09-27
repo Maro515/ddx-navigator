@@ -11,6 +11,8 @@ kb = json.loads(subprocess.check_output(['node', '-e', """require('./build/10_kb
 KD = {d['id']: d for d in kb['d']}; KDL = {d['label']: d['id'] for d in kb['d']}
 KF = {f['id']: f for f in kb['f']}
 ALIAS = json.load(open(os.path.join(BASE, 'tools', 'disease_alias.json'))) if os.path.exists(os.path.join(BASE, 'tools', 'disease_alias.json')) else {}
+# 異なる所見を1項目にまとめた値付き項目は複数選択（値ごとに最新を保持）
+MULTI = {'neuro_sx','skin_finding','electrolyte','ct_other','ct_wall_mass','endoscopy','hb_imaging','chronic_liver_labs','drug_hx_colitis','drug_hx_metabolic','anal_sx','abd_mass','endocrine_lab','autoantibodies','hepatitis_serology','cxr','urine_stool_color','diarrhea_pattern','hemolysis_labs','sx_sequence'}
 FALIAS = json.load(open(os.path.join(BASE, 'tools', 'feature_alias.json'))) if os.path.exists(os.path.join(BASE, 'tools', 'feature_alias.json')) else {}
 def apply_falias(fid, vals):
     a = FALIAS.get(fid)
@@ -83,7 +85,8 @@ for fid, nf in new_features.items():
     vals = nf.get('values')
     vals_js = ('[' + ', '.join(f"['{c}', {js(l)}]" for c, l in vals) + ']') if vals else 'null'
     acq = ACQ.get(t, "{ cost: 0, inv: 0, delay: 0, stage: 'bedside' }")
-    lines.append(f"  KB.addFeature({{ id: '{fid}', label: {js(nf['label'])}, type: '{t}', cat: '{cat}', anchor: '{ANCHOR.get(t, 'observation')}', values: {vals_js}, acq: {acq}, base: 0.1, mgmt: 1, ext: true }});")
+    multi = ', multi: true' if fid in MULTI and vals_js != 'null' else ''
+    lines.append(f"  KB.addFeature({{ id: '{fid}', label: {js(nf['label'])}, type: '{t}', cat: '{cat}', anchor: '{ANCHOR.get(t, 'observation')}', values: {vals_js}{multi}, acq: {acq}, base: 0.1, mgmt: 1, ext: true }});")
     KF[fid] = {'id': fid, 'label': nf['label'], 'type': t, 'base': 0.1, 'values': [c for c, l in (vals or [])]}
 # diseases + relations
 n_new = 0; n_rel = 0; unknown_feat = {}

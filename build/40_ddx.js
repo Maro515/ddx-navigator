@@ -41,6 +41,11 @@
     const present = observed.filter(o => o.status === 'present');
     let pos = false;
     if (present.length) pos = !r.values || present.some(o => r.values.includes(o.value_code));
+    else if (r.values) {
+      // 値付きの absent（「めまいなし」）は、その値を含む relation だけ否定。値なし absent は全体否定
+      const absents = observed.filter(o => o.status === 'absent');
+      if (!absents.some(o => !o.value_code || r.values.includes(o.value_code))) return null;
+    }
     const stale = observed.every(o => state.isStale(o));
     return { pos, stale, obs: present[0] || observed[0] };
   }
@@ -52,8 +57,8 @@
     let sum = 0;
     for (const fid in byF) {
       const group = byF[fid];
-      const evals = group.map(r => ({ r, e: evalRelation(r, state) }));
-      if (evals[0].e === null) {
+      const evals = group.map(r => ({ r, e: evalRelation(r, state) })).filter(x => x.e !== null);
+      if (!evals.length) {
         const strongest = group.reduce((a, b) => Math.abs(lnLRpos(a)) + Math.abs(lnLRneg(a)) >= Math.abs(lnLRpos(b)) + Math.abs(lnLRneg(b)) ? a : b);
         missing.push({ feature_id: fid, key: !!strongest.key, weight: Math.abs(lnLRpos(strongest)) + Math.abs(lnLRneg(strongest)), values: strongest.values });
         continue;

@@ -45,7 +45,7 @@
 出力は必ず record_findings ツールを1回呼び出して返してください。自由文は書きません。
 ルール:
 - 下のカタログにある feature_id と value_code だけを使う。該当しない情報は unmapped に短く列挙し、無理に当てはめない。
-- 「なし/否定/陰性」は status=absent、「不明/聞けていない」は unknown。それ以外は present。
+- 「なし/否定/陰性」は status=absent、「不明/聞けていない」は unknown。それ以外は present。値付き項目の特定の値だけを否定する場合（「めまいなし」「黒色便なし」）は status=absent に value_code も付ける。項目全体の否定は value_code=null。
 - 数値は閾値でカテゴリ化する（例: 体温38.2→temp 38_39、CRP 5.2 mg/dL→crp 5_10、WBC 12,300→wbc 10_15、SBP 86→sbp lt90、SpO2 92→spo2 lt94）。
 - 時間は相対表現から elapsed_bucket を選ぶ（「昨日から」→d_1_2、「3時間前」→h_1_3、「今朝」→hours、「先週」→w_1_2）。不明なら null。
 - 主訴（腹痛・下痢・嘔吐）には severity を推定して付ける（激痛/我慢できない=severe、軽い=mild、それ以外=moderate）。悪化/改善/持続/変動/消失 は trend。
@@ -79,7 +79,8 @@ ${catalogText()}`;
       const f = kb.feature[it.feature_id]; if (!f) continue;
       let value = it.value_code || null;
       if (f.values && it.status === 'present') { if (!value || !f.values.some(v => v.code === value)) continue; }
-      if (!f.values) value = null;
+      if (f.values && it.status === 'absent' && value && !f.values.some(v => v.code === value)) value = null;
+      if (!f.values || (it.status !== 'present' && it.status !== 'absent')) value = null;
       const eb = it.elapsed_bucket && kb.time.hours[it.elapsed_bucket] !== undefined ? it.elapsed_bucket : (f.anchor === 'none' ? null : 'unknown');
       const trend = ['worsening', 'stable', 'improving', 'fluctuating', 'resolved'].includes(it.trend) ? it.trend : 'unknown';
       const sev = ['mild', 'moderate', 'severe'].includes(it.severity) ? it.severity : null;
@@ -149,7 +150,12 @@ ${catalogText()}`;
     ['bowel_sounds', '腸(蠕動)?音(の)?亢進|金属音', 'hyper'], ['bowel_sounds', '腸(蠕動)?音(の)?(減弱|低下)', 'hypo'], ['bowel_sounds', '腸(蠕動)?音(の)?消失', 'absent'], ['bowel_sounds', '腸(蠕動)?音(は)?正常', 'normal'],
     ['cva_tender', 'CVA|肋骨脊柱角|叩打痛', null], ['pulsatile_mass', '拍動性(の)?腫瘤|拍動する', null], ['hernia_irreducible', '還納(不能|できない)|嵌頓', null], ['pain_disproportion', '所見に比して|所見に乏しい(のに|が)|痛みが強い割に', null],
     ['psoas_obturator', 'psoas|腸腰筋徴候|閉鎖筋徴候|obturator', null], ['dehydration_signs', '脱水|口腔(内)?乾燥|ツルゴール|皮膚の張り', null], ['rectal_blood', '直腸診で(血|出血)|直腸診.*血', null], ['adnexal_tender', '付属器(の)?圧痛|子宮頸部移動痛|CMT', null],
-    ['scrotal_exam', '陰嚢(の)?(腫脹|圧痛|腫大)|精巣(の)?(腫脹|圧痛)', 'tender_swollen'], ['skin_pallor_cold', '末梢冷感|冷感|蒼白|顔色不良', null], ['consciousness', '意識(障害|レベル低下|混濁|変容)|JCS|GCS\\s*1[0-4]|傾眠|せん妄', 'altered'], ['consciousness', '意識(清明|は清明|レベル清明)', 'alert'],
+    ['scrotal_exam', '陰嚢(の)?(腫脹|圧痛|腫大)|精巣(の)?(腫脹|圧痛)', 'tender_swollen'],
+    // 神経症状（拡張項目 neuro_sx）: 値ごとに明示ルール
+    ['neuro_sx', '末梢神経障害|ニューロパチー|多発(性)?(単)?神経炎|(四肢|手足|両手|両足|手|足)(の|に)?(しびれ|痺れ)|しびれ|痺れ|知覚(障害|鈍麻)|感覚(障害|鈍麻)|筋力低下|脱力|下垂足|手袋靴下|(四肢|手|足|下肢|上肢)(の)?麻痺', 'paresthesia_weakness'],
+    ['neuro_sx', '頭痛|項部硬直|髄膜刺激', 'headache'], ['neuro_sx', '錯乱|失調|眼球運動障害|眼振|(意識|認知)(の)?変容', 'confusion_ataxia'],
+    ['neuro_sx', 'めまい|眩暈|回転性', 'vertigo'], ['neuro_sx', '眼痛|視力(低下|障害)|霧視|かすみ|視野', 'eye_pain_visual'], ['neuro_sx', '局所神経|片麻痺|構音障害|失語|顔面麻痺', 'focal_deficit'], ['neuro_sx', '神経(学的)?(症状|所見|異常|脱落)', null],
+ ['skin_pallor_cold', '末梢冷感|冷感|蒼白|顔色不良', null], ['consciousness', '意識(障害|レベル低下|混濁|変容)|JCS|GCS\\s*1[0-4]|傾眠|せん妄', 'altered'], ['consciousness', '意識(清明|は清明|レベル清明)', 'alert'],
     ['hcg', '(妊娠反応|hCG|HCG)\\s*(陽性|\\(\\+\\)|（\\+）|\\+)', 'pos'], ['hcg', '(妊娠反応|hCG|HCG)\\s*(陰性|\\(-\\)|（-）|-)', 'neg'],
     ['urinalysis', '(血尿|潜血).*(膿尿|白血球)|(膿尿|白血球).*(血尿|潜血)', 'both'], ['urinalysis', '血尿|潜血', 'hematuria'], ['urinalysis', '膿尿|尿中白血球|尿WBC', 'pyuria'], ['urinalysis', '尿(検査|所見)(は)?正常|尿所見なし', 'normal'],
     ['troponin', 'トロポニン\\s*(陽性|上昇|\\+)', 'pos'], ['troponin', 'トロポニン\\s*(陰性|正常|-)', 'neg'], ['ecg', '(心電図|ECG).*(ST|虚血|T波)', 'ischemic'], ['ecg', '(心電図|ECG).*(心房細動|AF|Af)', 'af'], ['ecg', '(心電図|ECG)(は|に)?(正常|異常なし)', 'normal'],
@@ -203,7 +209,7 @@ ${catalogText()}`;
     if (KW_EXT) return KW_EXT;
     KW_EXT = [];
     const esc = t => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    const MANUAL = { radiation_hx: ['放射線治療', '放射線照射', '照射歴'], cancer_hx: ['癌の既往', 'がんの既往', '担癌', '悪性腫瘍の既往', '化学療法中'], cirrhosis_hx: ['肝硬変', '慢性肝炎', 'B型肝炎', 'C型肝炎', '慢性肝疾患'], dialysis_ckd: ['透析', '腎不全', 'CKD'], opioid_use: ['オピオイド', 'オキシコドン', 'モルヒネ', 'フェンタニル', 'トラマドール'], heartburn_regurg: ['胸やけ', '胸焼け', '呑酸', '逆流症状'], dysphagia: ['嚥下障害', '嚥下痛', '飲み込みにくい', 'つかえ'], hepatomegaly: ['肝腫大', '肝を触知', '肝叩打痛'], splenomegaly: ['脾腫', '脾を触知'], ascites_exam: ['腹水', '波動', 'shifting'], leg_edema: ['下腿浮腫', '下肢浮腫', '浮腫あり'], pruritus: ['瘙痒', 'そう痒', 'かゆみ'], tenesmus_urgency: ['しぶり腹', '便意切迫', 'テネスムス'], early_satiety_bloating: ['早期飽満', '早期満腹', '食後膨満', 'もたれ'], carnett_sign: ['Carnett', 'カーネット'], sti_risk: ['性感染症', 'STI', '複数パートナー', 'MSM', 'IUD'], raw_fish_intake: ['生魚', 'サバ', 'イカ', 'アジ', '刺身', '寿司'], pain_fasting_nocturnal: ['空腹時痛', '夜間痛', '空腹時に痛'], pain_relief_leaning_forward: ['前屈で軽減', '前かがみ', '坐位で軽減'], steatorrhea: ['脂肪便', '油っぽい便'], fatigue: ['倦怠感', 'だるさ', '疲労感'], obesity: ['肥満', 'BMI'], subcutaneous_emphysema: ['皮下気腫', 'Hamman'], forceful_vomiting_prior: ['激しい嘔吐の後', '嘔吐直後'], allergy_hx: ['喘息', 'アトピー', 'アレルギー性鼻炎', 'アレルギー'], new_medication: ['新しく開始', '開始した薬', '漢方', 'サプリ', '健康食品'], hepatotoxic_drug_supplement: ['健康食品', 'サプリ', '漢方', '免疫チェックポイント'], pancreatitis_hx: ['膵炎の既往', '膵炎歴', '高TG', '高トリグリセリド'], diabetes_new_worsening: ['糖尿病の新規発症', '血糖コントロール悪化'], blood_sexual_exposure: ['輸血歴', '刺青', '注射薬物', '性的接触'], eosinophilia: ['好酸球増多', '好酸球'], igg4: ['IgG4'], diarrhea_pattern: ['下痢', '便'], urine_stool_color: ['尿', '便'], abd_mass: ['腫瘤', '腫瘍を触知', 'しこり'], skin_finding: ['皮疹', '紫斑', '水疱', '紅斑', '色素沈着', 'くも状血管腫', '手掌紅斑'], neuro_sx: ['頭痛', '項部硬直', '麻痺', 'しびれ', '筋力低下', '錯乱', '失調', 'めまい', '眼痛', '視力'], electrolyte: ['Na', 'K', 'Ca', 'ナトリウム', 'カリウム', 'カルシウム'], endocrine_lab: ['TSH', 'コルチゾール', '甲状腺'], hemolysis_labs: ['溶血', 'ハプトグロビン', 'LDH'], menstrual_relation: ['月経', '生理', '排卵'], pregnancy_status: ['妊娠', '産褥', '分娩', '不妊治療'], ingestion_event: ['誤飲', '異物', '服用', '内視鏡'], paracentesis: ['腹水穿刺', 'SAAG'], endoscopy: ['内視鏡', '胃カメラ', 'EGD', 'GIF', 'CF', '大腸カメラ'], cxr: ['胸部X線', '胸部レントゲン', '胸写', 'CXR'], ct_other: ['CT'] };
+    const MANUAL = { radiation_hx: ['放射線治療', '放射線照射', '照射歴'], cancer_hx: ['癌の既往', 'がんの既往', '担癌', '悪性腫瘍の既往', '化学療法中'], cirrhosis_hx: ['肝硬変', '慢性肝炎', 'B型肝炎', 'C型肝炎', '慢性肝疾患'], dialysis_ckd: ['透析', '腎不全', 'CKD'], opioid_use: ['オピオイド', 'オキシコドン', 'モルヒネ', 'フェンタニル', 'トラマドール'], heartburn_regurg: ['胸やけ', '胸焼け', '呑酸', '逆流症状'], dysphagia: ['嚥下障害', '嚥下痛', '飲み込みにくい', 'つかえ'], hepatomegaly: ['肝腫大', '肝を触知', '肝叩打痛'], splenomegaly: ['脾腫', '脾を触知'], ascites_exam: ['腹水', '波動', 'shifting'], leg_edema: ['下腿浮腫', '下肢浮腫', '浮腫あり'], pruritus: ['瘙痒', 'そう痒', 'かゆみ'], tenesmus_urgency: ['しぶり腹', '便意切迫', 'テネスムス'], early_satiety_bloating: ['早期飽満', '早期満腹', '食後膨満', 'もたれ'], carnett_sign: ['Carnett', 'カーネット'], sti_risk: ['性感染症', 'STI', '複数パートナー', 'MSM', 'IUD'], raw_fish_intake: ['生魚', 'サバ', 'イカ', 'アジ', '刺身', '寿司'], pain_fasting_nocturnal: ['空腹時痛', '夜間痛', '空腹時に痛'], pain_relief_leaning_forward: ['前屈で軽減', '前かがみ', '坐位で軽減'], steatorrhea: ['脂肪便', '油っぽい便'], fatigue: ['倦怠感', 'だるさ', '疲労感'], obesity: ['肥満', 'BMI'], subcutaneous_emphysema: ['皮下気腫', 'Hamman'], forceful_vomiting_prior: ['激しい嘔吐の後', '嘔吐直後'], allergy_hx: ['喘息', 'アトピー', 'アレルギー性鼻炎', 'アレルギー'], new_medication: ['新しく開始', '開始した薬', '漢方', 'サプリ', '健康食品'], hepatotoxic_drug_supplement: ['健康食品', 'サプリ', '漢方', '免疫チェックポイント'], pancreatitis_hx: ['膵炎の既往', '膵炎歴', '高TG', '高トリグリセリド'], diabetes_new_worsening: ['糖尿病の新規発症', '血糖コントロール悪化'], blood_sexual_exposure: ['輸血歴', '刺青', '注射薬物', '性的接触'], eosinophilia: ['好酸球増多', '好酸球'], igg4: ['IgG4'], diarrhea_pattern: ['下痢', '便'], urine_stool_color: ['尿', '便'], abd_mass: ['腫瘤', '腫瘍を触知', 'しこり'], skin_finding: ['皮疹', '紫斑', '水疱', '紅斑', '色素沈着', 'くも状血管腫', '手掌紅斑'], electrolyte: ['Na', 'K', 'Ca', 'ナトリウム', 'カリウム', 'カルシウム'], endocrine_lab: ['TSH', 'コルチゾール', '甲状腺'], hemolysis_labs: ['溶血', 'ハプトグロビン', 'LDH'], menstrual_relation: ['月経', '生理', '排卵'], pregnancy_status: ['妊娠', '産褥', '分娩', '不妊治療'], ingestion_event: ['誤飲', '異物', '服用', '内視鏡'], paracentesis: ['腹水穿刺', 'SAAG'], endoscopy: ['内視鏡', '胃カメラ', 'EGD', 'GIF', 'CF', '大腸カメラ'], cxr: ['胸部X線', '胸部レントゲン', '胸写', 'CXR'], ct_other: ['CT'] };
     const GENERIC = /^(腹部|上腹部|下腹部|骨盤|腫瘤|触知|正常|異常|異常なし|なし|所見|既往|歴|使用|服用|摂取|上昇|低下|陽性|陰性|その他|増多|性状|変化|急性|慢性|検査|血清|末梢|皮膚|神経|症状|パターン|状態|関連|リスク|持続|反復|大量|少量|頻回|軽減|増悪|数時間|数日|以内|新規|最近|一時|治療中|治療歴|状態)$/;
     for (const f of KB().features) {
       if (!f.ext) continue;
@@ -224,7 +230,7 @@ ${catalogText()}`;
   function local(text) {
     const kb = KB(); const items = []; const seen = new Set();
     const add = (fid, value, quote, status, extra) => { const key = fid + '|' + (value || '') + '|' + (status || 'present'); if (seen.has(key)) return; seen.add(key); const f = kb.feature[fid]; if (!f) return;
-      items.push(Object.assign({ feature_id: fid, status: status || 'present', value_code: (status || 'present') === 'present' ? value : null, severity: null, time_context: { elapsed_bucket: f.anchor === 'none' ? null : 'unknown', trend: 'unknown' }, quote: quote || '' }, extra || {})); };
+      items.push(Object.assign({ feature_id: fid, status: status || 'present', value_code: (status || 'present') === 'present' || (status === 'absent' && f.values) ? value : null, severity: null, time_context: { elapsed_bucket: f.anchor === 'none' ? null : 'unknown', trend: 'unknown' }, quote: quote || '' }, extra || {})); };
     const sentences = text.split(/[。\n．]/).map(s => s.trim()).filter(Boolean);
     for (const s of sentences) {
       const tb = bucketTime(s), tr = trendOf(s);
@@ -241,7 +247,7 @@ ${catalogText()}`;
         const extra = { time_context: { elapsed_bucket: f.anchor === 'none' ? null : (tb || 'unknown'), trend: (f.type === 'chief_complaint' || f.type === 'symptom') ? tr : 'unknown' } };
         if (f.sev && !neg) extra.severity = sevOf(s);
         if (f.values && !neg && val === null) continue;
-        if (f.multi && neg) continue; // 画像の「〜なし」は所見として登録しない（異常なし は normal で扱う）
+        if (f.multi && f.type === 'imaging' && neg) continue; // 画像の「〜なし」は所見として登録しない（異常なし は normal で扱う）。症状系の multi は値付き absent で登録
         add(fid, f.values ? val : null, s.slice(0, 60), neg ? 'absent' : 'present', extra);
       }
       numbers(s, (fid, val, q) => add(fid, val, q, 'present', { time_context: { elapsed_bucket: tb || 'unknown', trend: 'unknown' } }));
