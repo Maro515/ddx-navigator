@@ -113,7 +113,7 @@ ${catalogText()}`;
         };
         // Opus 5.5 / Opus 5 / Sonnet 5: thinking は既定で adaptive（5.5 は無効化不可）。抽出は effort:low で十分。
         // tool_choice は 'auto'（Opus 5.5 は any/tool の強制指定を受け付けない）。Haiku 4.5 は effort 非対応。
-        if (/haiku-4-5/.test(LLM.config.model)) { /* no effort */ } else body.output_config = { effort: 'low' };
+        if (/haiku-4-5/.test(LLM.config.model)) { /* no effort */ } else body.output_config = { effort: LLM.config.effort || 'low' };
         const res = await fetch('https://api.anthropic.com/v1/messages', {
           method: 'POST', signal: ctrl.signal,
           headers: { 'content-type': 'application/json', 'x-api-key': LLM.config.apiKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },

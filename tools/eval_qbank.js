@@ -12,7 +12,7 @@ const B = path.join(__dirname, '..', 'build');
 for (const f of ['10_kb', '11_kb_abd_ext', '12_evidence', '13_prevalence', '19_labs', '20_state', '30_safety', '40_ddx', '50_next', '60_audit', '65_extract']) require(path.join(B, f + '.js'));
 const D = globalThis.DDX, KB = D.KB;
 const args = process.argv.slice(2);
-const VALUED = ['--detail', '--json', '--map', '--llm', '--model', '--limit', '--conc'];
+const VALUED = ['--detail', '--json', '--map', '--llm', '--model', '--limit', '--conc', '--effort'];
 const opt = f => args.includes(f) ? args[args.indexOf(f) + 1] : null;
 const flagVals = new Set(VALUED.filter(f => args.includes(f)).map(f => args[args.indexOf(f) + 1]).filter(Boolean));
 const src = args.find(a => !a.startsWith('--') && !flagVals.has(a));
@@ -32,6 +32,7 @@ const DEFAULT_MODEL = { anthropic: 'claude-opus-5-5', openai: 'gpt-6-luna' };
 const model = opt('--model') || (provider && DEFAULT_MODEL[provider]);
 const limit = +(opt('--limit') || 0), conc = Math.max(1, +(opt('--conc') || 4));
 const useCache = !args.includes('--no-cache'), dry = args.includes('--dry');
+const effort = opt('--effort') || 'low';   // 思考の深さ（low/medium/high）。アプリの既定は low
 // 料金（米ドル/100万トークン、2026-09 時点の公表値）。cw = キャッシュ書き込み、cr = キャッシュ読み出し。未登録のモデルは費用を出さない
 const PRICE = {
   'claude-opus-5-5': { in: 4, out: 20, cw: 5, cr: 0.2 }, 'claude-opus-5': { in: 5, out: 25, cw: 6.25, cr: 0.5 },
@@ -53,15 +54,15 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
 async function llmExtract(text) {
   const sc = D.Extract.scrub(text);
   const loc = D.Extract.local(sc.text);
-  const key = crypto.createHash('sha1').update([provider, model, promptHash, sc.text].join('\n')).digest('hex');
+  const key = crypto.createHash('sha1').update([provider, model, promptHash, effort === 'low' ? '' : effort, sc.text].join('\n')).digest('hex');
   const cf = path.join(cacheDir, key + '.json');
   if (useCache && fs.existsSync(cf)) { stats.cached++; return JSON.parse(fs.readFileSync(cf, 'utf8')); }
   let out = null, err = null;
   for (let attempt = 0; attempt < 5 && !out; attempt++) {
     try {
       stats.calls++;
-      if (provider === 'anthropic') { D.Extract.LLM.config.apiKey = apiKey; D.Extract.LLM.config.model = model; D.Extract.LLM.config.timeoutMs = 120000; out = await D.Extract.LLM.extract(sc.text); }
-      else out = await require('./llm_openai.js')({ apiKey, model, text: sc.text });
+      if (provider === 'anthropic') { D.Extract.LLM.config.apiKey = apiKey; D.Extract.LLM.config.model = model; D.Extract.LLM.config.timeoutMs = 120000; D.Extract.LLM.config.effort = effort; out = await D.Extract.LLM.extract(sc.text); }
+      else out = await require('./llm_openai.js')({ apiKey, model, text: sc.text, effort });
     } catch (e) {
       err = e; const m = String(e && e.message || e);
       if (/HTTP (429|500|502|503|504|529)/.test(m) || /abort/i.test(m)) { await sleep(Math.min(60000, (e.retryAfter ? e.retryAfter * 1000 : 0) || 2000 * 2 ** attempt)); continue; }
@@ -138,7 +139,7 @@ function score(q, ex) {
     console.log(`${name.padEnd(8)} 問 ${String(list.length).padStart(3)}（KB 該当 ${n}） Top1 ${pct(1)}  Top3 ${pct(3)}  Top5 ${pct(5)}  Top10 ${pct(10)}  圏外 ${n - at(10)}  Top5外のうち有病率のため下位 ${byPrev}`);
     return { n: list.length, inKB: n, top1: at(1), top3: at(3), top5: at(5), top10: at(10) };
   }
-  console.log(provider ? `抽出: ${provider} / ${model}` : '抽出: ローカル解析');
+  console.log(provider ? `抽出: ${provider} / ${model}（思考 ${effort}）` : '抽出: ローカル解析');
   const out = { all: summary(res, '全体'), dev: summary(res.filter(x => !x.holdout), '改善用'), holdout: summary(res.filter(x => x.holdout), '検証用') };
   if (provider) {
     const u = stats.usage, p = PRICE[model];
@@ -156,5 +157,5 @@ function score(q, ex) {
     console.log(`\n--- Top5 外（${detail}）${show.length} 問 ---`);
     for (const x of show.sort((a, b) => a.q - b.q)) console.log(`問${x.q} [${x.rank === 999 ? '除外' : x.rank + '位'}${x.likRank && x.likRank <= 5 ? '・所見だけなら' + x.likRank + '位（有病率のため下位）' : ''}] ${x.answer}${x.llmOk === false ? '（AI 失敗→ローカル）' : ''}\n   上位: ${x.top5.join(' / ')}\n   抽出: ${x.items.join(', ') || '（なし）'} ${JSON.stringify(x.ctx)}`);
   }
-  if (jsonOut) fs.writeFileSync(jsonOut, JSON.stringify({ summary: out, provider, model, stats, results: res }, null, 1));
+  if (jsonOut) fs.writeFileSync(jsonOut, JSON.stringify({ summary: out, provider, model, effort, stats, results: res }, null, 1));
 })();
