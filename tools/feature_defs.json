@@ -492,6 +492,26 @@
     "delay": 3,
     "stage": "special"
    }
+  },
+  "kf_ring": {
+   "label": "角膜輪（Kayser-Fleischer）",
+   "type": "exam",
+   "base": 0.001
+  },
+  "meckel_scan": {
+   "label": "異所性胃粘膜シンチグラフィ陽性",
+   "type": "imaging",
+   "base": 0.001
+  },
+  "cervical_os_open": {
+   "label": "子宮頸管口の開大/妊娠組織の排出",
+   "type": "exam",
+   "base": 0.01
+  },
+  "aaa_known": {
+   "label": "腹部大動脈瘤の指摘・既往",
+   "type": "history",
+   "base": 0.01
   }
  },
  "add_values": {
@@ -729,6 +749,10 @@
    [
     "lymph_nodes",
     "腸間膜/回盲部リンパ節腫大"
+   ],
+   [
+    "iup",
+    "子宮内妊娠（胎嚢/胎児心拍）"
    ]
   ],
   "xray": [
@@ -1402,7 +1426,7 @@
     "pbm"
    ],
    "sens": 0.9,
-   "spec": 0.995,
+   "spec": 0.99,
    "_why": "症例問題集の改善用で不足が判明した古典的所見（ドラフト値）"
   },
   {
@@ -2264,7 +2288,7 @@
    "f": "macroglossia",
    "values": null,
    "sens": 0.2,
-   "spec": 0.995,
+   "spec": 0.99,
    "_why": "症例問題集の検討で不足が判明した古典的所見（ドラフト値）"
   },
   {
@@ -2461,7 +2485,7 @@
     "polyposis"
    ],
    "sens": 0.9,
-   "spec": 0.995,
+   "spec": 0.99,
    "_why": "症例問題集の検討で不足が判明した古典的所見（ドラフト値）"
   },
   {
@@ -2493,7 +2517,7 @@
     "polyposis"
    ],
    "sens": 0.8,
-   "spec": 0.995,
+   "spec": 0.99,
    "_why": "症例問題集の検討で不足が判明した古典的所見（ドラフト値）"
   },
   {
@@ -2580,7 +2604,7 @@
    "f": "platypnea",
    "values": null,
    "sens": 0.8,
-   "spec": 0.995,
+   "spec": 0.99,
    "_why": "症例問題集の検討で不足が判明した古典的所見（ドラフト値）"
   },
   {
@@ -2694,7 +2718,7 @@
     "barrett"
    ],
    "sens": 0.9,
-   "spec": 0.995,
+   "spec": 0.99,
    "_why": "症例問題集の検討で不足が判明した古典的所見（ドラフト値）"
   },
   {
@@ -2851,7 +2875,7 @@
     "pancreas_divisum"
    ],
    "sens": 0.9,
-   "spec": 0.995,
+   "spec": 0.99,
    "_why": "症例問題集の検討で不足が判明した古典的所見（ドラフト値）"
   },
   {
@@ -2918,7 +2942,7 @@
     "dieulafoy"
    ],
    "sens": 0.9,
-   "spec": 0.995,
+   "spec": 0.99,
    "_why": "症例問題集の検討で不足が判明した古典的所見（ドラフト値）"
   },
   {
@@ -2988,7 +3012,7 @@
     "bowel_stone"
    ],
    "sens": 0.7,
-   "spec": 0.995,
+   "spec": 0.99,
    "_why": "症例問題集の検討で不足が判明した古典的所見（ドラフト値）"
   },
   {
@@ -3057,7 +3081,7 @@
     "gastric_volvulus"
    ],
    "sens": 0.9,
-   "spec": 0.995,
+   "spec": 0.99,
    "_why": "症例問題集の検討で不足が判明した古典的所見（ドラフト値）"
   },
   {
@@ -3165,7 +3189,7 @@
     "appendiceal_mucocele"
    ],
    "sens": 0.9,
-   "spec": 0.995,
+   "spec": 0.99,
    "_why": "症例問題集の検討で不足が判明した古典的所見（ドラフト値）"
   },
   {
@@ -3199,7 +3223,7 @@
     "pseudomyxoma"
    ],
    "sens": 0.9,
-   "spec": 0.995,
+   "spec": 0.99,
    "_why": "症例問題集の検討で不足が判明した古典的所見（ドラフト値）"
   },
   {
@@ -3454,7 +3478,7 @@
     "hemangioma_pattern"
    ],
    "sens": 0.7,
-   "spec": 0.995,
+   "spec": 0.99,
    "_why": "肝腫瘤/膵嚢胞の造影パターン（ドラフト値）"
   },
   {
@@ -3544,7 +3568,7 @@
     "cystic_calcified"
    ],
    "sens": 0.8,
-   "spec": 0.995,
+   "spec": 0.99,
    "_why": "肝腫瘤/膵嚢胞の造影パターン（ドラフト値）"
   },
   {
@@ -3616,6 +3640,122 @@
    "sens": 0.4,
    "spec": 0.97,
    "_why": "下部消化管の腫瘍所見（ドラフト値）"
+  },
+  {
+   "d": "autoimmune_hepatitis",
+   "f": "kf_ring",
+   "values": null,
+   "sens": 0.5,
+   "spec": 0.99,
+   "_why": "別版問題集の検討で不足が判明（ドラフト値）"
+  },
+  {
+   "d": "meckel_diverticulum",
+   "f": "meckel_scan",
+   "values": null,
+   "sens": 0.85,
+   "spec": 0.99,
+   "_why": "別版問題集の検討で不足が判明（ドラフト値）"
+  },
+  {
+   "d": "miscarriage",
+   "f": "cervical_os_open",
+   "values": null,
+   "sens": 0.6,
+   "spec": 0.99,
+   "_why": "別版問題集の検討で不足が判明（ドラフト値）"
+  },
+  {
+   "d": "miscarriage",
+   "f": "us",
+   "values": [
+    "iup"
+   ],
+   "sens": 0.7,
+   "spec": 0.9,
+   "_why": "別版問題集の検討で不足が判明（ドラフト値）"
+  },
+  {
+   "d": "ectopic_pregnancy",
+   "f": "us",
+   "values": [
+    "iup"
+   ],
+   "sens": 0.02,
+   "spec": 0.7,
+   "_why": "別版問題集の検討で不足が判明（ドラフト値）"
+  },
+  {
+   "d": "molar_pregnancy",
+   "f": "us",
+   "values": [
+    "iup"
+   ],
+   "sens": 0.05,
+   "spec": 0.9,
+   "_why": "別版問題集の検討で不足が判明（ドラフト値）"
+  },
+  {
+   "d": "miscarriage",
+   "f": "pregnancy_status",
+   "values": [
+    "first_tri"
+   ],
+   "sens": 0.9,
+   "spec": 0.9,
+   "_why": "別版問題集の検討で不足が判明（ドラフト値）"
+  },
+  {
+   "d": "ectopic_pregnancy",
+   "f": "pregnancy_status",
+   "values": [
+    "first_tri"
+   ],
+   "sens": 0.9,
+   "spec": 0.9,
+   "_why": "別版問題集の検討で不足が判明（ドラフト値）"
+  },
+  {
+   "d": "molar_pregnancy",
+   "f": "pregnancy_status",
+   "values": [
+    "first_tri"
+   ],
+   "sens": 0.9,
+   "spec": 0.9,
+   "_why": "別版問題集の検討で不足が判明（ドラフト値）"
+  },
+  {
+   "d": "ruptured_aaa",
+   "f": "aaa_known",
+   "values": null,
+   "sens": 0.5,
+   "spec": 0.99,
+   "_why": "別版問題集の検討で不足が判明（ドラフト値）"
+  },
+  {
+   "d": "rectus_sheath_hematoma",
+   "f": "carnett_sign",
+   "values": null,
+   "sens": 0.7,
+   "spec": 0.9,
+   "_why": "別版問題集の検討で不足が判明（ドラフト値）"
+  },
+  {
+   "d": "pid",
+   "f": "vaginal_discharge",
+   "values": null,
+   "sens": 0.5,
+   "spec": 0.9,
+   "_why": "別版問題集の検討で不足が判明（ドラフト値）"
+  },
+  {
+   "d": "fitz_hugh_curtis",
+   "f": "vaginal_discharge",
+   "values": null,
+   "sens": 0.5,
+   "spec": 0.9,
+   "_why": "別版問題集の検討で不足が判明（ドラフト値）"
   }
  ],
  "drop_relations": [
@@ -4193,6 +4333,16 @@
    "d": "chronic_viral_hepatitis",
    "f": "hepatitis_serology",
    "v": "hcv_pos"
+  },
+  {
+   "d": "autoimmune_hepatitis",
+   "f": "kf_ring",
+   "v": null
+  },
+  {
+   "d": "meckel_diverticulum",
+   "f": "meckel_scan",
+   "v": null
   }
  ],
  "diagnostic_doc": "診断的所見: その所見があればほぼその疾患と言えるもの。特異度 0.9999・尤度比の上限 1万で扱う（同じ所見を持つ疾患どうしは有病率順）。臨床判断によるドラフト",

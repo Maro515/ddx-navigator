@@ -244,6 +244,20 @@ check('入力順序不変性 (Top10/Next5/hash 同一)', orderFail === 0, `${ord
     const bad = [];
     for (const [text, must, mustNot] of V) { const got = D.Extract.local(text).items.map(fmt); if (!must.every(t => hasT(got, t)) || mustNot.some(t => hasT(got, t))) bad.push(text + ' → ' + got.join(', ')); }
     check('語彙: 否定・同じ文の上書き・定性的な検査/バイタル・内視鏡/画像の所見', !bad.length, bad.join(' | '));
+    const V2 = [
+      ['血便、発熱、体重減少はなく、診察に異常はない。', ['fever_sub(absent)', 'weight_loss(absent)'], ['fever_sub:', 'weight_loss:']],
+      ['ALT 2,100 U/L、AST 1,500 U/L。', ['ast_alt_pattern:gt1000', 'liver_enz:elevated'], ['liver_enz:normal']],
+      ['膵管と胆管が十二指腸壁の外で長い共通管として合流する。', ['ct:pbm'], []],
+      ['CTで小腸の移行部に高吸収結石、胆道内ガス、胆嚢と十二指腸の瘻孔を認める。', ['ct:bowel_stone', 'ct:pneumobilia'], ['perianal_disease', 'ct:stone']],
+      ['以前から立つと右鼠径部が膨らんでいたが、今日は戻らない。', ['groin_bulge', 'hernia_irreducible'], []],
+      ['CTで虫垂・腸管の局所病変はない。', [], ['ct:appendicitis']],
+      ['内視鏡で下部直腸に露出血管を伴う限局した潰瘍を認める。', ['endoscopy:rectal_ulcer'], ['endoscopy:dieulafoy']],
+      ['超音波で水腎症はない。', [], ['us:hydro']],
+      ['アルカリ性の配管洗浄剤を誤飲した。', ['ingestion_event:caustic'], []]
+    ];
+    const bad2 = [];
+    for (const [text, must, mustNot] of V2) { const got = D.Extract.local(text).items.map(fmt); if (!must.every(t => hasT(got, t)) || mustNot.some(t => got.some(x => x.startsWith(t) && !x.endsWith('(absent)')))) bad2.push(text + ' → ' + got.join(', ')); }
+    check('語彙: 別版問題集で直した言い回し（読点の並列否定・カンマ入り数値・検査名のない画像語・誤反応）', !bad2.length, bad2.join(' | '));
     const merged = ['acute_hepatitis', 'fatty_liver', 'hcc_rupture', 'acute_portal_vein_thrombosis', 'amyloidosis_gi', 'uremia_renal_failure', 'thyroid_storm', 'intestinal_tb', 'fecal_impaction', 'hiatal_diaphragmatic_hernia'];
     check('統合: 重複していた疾患 10 組が1つにまとまっている', merged.every(x => !KB.disease[x]), merged.filter(x => KB.disease[x]).join(','));
     // 決め手の所見は事前確率の差を覆せる（陽性側の上限 LR 100）

@@ -1,0 +1,707 @@
+{
+"_doc": "別版220問の解答 → KB 疾患 ID（前版 tests/qbank_answer_map.json を解答名で引き継ぎ）。疾患群は評価時に統合先へ読み替える",
+"map": {
+"1": [
+"urinary_retention"
+],
+"2": [
+"ibd_flare"
+],
+"3": [
+"gallbladder_polyp"
+],
+"4": [
+"endometriosis_adenomyosis"
+],
+"5": [
+"perforation"
+],
+"6": [
+"peutz_jeghers"
+],
+"7": [
+"aflp_hellp"
+],
+"8": [
+"ibd_flare"
+],
+"9": [
+"esophageal_perforation"
+],
+"10": [
+"hemorrhoids_fissure"
+],
+"11": [
+"aflp_hellp"
+],
+"12": [
+"renal_infarction"
+],
+"13": [
+"ischemic_colitis"
+],
+"14": [
+"antibiotic_hemorrhagic_colitis"
+],
+"15": [
+"pancreatic_pseudocyst_won"
+],
+"16": [
+"fitz_hugh_curtis"
+],
+"17": [
+"mesenteric_ischemia"
+],
+"18": [
+"appendicitis"
+],
+"19": [
+"miscarriage"
+],
+"20": [
+"acute_viral_hepatitis",
+"acute_hepatitis"
+],
+"21": [
+"pancreatic_cancer"
+],
+"22": [
+"sle_vasculitis_serositis",
+"pan_mesenteric_vasculitis"
+],
+"23": [
+"rectal_prolapse_mps",
+"anorectal_cancer_prolapse"
+],
+"24": [
+"acute_hemorrhagic_rectal_ulcer"
+],
+"25": [
+"cdiff"
+],
+"26": [
+"reducible_hernia",
+"incarcerated_hernia"
+],
+"27": [
+"hypercalcemia"
+],
+"28": [
+"dka"
+],
+"29": [
+"tubo_ovarian_abscess"
+],
+"30": [
+"biliary_colic"
+],
+"31": [
+"ehec_hus",
+"bacterial_colitis"
+],
+"32": [
+"toxic_megacolon"
+],
+"33": [
+"splenic_infarct_rupture"
+],
+"34": [
+"perianal_abscess"
+],
+"35": [
+"perforation"
+],
+"36": [
+"drug_induced_liver_injury"
+],
+"37": [
+"achalasia"
+],
+"38": [
+"angiodysplasia"
+],
+"39": [
+"mesenteric_adenitis_ileitis"
+],
+"40": [
+"pancreatitis"
+],
+"41": [
+"placental_abruption_uterine_rupture"
+],
+"42": [
+"cholecystitis"
+],
+"43": [
+"biliary_colic"
+],
+"44": [
+"chronic_mesenteric_ischemia"
+],
+"45": [
+"ovarian_cyst_rupture_hemorrhage"
+],
+"46": [
+"functional_dyspepsia"
+],
+"47": [
+"malas"
+],
+"48": [
+"abdominal_wall_pain_acnes"
+],
+"49": [
+"hepatolithiasis"
+],
+"50": [
+"gallbladder_polyp"
+],
+"51": [
+"molar_pregnancy"
+],
+"52": [
+"perforation"
+],
+"53": [
+"pseudomyxoma"
+],
+"54": [
+"uterine_cancer_hematometra"
+],
+"55": [
+"gastric_anisakiasis"
+],
+"56": [
+"hemorrhoids_fissure"
+],
+"57": [
+"bacterial_colitis",
+"gastroenteritis"
+],
+"58": [
+"primary_dysmenorrhea"
+],
+"59": [
+"bacterial_colitis",
+"gastroenteritis"
+],
+"60": [
+"gerd"
+],
+"61": [
+"pancreaticobiliary_maljunction"
+],
+"62": [
+"pancreatic_cancer"
+],
+"63": [
+"gallbladder_cancer",
+"extrahepatic_cholangiocarcinoma"
+],
+"64": [
+"microscopic_colitis",
+"drug_induced_enterocolitis"
+],
+"65": [
+"paralytic_ileus_pseudoobstruction"
+],
+"66": [
+"gi_amyloidosis",
+"amyloidosis_gi"
+],
+"67": [
+"gastrinoma_zes",
+"neuroendocrine_tumor_hormonal"
+],
+"68": [
+"chronic_viral_hepatitis"
+],
+"69": [
+"extrahepatic_cholangiocarcinoma"
+],
+"70": [
+"heart_failure_congestive_hepatopathy"
+],
+"71": [
+"protein_losing_enteropathy"
+],
+"72": [
+"hepatorenal_syndrome"
+],
+"73": [
+"wilson_disease"
+],
+"74": [
+"pancreas_divisum"
+],
+"75": [
+"liver_abscess"
+],
+"76": [
+"pyelonephritis"
+],
+"77": [
+"internal_hernia",
+"postgastrectomy_syndrome"
+],
+"78": [
+"variceal_bleeding"
+],
+"79": [
+"intestinal_tuberculosis_peritonitis",
+"intestinal_tb"
+],
+"80": [
+"mesenteric_ischemia"
+],
+"81": [
+"cystitis",
+"pyelonephritis"
+],
+"82": [
+"hemochromatosis"
+],
+"83": [
+"acute_porphyria"
+],
+"84": [
+"dieulafoy"
+],
+"85": [
+"eosinophilic_esophagitis"
+],
+"86": [
+"gastroenteritis",
+"bacterial_colitis",
+"toxin_food_poisoning"
+],
+"87": [
+"pan_mesenteric_vasculitis"
+],
+"88": [
+"alcoholic_hepatitis"
+],
+"89": [
+"benign_liver_tumor"
+],
+"90": [
+"pulmonary_embolism"
+],
+"91": [
+"gastric_cancer"
+],
+"92": [
+"sigmoid_volvulus"
+],
+"93": [
+"portal_vein_thrombosis",
+"acute_portal_vein_thrombosis"
+],
+"94": [
+"rectus_sheath_hematoma"
+],
+"95": [
+"colorectal_cancer"
+],
+"96": [
+"hypothyroidism"
+],
+"97": [
+"appendicitis"
+],
+"98": [
+"hcc_rupture",
+"hcc"
+],
+"99": [
+"gastroenteritis"
+],
+"100": [
+"colorectal_cancer"
+],
+"101": [
+"gastric_outlet_obstruction"
+],
+"102": [
+"liver_metastases"
+],
+"103": [
+"spontaneous_bacterial_peritonitis"
+],
+"104": [
+"hepatopulmonary"
+],
+"105": [
+"fmf"
+],
+"106": [
+"small_bowel_tumor"
+],
+"107": [
+"liver_abscess"
+],
+"108": [
+"pancreatic_pseudocyst_won"
+],
+"109": [
+"miscarriage"
+],
+"110": [
+"ovarian_cyst_rupture_hemorrhage"
+],
+"111": [
+"echinococcosis"
+],
+"112": [
+"sbo"
+],
+"113": [
+"post_polypectomy"
+],
+"114": [
+"gastric_outlet_obstruction"
+],
+"115": [
+"intrahepatic_cholangiocarcinoma"
+],
+"116": [
+"acute_viral_hepatitis",
+"acute_hepatitis"
+],
+"117": [
+"autoimmune_pancreatitis"
+],
+"118": [
+"gallstone_ileus"
+],
+"119": [
+"pancreaticobiliary_maljunction"
+],
+"120": [
+"gastric_smt_gist"
+],
+"121": [
+"igg4_sclerosing_cholangitis",
+"autoimmune_pancreatitis"
+],
+"122": [
+"smv_thrombosis"
+],
+"123": [
+"splenic_infarct_rupture",
+"visceral_aneurysm_rupture"
+],
+"124": [
+"intussusception_adult"
+],
+"125": [
+"acs"
+],
+"126": [
+"cholecystitis"
+],
+"127": [
+"fecal_impaction",
+"chronic_constipation_impaction"
+],
+"128": [
+"cholangitis"
+],
+"129": [
+"herpes_zoster"
+],
+"130": [
+"decompensated_cirrhosis"
+],
+"131": [
+"adrenal_insufficiency"
+],
+"132": [
+"postgastrectomy_syndrome"
+],
+"133": [
+"nsaid_enteropathy",
+"drug_induced_enterocolitis"
+],
+"134": [
+"cholecystitis"
+],
+"135": [
+"meckel_diverticulum"
+],
+"136": [
+"h_pylori_gastritis"
+],
+"137": [
+"perforation",
+"diverticulitis"
+],
+"138": [
+"hyperemesis_gravidarum"
+],
+"139": [
+"ovarian_torsion"
+],
+"140": [
+"incarcerated_hernia"
+],
+"141": [
+"protein_losing_enteropathy"
+],
+"142": [
+"uterine_fibroid"
+],
+"143": [
+"infectious_esophagitis"
+],
+"144": [
+"parasitic_enteritis"
+],
+"145": [
+"ureteral_stone"
+],
+"146": [
+"ectopic_pregnancy"
+],
+"147": [
+"gi_lymphoma_gist_small_bowel_tumor"
+],
+"148": [
+"lamn"
+],
+"149": [
+"nafld_nash",
+"fatty_liver"
+],
+"150": [
+"pan_mesenteric_vasculitis"
+],
+"151": [
+"ipmn_mcn"
+],
+"152": [
+"postgastrectomy_syndrome"
+],
+"153": [
+"ipmn_mcn"
+],
+"154": [
+"anaphylaxis"
+],
+"155": [
+"pud_gastritis"
+],
+"156": [
+"pud_gastritis"
+],
+"157": [
+"ovarian_tumor"
+],
+"158": [
+"acute_liver_failure"
+],
+"159": [
+"ibs"
+],
+"160": [
+"pud_gastritis"
+],
+"161": [
+"corrosive_esophagitis"
+],
+"162": [
+"strangulated_obstruction"
+],
+"163": [
+"splenic_infarct_rupture"
+],
+"164": [
+"gastroduodenal_nen"
+],
+"165": [
+"eosinophilic_gastroenteritis"
+],
+"166": [
+"pneumonia_pleurisy"
+],
+"167": [
+"intestinal_behcet"
+],
+"168": [
+"clonorchiasis"
+],
+"169": [
+"perianal_abscess"
+],
+"170": [
+"mallory_weiss"
+],
+"171": [
+"psc",
+"pbc"
+],
+"172": [
+"chronic_constipation_impaction",
+"nonspecific_ap"
+],
+"173": [
+"aortic_dissection"
+],
+"174": [
+"protein_losing_enteropathy"
+],
+"175": [
+"decompensated_cirrhosis"
+],
+"176": [
+"budd_chiari"
+],
+"177": [
+"chronic_pancreatitis"
+],
+"178": [
+"pud_gastritis"
+],
+"179": [
+"gi_net_carcinoid"
+],
+"180": [
+"gastrinoma_zes",
+"neuroendocrine_tumor_hormonal"
+],
+"181": [
+"endometriosis_adenomyosis"
+],
+"182": [
+"pancreatitis"
+],
+"183": [
+"diverticular_bleeding"
+],
+"184": [
+"chronic_pancreatitis"
+],
+"185": [
+"hyperkalemia"
+],
+"186": [
+"protein_losing_enteropathy"
+],
+"187": [
+"peritoneal_carcinomatosis"
+],
+"188": [
+"gastric_malt_lymphoma"
+],
+"189": [
+"ovulation_pain"
+],
+"190": [
+"cmv_colitis"
+],
+"191": [
+"endometriosis_adenomyosis"
+],
+"192": [
+"esophageal_cancer"
+],
+"193": [
+"gastric_polyp"
+],
+"194": [
+"gi_net_carcinoid",
+"neuroendocrine_tumor_hormonal"
+],
+"195": [
+"pheochromocytoma"
+],
+"196": [
+"barrett"
+],
+"197": [
+"iga_vasculitis"
+],
+"198": [
+"pyelonephritis"
+],
+"199": [
+"hcc",
+"hcc_rupture"
+],
+"200": [
+"ceas"
+],
+"201": [
+"hiatal_hernia",
+"hiatal_diaphragmatic_hernia"
+],
+"202": [
+"ruptured_aaa"
+],
+"203": [
+"acute_viral_hepatitis",
+"acute_hepatitis"
+],
+"204": [
+"ectopic_pregnancy"
+],
+"205": [
+"fecal_impaction",
+"chronic_constipation_impaction"
+],
+"206": [
+"gastric_volvulus"
+],
+"207": [
+"rectal_prolapse_mps",
+"anorectal_cancer_prolapse"
+],
+"208": [
+"ovarian_tumor",
+"gastric_cancer"
+],
+"209": [
+"autoimmune_hepatitis"
+],
+"210": [
+"diverticulitis"
+],
+"211": [
+"celiac_malabsorption"
+],
+"212": [
+"benign_liver_tumor"
+],
+"213": [
+"extrahepatic_cholangiocarcinoma"
+],
+"214": [
+"pid",
+"tubo_ovarian_abscess"
+],
+"215": [
+"autoimmune_gastritis"
+],
+"216": [
+"gastric_smt_gist"
+],
+"217": [
+"fap"
+],
+"218": [
+"pbc"
+],
+"219": [
+"ovarian_cyst_rupture_hemorrhage"
+],
+"220": [
+"incarcerated_hernia"
+]
+},
+"lumped": {
+"87": "顕微鏡的多発血管炎 → PAN/膠原病関連血管炎",
+"120": "食道平滑筋腫 → 胃・食道粘膜下腫瘍",
+"175": "肝性脳症 → 非代償性肝硬変",
+"181": "虫垂子宮内膜症 → 子宮内膜症"
+}
+}

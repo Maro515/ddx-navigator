@@ -1,18 +1,20 @@
 /* 症例問題集での鑑別精度評価: node tools/eval_qbank.js <問題集.md> [--detail dev|holdout|all] [--json out.json]
  *  各問の症例文 → ローカル抽出（AI なし）→ 鑑別 → 解答疾患の順位。
  *  解答 → 疾患 ID の対応は tests/qbank_answer_map.json（いずれかが上位なら正解）。
- *  holdout（q % 3 == 0）は改善の検討に使わず、一般化の見積もりにだけ使う。
+ *  holdout（q % 3 == 0）は改善の検討に使わず、一般化の見積もりにだけ使う。--map で別の対応表（別版など）を指定できる。
  *  問題集そのものはリポジトリに含めない。 */
 const fs = require('fs'), path = require('path');
 const B = path.join(__dirname, '..', 'build');
 for (const f of ['10_kb', '11_kb_abd_ext', '12_evidence', '13_prevalence', '19_labs', '20_state', '30_safety', '40_ddx', '50_next', '60_audit', '65_extract']) require(path.join(B, f + '.js'));
 const D = globalThis.DDX, KB = D.KB;
 const args = process.argv.slice(2);
-const src = args.find(a => !a.startsWith('--'));
+const flagVals = new Set(['--detail', '--json', '--map'].filter(f => args.includes(f)).map(f => args[args.indexOf(f) + 1]).filter(Boolean));
+const src = args.find(a => !a.startsWith('--') && !flagVals.has(a));
 if (!src) { console.error('usage: node tools/eval_qbank.js <問題集.md> [--detail dev|holdout|all] [--json out.json]'); process.exit(1); }
 const detail = args.includes('--detail') ? (/^(dev|holdout|all)$/.test(args[args.indexOf('--detail') + 1] || '') ? args[args.indexOf('--detail') + 1] : 'dev') : '';
 const jsonOut = args.includes('--json') ? args[args.indexOf('--json') + 1] : null;
-const MAP0 = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'tests', 'qbank_answer_map.json'), 'utf8')).map;
+const mapPath = args.includes('--map') ? args[args.indexOf('--map') + 1] : path.join(__dirname, '..', 'tests', 'qbank_answer_map.json');
+const MAP0 = JSON.parse(fs.readFileSync(mapPath, 'utf8')).map;
 // 統合された疾患（疾患群）は統合先の ID で採点する
 const ALIAS = JSON.parse(fs.readFileSync(path.join(__dirname, 'disease_alias.json'), 'utf8'));
 const canon = x => { const seen = new Set(); while (ALIAS[x] && !seen.has(x)) { seen.add(x); x = ALIAS[x]; } return x; };
