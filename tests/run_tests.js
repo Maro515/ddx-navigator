@@ -356,6 +356,43 @@ check('入力順序不変性 (Top10/Next5/hash 同一)', orderFail === 0, `${ord
     const v = D.Extract.validate({ items: [{ feature_id: 'abd_pain', value_code: 'rlq', status: 'present', elapsed_bucket: 'h_1_3', trend: 'worsening', severity: 'severe', quote: '' }, { feature_id: 'nope', value_code: null, status: 'present', elapsed_bucket: null, trend: null, severity: null, quote: '' }, { feature_id: 'temp', value_code: 'bogus', status: 'present', elapsed_bucket: null, trend: null, severity: null, quote: '' }], context: { age_band: '40-49', sex: 'female', pregnancy: 'possible' }, unmapped: [] });
     check('LLM 出力の検証: カタログ外の feature/value を捨てる', v.items.length === 1 && v.context.age_band === '40-49');
   }
+  /* 11d. AI 抽出の提供元切替（fetch を差し替えて通信せずに確認） */
+  {
+    const L = D.Extract.LLM, saved = Object.assign({}, L.config), realFetch = globalThis.fetch, calls = [];
+    const args = { items: [{ feature_id: 'abd_pain', value_code: 'rlq', status: 'present', elapsed_bucket: 'd_1_2', trend: 'worsening', severity: 'severe', quote: '右下腹部痛' }], context: { age_band: '30-39', sex: 'male', pregnancy: 'no' }, unmapped: [] };
+    let mode = 'ok';
+    globalThis.fetch = async (url, opt) => {
+      const body = JSON.parse(opt.body); calls.push({ url, headers: opt.headers, body });
+      const res = (status, j) => ({ status, json: async () => j, headers: { get: () => null } });
+      if (/openai/.test(url)) {
+        if (mode === 'noeffort' && body.reasoning) return res(400, { error: { message: "Unsupported parameter: 'reasoning.effort'" } });
+        if (mode === 'text') return res(200, { output: [{ type: 'message', content: [{ type: 'output_text', text: 'すみません' }] }] });
+        return res(200, { model: 'gpt-6-luna', output: [{ type: 'reasoning' }, { type: 'function_call', name: 'record_findings', arguments: JSON.stringify(args) }], usage: { input_tokens: 14000, output_tokens: 300, input_tokens_details: { cached_tokens: 13000 } } });
+      }
+      return res(200, { model: 'claude-opus-5-5', stop_reason: 'tool_use', content: [{ type: 'tool_use', name: 'record_findings', input: args }], usage: { input_tokens: 50, output_tokens: 300 } });
+    };
+    try {
+      Object.assign(L.config, { apiKey: 'test-anthropic', openaiKey: '', model: 'gpt-6-luna', effort: undefined });
+      check('AI 提供元: Luna 選択で OpenAI キーが無ければ未設定扱い（ローカル解析）', L.vendor() === 'openai' && !L.ready());
+      L.config.openaiKey = 'test-openai';
+      const r1 = await D.Extract.extract('30代男性。昨日から右下腹部痛が悪化。CRP 5.8。', { useLLM: true });
+      const c1 = calls[0];
+      check('AI 提供元: Luna は OpenAI Responses API へ（Bearer・store:false・strict 関数・関数強制・思考 low・<memo>）',
+        c1.url === 'https://api.openai.com/v1/responses' && c1.headers.authorization === 'Bearer test-openai' && !c1.headers['x-api-key'] && c1.body.store === false && c1.body.model === 'gpt-6-luna'
+        && c1.body.tools[0].strict === true && c1.body.tool_choice.name === 'record_findings' && c1.body.reasoning.effort === 'low' && c1.body.instructions === D.Extract.SYSTEM() && /<memo>/.test(c1.body.input[0].content), JSON.stringify(c1.body).slice(0, 200));
+      check('AI 提供元: Luna の応答を検証・合成（AI 項目＋数値のローカル項目、usage のキャッシュ分）',
+        r1.llm.ok && r1.llm.vendor === 'openai' && r1.items.some(i => i.feature_id === 'abd_pain' && i.value_code === 'rlq') && r1.items.some(i => i.feature_id === 'crp' && i.value_code === '5_10') && r1.llm.usage.cache_read_input_tokens === 13000, JSON.stringify(r1.llm));
+      mode = 'noeffort'; calls.length = 0;
+      const r2 = await D.Extract.extract('右下腹部痛', { useLLM: true });
+      check('AI 提供元: 思考の深さを受け付けないときは外して再試行', r2.llm.ok && calls.length === 2 && !calls[1].body.reasoning);
+      mode = 'text';
+      const r3 = await D.Extract.extract('30代男性。右下腹部痛。', { useLLM: true });
+      check('AI 提供元: 構造化出力が無ければローカル解析で代替', r3.llm.ok === false && r3.fallback === 'llm_error' && r3.items.some(i => i.feature_id === 'abd_pain'), r3.llm.error);
+      mode = 'ok'; calls.length = 0; L.config.model = 'claude-opus-5-5';
+      const r4 = await D.Extract.extract('右下腹部痛', { useLLM: true });
+      check('AI 提供元: Claude は Anthropic Messages API へ（x-api-key、OpenAI キーは送らない）', calls[0].url === 'https://api.anthropic.com/v1/messages' && calls[0].headers['x-api-key'] === 'test-anthropic' && !calls[0].headers.authorization && r4.llm.vendor === 'anthropic' && r4.llm.ok);
+    } finally { globalThis.fetch = realFetch; Object.keys(L.config).forEach(k => delete L.config[k]); Object.assign(L.config, saved); }
+  }
   /* 12. KB 整合性 */
   const bad = KB.relations.filter(r => r.values && r.values.some(v => !KB.feature[r.f].values || !KB.feature[r.f].values.some(x => x.code === v)));
   check('KB: relation の値コードが feature 定義に存在', bad.length === 0, bad.map(r => r.d + '/' + r.f).join(','));

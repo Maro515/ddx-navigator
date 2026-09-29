@@ -1,7 +1,7 @@
 /* ============================================================
  * Free-text → 構造化 Observation
  *  1) PII scrub（送信前に必ず実行、除去内容を可視化）
- *  2) LLM 抽出（Claude Messages API、tool use で JSON を強制。カタログ外の語は捨てる）
+ *  2) LLM 抽出（Claude Messages API または OpenAI Responses API〔GPT-6 Luna〕、関数呼び出しで JSON を強制。カタログ外の語は捨てる）
  *  3) ローカル抽出（日本語ルール。API 不可時の fallback、数値は常にコード側で判定）
  * ============================================================ */
 (function (g) {
@@ -159,39 +159,83 @@ ${catalogText()}
     return out;
   }
 
-  /* ---------------- LLM 抽出（Claude Messages API, ブラウザ直接） ---------------- */
+  /* ---------------- LLM 抽出（ブラウザから各社 API へ直接。Claude = Messages API、GPT-6 Luna = OpenAI Responses API） ---------------- */
+  // 指示文・出力スキーマ・検証（validate）は提供元によらず共通。キーは提供元ごとに保持する
   const LLM = {
-    config: { apiKey: '', model: 'claude-opus-5-5', confirm: true, timeoutMs: 60000 },
-    models: [{ id: 'claude-opus-5-5', label: 'Claude Opus 5.5（最新・既定）' }, { id: 'claude-opus-5', label: 'Claude Opus 5' }, { id: 'claude-sonnet-5', label: 'Claude Sonnet 5（速い・安い）' }, { id: 'claude-haiku-4-5', label: 'Claude Haiku 4.5（最速・最安）' }],
-    ready() { return !!LLM.config.apiKey; },
-    async extract(scrubbedText) {
-      const ctrl = new AbortController(); const timer = setTimeout(() => ctrl.abort(), LLM.config.timeoutMs);
-      const t0 = Date.now();
-      try {
-        const body = {
-          model: LLM.config.model, max_tokens: 4096,
-          system: [{ type: 'text', text: SYSTEM(), cache_control: { type: 'ephemeral' } }],
-          tools: [TOOL()], tool_choice: { type: 'auto' },
-          messages: [{ role: 'user', content: USER(scrubbedText) }]
-        };
-        // Opus 5.5 / Opus 5 / Sonnet 5: thinking は既定で adaptive（5.5 は無効化不可）。抽出は effort:low で十分。
-        // tool_choice は 'auto'（Opus 5.5 は any/tool の強制指定を受け付けない）。Haiku 4.5 は effort 非対応。
-        if (/haiku-4-5/.test(LLM.config.model)) { /* no effort */ } else body.output_config = { effort: LLM.config.effort || 'low' };
-        const res = await fetch('https://api.anthropic.com/v1/messages', {
-          method: 'POST', signal: ctrl.signal,
-          headers: { 'content-type': 'application/json', 'x-api-key': LLM.config.apiKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
-          body: JSON.stringify(body)
-        });
-        if (!res.ok) { let msg = 'HTTP ' + res.status; try { const j = await res.json(); msg += ': ' + (j.error && j.error.message || ''); } catch (e) { } throw new Error(msg); }
-        const j = await res.json();
-        if (j.stop_reason === 'refusal') throw new Error('モデルが応答を拒否しました');
-        const tu = (j.content || []).find(b => b.type === 'tool_use' && b.name === 'record_findings');
-        if (!tu) throw new Error('構造化出力が返りませんでした');
-        const out = validate(tu.input);
-        return Object.assign(out, { ok: true, provider: 'llm', model: j.model, latency: Date.now() - t0, usage: j.usage });
-      } finally { clearTimeout(timer); }
-    }
+    config: { apiKey: '', openaiKey: '', model: 'claude-opus-5-5', confirm: true, timeoutMs: 60000 },
+    models: [
+      { id: 'claude-opus-5-5', vendor: 'anthropic', label: 'Claude Opus 5.5（最新・既定）' },
+      { id: 'claude-opus-5', vendor: 'anthropic', label: 'Claude Opus 5' },
+      { id: 'claude-sonnet-5', vendor: 'anthropic', label: 'Claude Sonnet 5（速い・安い）' },
+      { id: 'claude-haiku-4-5', vendor: 'anthropic', label: 'Claude Haiku 4.5（最速・最安）' },
+      { id: 'gpt-6-luna', vendor: 'openai', label: 'GPT-6 Luna（OpenAI・最安、Opus の約1/50）' }
+    ],
+    vendorName: { anthropic: 'Anthropic', openai: 'OpenAI' },
+    vendor(model) { return (LLM.models.find(m => m.id === (model || LLM.config.model)) || { vendor: 'anthropic' }).vendor; },
+    label(model) { return (LLM.models.find(m => m.id === (model || LLM.config.model)) || { label: model || LLM.config.model }).label.split('（')[0]; },
+    key() { return LLM.vendor() === 'openai' ? LLM.config.openaiKey : LLM.config.apiKey; },
+    ready() { return !!LLM.key(); },
+    async extract(scrubbedText) { return LLM.vendor() === 'openai' ? extractOpenAI(scrubbedText) : extractAnthropic(scrubbedText); }
   };
+  // タイムアウト付きの POST。JSON を読めなかったときも status は返す
+  async function post(url, headers, body) {
+    const ctrl = new AbortController(); const timer = setTimeout(() => ctrl.abort(), LLM.config.timeoutMs);
+    try {
+      const res = await fetch(url, { method: 'POST', signal: ctrl.signal, headers: Object.assign({ 'content-type': 'application/json' }, headers), body: JSON.stringify(body) });
+      const j = await res.json().catch(() => ({}));
+      return { status: res.status, j, retryAfter: +(res.headers.get('retry-after') || 0) };
+    } finally { clearTimeout(timer); }
+  }
+  const httpError = r => { const e = new Error('HTTP ' + r.status + ': ' + ((r.j.error && r.j.error.message) || '')); e.status = r.status; e.retryAfter = r.retryAfter; return e; };
+
+  async function extractAnthropic(scrubbedText) {
+    const t0 = Date.now();
+    const body = {
+      model: LLM.config.model, max_tokens: 4096,
+      system: [{ type: 'text', text: SYSTEM(), cache_control: { type: 'ephemeral' } }],
+      tools: [TOOL()], tool_choice: { type: 'auto' },
+      messages: [{ role: 'user', content: USER(scrubbedText) }]
+    };
+    // Opus 5.5 / Opus 5 / Sonnet 5: thinking は既定で adaptive（5.5 は無効化不可）。抽出は effort:low で十分。
+    // tool_choice は 'auto'（Opus 5.5 は any/tool の強制指定を受け付けない）。Haiku 4.5 は effort 非対応。
+    if (!/haiku-4-5/.test(LLM.config.model)) body.output_config = { effort: LLM.config.effort || 'low' };
+    const r = await post('https://api.anthropic.com/v1/messages', { 'x-api-key': LLM.config.apiKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' }, body);
+    if (r.status !== 200) throw httpError(r);
+    if (r.j.stop_reason === 'refusal') throw new Error('モデルが応答を拒否しました');
+    const tu = (r.j.content || []).find(b => b.type === 'tool_use' && b.name === 'record_findings');
+    if (!tu) throw new Error('構造化出力が返りませんでした');
+    return Object.assign(validate(tu.input), { ok: true, provider: 'llm', vendor: 'anthropic', model: r.j.model, latency: Date.now() - t0, usage: r.j.usage });
+  }
+
+  // OpenAI Responses API。store:false で応答を OpenAI 側に保存させない。関数呼び出しを強制し、strict スキーマで出力を固定する。
+  // 思考の深さ（reasoning.effort）を受け付けないモデルなら外して再試行する。usage は Claude と同じ名前に揃える（input_tokens はキャッシュ分を含む）
+  async function extractOpenAI(scrubbedText) {
+    const t0 = Date.now(), tool = TOOL();
+    const body = {
+      model: LLM.config.model, store: false,
+      instructions: SYSTEM(),
+      input: [{ role: 'user', content: USER(scrubbedText) }],
+      tools: [{ type: 'function', name: tool.name, description: tool.description, parameters: tool.input_schema, strict: true }],
+      tool_choice: { type: 'function', name: tool.name },
+      reasoning: { effort: LLM.config.effort || 'low' }
+    };
+    const headers = { authorization: 'Bearer ' + LLM.config.openaiKey };
+    let r = await post('https://api.openai.com/v1/responses', headers, body);
+    if (r.status === 400 && /reasoning|effort/i.test(JSON.stringify(r.j.error || ''))) { delete body.reasoning; r = await post('https://api.openai.com/v1/responses', headers, body); }
+    if (r.status !== 200) throw httpError(r);
+    const out = r.j.output || [];
+    const fc = out.find(o => o.type === 'function_call' && o.name === tool.name);
+    if (!fc) {
+      const refusal = out.some(o => (o.content || []).some(c => c.type === 'refusal'));
+      throw new Error(refusal ? 'モデルが応答を拒否しました' : '構造化出力が返りませんでした');
+    }
+    let args; try { args = JSON.parse(fc.arguments); } catch (e) { throw new Error('構造化出力を読めませんでした'); }
+    const u = r.j.usage || {};
+    const usage = { input_tokens: u.input_tokens || 0, output_tokens: u.output_tokens || 0,
+      cache_read_input_tokens: (u.input_tokens_details && u.input_tokens_details.cached_tokens) || 0,
+      reasoning_tokens: (u.output_tokens_details && u.output_tokens_details.reasoning_tokens) || 0 };
+    return Object.assign(validate(args), { ok: true, provider: 'llm', vendor: 'openai', model: r.j.model || LLM.config.model, latency: Date.now() - t0, usage });
+  }
 
   /* ---------------- ローカル抽出（日本語ルール） ---------------- */
   const NEG = '(?:なし|無し|ない|認めず|認めない|認められず|否定|陰性|\\(-\\)|（-）|−|マイナス|みられず|見られず|みられない|見られない|はない|なく|なかった|認めなかった|指摘できず|指摘されず|指摘なし|描出されず|検出されず|ありません|乏しい|弱い|不能)';
@@ -535,9 +579,9 @@ ${catalogText()}
     if (!opts.useLLM || !LLM.ready()) return Object.assign(loc, { scrubbed: sc, llm: null, fallback: !opts.useLLM ? 'llm_off' : 'no_key' });
     try {
       const out = mergeLocal(await LLM.extract(sc.text), loc);
-      return Object.assign(out, { scrubbed: sc, llm: { ok: true, model: out.model, latency: out.latency, usage: out.usage } });
+      return Object.assign(out, { scrubbed: sc, llm: { ok: true, vendor: out.vendor, model: out.model, latency: out.latency, usage: out.usage } });
     } catch (e) {
-      return Object.assign(loc, { scrubbed: sc, llm: { ok: false, error: String(e && e.message || e) }, fallback: 'llm_error' });
+      return Object.assign(loc, { scrubbed: sc, llm: { ok: false, vendor: LLM.vendor(), model: LLM.config.model, error: String(e && e.message || e) }, fallback: 'llm_error' });
     }
   }
   DDX.Extract = { scrub, local, extract, LLM, validate, tidy, mergeLocal, catalogText, ageBand, SYSTEM, USER, TOOL };

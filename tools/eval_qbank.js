@@ -39,6 +39,7 @@ const PRICE = {
   'claude-haiku-4-5': { in: 1, out: 5, cw: 1.25, cr: 0.1 }, 'gpt-6-luna': { in: 0.1, out: 0.5, cw: 0.125, cr: 0.01 }
 };
 let apiKey = null;
+if (provider && D.Extract.LLM.vendor(model) !== provider) { console.error(`モデル ${model} は ${provider} のモデルではありません（アプリの選択肢: ${D.Extract.LLM.models.map(m => m.id).join(', ')}）`); process.exit(1); }
 if (provider && !dry) {
   const kf = path.join(os.homedir(), '.config', 'ddx-navigator', provider + '_key');
   if (!fs.existsSync(kf)) { console.error(`キーのファイルがありません: ${kf}\nターミナルで次を実行して保存してください（入力は表示されません）:\n  read -s "K?API key: " && printf %s "$K" > ${kf} && chmod 600 ${kf} && unset K`); process.exit(2); }
@@ -61,8 +62,9 @@ async function llmExtract(text) {
   for (let attempt = 0; attempt < 5 && !out; attempt++) {
     try {
       stats.calls++;
-      if (provider === 'anthropic') { D.Extract.LLM.config.apiKey = apiKey; D.Extract.LLM.config.model = model; D.Extract.LLM.config.timeoutMs = 120000; D.Extract.LLM.config.effort = effort; out = await D.Extract.LLM.extract(sc.text); }
-      else out = await require('./llm_openai.js')({ apiKey, model, text: sc.text, effort });
+      // アプリと同じ実装（DDX.Extract.LLM）で呼ぶ。提供元はモデル ID から決まる
+      Object.assign(D.Extract.LLM.config, provider === 'openai' ? { openaiKey: apiKey } : { apiKey }, { model, timeoutMs: 120000, effort });
+      out = await D.Extract.LLM.extract(sc.text);
     } catch (e) {
       err = e; const m = String(e && e.message || e);
       if (/HTTP (429|500|502|503|504|529)/.test(m) || /abort/i.test(m)) { await sleep(Math.min(60000, (e.retryAfter ? e.retryAfter * 1000 : 0) || 2000 * 2 ** attempt)); continue; }

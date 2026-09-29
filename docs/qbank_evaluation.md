@@ -109,7 +109,7 @@ node tools/eval_qbank.js <別版.md> --map tests/qbank2_answer_map.json --detail
 
 ## AI 抽出の比較（2026-09-27 追加）
 
-`node tools/eval_qbank.js <問題集> [--map ...] --llm anthropic|openai --model <ID> [--effort low|medium]`。キーは `~/.config/ddx-navigator/` から読み、抽出結果は `~/.cache/ddx-navigator/llm` にキャッシュ（リポジトリ外）。GPT-6 Luna は評価専用の部品（`tools/llm_openai.js`）で、アプリと同じ指示文・出力スキーマ・検証を使う。
+`node tools/eval_qbank.js <問題集> [--map ...] --llm anthropic|openai --model <ID> [--effort low|medium]`。キーは `~/.config/ddx-navigator/` から読み、抽出結果は `~/.cache/ddx-navigator/llm` にキャッシュ（リポジトリ外）。GPT-6 Luna は当初、評価専用の部品（`tools/llm_openai.js`）で呼んでいた。2026-09-29 にアプリ本体の選択肢に組み込み、評価もアプリと同じ実装（`DDX.Extract.LLM`）で呼ぶようにした（同じ要求内容なのでキャッシュと成績はそのまま）。
 
 | 抽出 | 別版 Top5 | 前版 Top5 | 別版 Top10 | 前版 Top10 | 440 問の費用 | 応答時間（中央値） |
 |---|---|---|---|---|---|---|

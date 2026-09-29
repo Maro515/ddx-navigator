@@ -40,7 +40,7 @@
     document.querySelectorAll('nav.tabs button').forEach(b => { b.classList.toggle('on', b.dataset.tab === UI.tab); const nn = b.querySelector('.n'); if (nn) nn.remove(); if (b.dataset.tab === 'result' && (em || al)) b.insertAdjacentHTML('beforeend', `<span class="n">${al ? '!' : em}</span>`); });
     document.querySelectorAll('section.view').forEach(s => s.classList.toggle('active', s.id === 'view-' + UI.tab));
     const p = $('#pillLLM'); const L = DDX.Extract.LLM;
-    p.textContent = L.ready() ? 'AI: ' + (L.models.find(m => m.id === L.config.model) || {}).label.split('（')[0] : 'AI: 未設定（ローカル解析）'; p.className = 'pill ' + (L.ready() ? 'on' : '');
+    p.textContent = L.ready() ? 'AI: ' + L.label() : 'AI: 未設定（ローカル解析）'; p.className = 'pill ' + (L.ready() ? 'on' : '');
   }
   function bannersHtml() {
     if (!UI.last) return ''; const s = UI.last.safety; let h = '';
@@ -58,10 +58,11 @@
       <div class="tiny muted">送信前に氏名・ID・日付・連絡先などは自動で除去されます${DDX.Extract.LLM.ready() ? '' : '。AI 未設定のためローカル解析で動作中（設定で API キーを登録）'}</div></div>`;
     if (UI.pending) {
       const p = UI.pending;
-      h += `<div class="card confirm"><h2>送信内容の確認</h2><div class="scrubbed">${esc(p.scrubbed.text)}</div>${p.scrubbed.removed.length ? `<div class="small muted">除去: ${p.scrubbed.removed.map(r => esc(r.kind)).join('、')}</div>` : '<div class="small muted">個人情報は検出されませんでした</div>'}<div class="inputacts"><button class="big primary grow" data-act="send">この内容で追加（AI）</button><button class="big" data-act="localOnly">送らずに解析</button><button class="big ghost" data-act="cancelSend">取消</button></div></div>`;
+      const L = DDX.Extract.LLM;
+      h += `<div class="card confirm"><h2>送信内容の確認</h2><div class="small muted">送信先: ${esc(L.vendorName[L.vendor()])}（${esc(L.label())}）</div><div class="scrubbed">${esc(p.scrubbed.text)}</div>${p.scrubbed.removed.length ? `<div class="small muted">除去: ${p.scrubbed.removed.map(r => esc(r.kind)).join('、')}</div>` : '<div class="small muted">個人情報は検出されませんでした</div>'}<div class="inputacts"><button class="big primary grow" data-act="send">この内容で追加（AI）</button><button class="big" data-act="localOnly">送らずに解析</button><button class="big ghost" data-act="cancelSend">取消</button></div></div>`;
     }
     if (UI.lastAdded.length || (UI.lastResult && UI.lastResult.unmapped && UI.lastResult.unmapped.length)) {
-      h += `<div class="card"><h2>読み取った項目 <span class="cnt">${UI.lastResult && UI.lastResult.llm && UI.lastResult.llm.ok ? 'AI' : 'ローカル解析'}${UI.lastResult && UI.lastResult.llm && UI.lastResult.llm.ok === false ? '（AI エラー→ローカル）' : ''}</span></h2><div class="items">`;
+      h += `<div class="card"><h2>読み取った項目 <span class="cnt">${UI.lastResult && UI.lastResult.llm && UI.lastResult.llm.ok ? 'AI（' + esc(DDX.Extract.LLM.label(UI.lastResult.llm.model)) + '）' : 'ローカル解析'}${UI.lastResult && UI.lastResult.llm && UI.lastResult.llm.ok === false ? '（AI エラー→ローカル）' : ''}</span></h2><div class="items">`;
       for (const id of UI.lastAdded) { const o = st.observations.find(x => x.obs_id === id); if (!o) continue; const l = obsLine(o); h += `<div class="item ${l.absent ? 'abs' : ''}"><div class="grow"><b>${esc(l.label)}</b> ${esc(l.value)}<div class="tiny muted">${esc(l.meta)}</div></div><button class="ghost" data-del="${o.obs_id}" aria-label="削除">✕</button></div>`; }
       if (UI.lastResult && UI.lastResult.unmapped && UI.lastResult.unmapped.length) h += `<div class="tiny muted" style="margin-top:6px">対応項目なし（記録のみ）: ${UI.lastResult.unmapped.map(esc).join('、')}</div>`;
       if (UI.lastResult && UI.lastResult.llm && UI.lastResult.llm.ok === false) h += `<div class="tiny" style="color:var(--danger)">AI: ${esc(UI.lastResult.llm.error)}</div>`;
@@ -146,12 +147,13 @@
   }
   function renderSettings() {
     const L = DDX.Extract.LLM, v = DDX.Audit.versions(), cov = KB().evidenceCoverage || {};
-    let h = `<div class="card"><h2>AI 解析（Claude API）</h2>
-      <label class="lab">API キー（この端末にのみ保存）</label><input type="password" id="apiKey" value="${esc(L.config.apiKey)}" placeholder="sk-ant-...">
+    let h = `<div class="card"><h2>AI 解析</h2>
       <label class="lab">モデル</label><select id="model">${L.models.map(m => `<option value="${m.id}" ${m.id === L.config.model ? 'selected' : ''}>${esc(m.label)}</option>`).join('')}</select>
+      <label class="lab">Anthropic API キー（Claude を使う場合・この端末にのみ保存）</label><input type="password" id="apiKey" value="${esc(L.config.apiKey)}" placeholder="sk-ant-..." autocomplete="off">
+      <label class="lab">OpenAI API キー（GPT-6 Luna を使う場合・この端末にのみ保存）</label><input type="password" id="openaiKey" value="${esc(L.config.openaiKey || '')}" placeholder="sk-..." autocomplete="off">
       <label class="chk"><input type="checkbox" id="confirmSend" ${L.config.confirm ? 'checked' : ''}> 送信前に除去後の文面を確認する</label>
       <div class="inputacts"><button class="big primary" data-act="saveLLM">保存</button></div>
-      <div class="tiny muted">送信するのは除去後の本文と項目カタログだけです。API キーはブラウザから直接 Anthropic に送られ、他のサーバーを経由しません。</div></div>`;
+      <div class="tiny muted">送信するのは除去後の本文と項目カタログだけです。API キーと本文はブラウザから直接、選んだモデルの提供元（Anthropic または OpenAI）に送られ、他のサーバーを経由しません。OpenAI には応答を保存しない指定（store: false）で送ります。選んだモデルのキーが無いときはローカル解析で動きます。</div></div>`;
     h += `<div class="card"><h2>症例</h2><div class="inputacts"><button class="big ${UI.confirmKey === 'newCase' ? 'danger' : ''}" data-act="newCase">${UI.confirmKey === 'newCase' ? 'もう一度押して新規開始' : '新規症例'}</button><button class="big" data-act="exportCase">症例JSON書き出し</button></div>
       <label class="lab" style="margin-top:10px">デモ症例（メモを順に入力）</label><select id="demoSel">${DDX.DEMO_TEXT.map((d, i) => `<option value="${i}">${esc(d.label)}</option>`).join('')}</select><div class="inputacts"><button class="big" data-act="demoStart">読み込む</button></div></div>`;
     h += `<div class="card"><h2>記録・根拠</h2><div class="small">監査ログ ${DDX.Audit.list().length} 件 · 根拠文献 ${KB().evidence.length} 件（感度+特異度を文献値で ${cov.with_values || 0} / 感度のみ ${cov.partial || 0} / 全 ${cov.total || 0} 関係）</div>
@@ -313,7 +315,7 @@
         case 'send': await runExtract(UI.pending.text, true); break;
         case 'localOnly': await runExtract(UI.pending.text, false); break;
         case 'cancelSend': UI.pending = null; renderInput(); break;
-        case 'saveLLM': { const L = DDX.Extract.LLM; L.config.apiKey = $('#apiKey').value.trim(); L.config.model = $('#model').value; L.config.confirm = $('#confirmSend').checked; LS.set('ddxnav_llm', { apiKey: L.config.apiKey, model: L.config.model, confirm: L.config.confirm }); toast('保存しました'); renderAll(); break; }
+        case 'saveLLM': { const L = DDX.Extract.LLM; L.config.apiKey = $('#apiKey').value.trim(); L.config.openaiKey = $('#openaiKey').value.trim(); L.config.model = $('#model').value; L.config.confirm = $('#confirmSend').checked; LS.set('ddxnav_llm', { apiKey: L.config.apiKey, openaiKey: L.config.openaiKey, model: L.config.model, confirm: L.config.confirm }); toast(L.ready() ? '保存しました' : `保存しました（${L.vendorName[L.vendor()]} のキーが未入力のためローカル解析）`); renderAll(); break; }
         case 'newCase': if (UI.confirmKey === 'newCase') { UI.confirmKey = null; UI.state = new DDX.ClinicalState({}); UI.labValues = {}; UI.lastAdded = []; UI.lastResult = null; UI.demoQueue = null; UI.open = {}; UI.draft = ''; recompute('new_case'); UI.tab = 'input'; } else { UI.confirmKey = 'newCase'; renderSettings(); setTimeout(() => { if (UI.confirmKey === 'newCase') { UI.confirmKey = null; renderSettings(); } }, 4000); } break;
         case 'exportCase': download(`ddx_case_${UI.state.case_token}.json`, JSON.stringify(UI.state.toJSON(), null, 2)); break;
         case 'exportLog': download('ddx_audit_log.json', DDX.Audit.export()); break;
