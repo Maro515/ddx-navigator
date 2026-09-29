@@ -1,6 +1,6 @@
 /* 回帰テスト（合成症例）: node tests/run_tests.js */
 const path = require('path');
-for (const f of ['10_kb', '11_kb_abd_ext', '12_evidence', '13_prevalence', '15_demo', '18_bodymap', '19_labs', '20_state', '30_safety', '40_ddx', '50_next', '60_audit', '65_extract']) require(path.join(__dirname, '..', 'build', f + '.js'));
+for (const f of ['10_kb', '11_kb_abd_ext', '12_evidence', '13_prevalence', '15_demo', '18_bodymap', '19_labs', '20_state', '30_safety', '40_ddx', '50_next', '60_audit', '65_extract', '70_patients']) require(path.join(__dirname, '..', 'build', f + '.js'));
 const D = globalThis.DDX, KB = D.KB;
 let seed = 12345; const rnd = () => { seed = (seed * 1103515245 + 12345) & 0x7fffffff; return seed / 0x7fffffff; };
 const pick = a => a[Math.floor(rnd() * a.length)];
@@ -392,6 +392,40 @@ check('入力順序不変性 (Top10/Next5/hash 同一)', orderFail === 0, `${ord
       const r4 = await D.Extract.extract('右下腹部痛', { useLLM: true });
       check('AI 提供元: Claude は Anthropic Messages API へ（x-api-key、OpenAI キーは送らない）', calls[0].url === 'https://api.anthropic.com/v1/messages' && calls[0].headers['x-api-key'] === 'test-anthropic' && !calls[0].headers.authorization && r4.llm.vendor === 'anthropic' && r4.llm.ok);
     } finally { globalThis.fetch = realFetch; Object.keys(L.config).forEach(k => delete L.config[k]); Object.assign(L.config, saved); }
+  }
+  /* 11e. 患者管理（メモリ上の保存先で確認） */
+  {
+    const Pt = D.Patients; await Pt.open(Pt.memBackend());
+    const f1 = Pt.addFolder('救急外来'), f2 = Pt.addFolder('病棟 5A');
+    check('患者管理: 同名フォルダは作らない', Pt.addFolder(' 救急外来 ') === f1 && Pt.index.folders.length === 2);
+    const a = Pt.create({ name: '  救急3番  ', folderId: f1.id, context: { age_band: '60-69', sex: 'male' } });
+    const st = new D.ClinicalState({ context: { age_band: '60-69', sex: 'male', pregnancy: 'no' } });
+    st.add({ feature_id: 'abd_pain', value_code: 'rlq', severity: 'severe', time_context: { elapsed_bucket: 'h_3_6', trend: 'worsening' } });
+    await Pt.saveData(a.id, { state: st.toJSON(), labValues: { crp: '5.8' }, draft: '下書き' }, { hash: st.hash(), summary: { top: ['appendicitis'], n: 1, alert: 0, mnm: 1 } });
+    const back = await Pt.loadData(a.id), st2 = D.ClinicalState.fromJSON(back.state);
+    check('患者管理: 患者別データの保存と読み戻し（state・検査値・下書き、呼び名の空白整理）', a.name === '救急3番' && st2.hash() === st.hash() && back.labValues.crp === '5.8' && back.draft === '下書き' && Pt.get(a.id).summary.top[0] === 'appendicitis');
+    const b = Pt.create({ folderId: 'nope' });
+    check('患者管理: 呼び名なしは「患者 N」、存在しないフォルダは未分類', b.name === '患者 2' && b.folderId === null && Pt.list(f1.id).length === 1 && Pt.list('none').length === 1);
+    let over = null; for (let i = Pt.count(); i < Pt.MAX; i++) Pt.create({ name: 'p' + i });
+    try { Pt.create({ name: '101人目' }); } catch (e) { over = e.message; }
+    check('患者管理: 同時に保存できるのは 100 人まで', Pt.count() === 100 && Pt.full() && /100/.test(over || ''), over);
+    Pt.move(b.id, f2.id); Pt.removeFolder(f1.id);
+    check('患者管理: フォルダを消しても患者は消えず未分類へ', Pt.get(a.id) && Pt.get(a.id).folderId === null && Pt.get(b.id).folderId === f2.id && !Pt.folder(f1.id));
+    Pt.setCurrent(a.id); await Pt.remove(a.id);
+    check('患者管理: 削除でデータも消え、表示中なら未選択に', !Pt.get(a.id) && (await Pt.loadData(a.id)) === null && Pt.index.currentId === null && Pt.count() === 99);
+    const dump = await Pt.exportAll();
+    const idxSaved = await Pt.backend.get('index');
+    check('患者管理: 一覧は保存先に書かれ、書き出しに全員分が入る', idxSaved.patients.length === 99 && dump.patients.length === 99 && dump.kind === 'patients');
+    await Pt.open(Pt.memBackend());
+    const r = await Pt.importAll(dump); const r2 = await Pt.importAll(dump);
+    check('患者管理: 控えからの取り込み（重複は除外、フォルダも復元）', r.added === 99 && r2.added === 0 && r2.dup === 99 && Pt.index.folders.some(f => f.name === '病棟 5A') && Pt.list(Pt.index.folders.find(f => f.name === '病棟 5A').id).length === 1);
+    let bad = null; try { await Pt.importAll({ foo: 1 }); } catch (e) { bad = e.message; }
+    check('患者管理: 別形式のファイルは取り込まない', !!bad && Pt.count() === 99);
+    const ls = new Map(); const fakeLS = { getItem: k => ls.has(k) ? ls.get(k) : null, setItem: (k, v) => { if (v.length > 50) { const e = new Error('QuotaExceededError'); throw e; } ls.set(k, v); }, removeItem: k => ls.delete(k) };
+    await Pt.open(Pt.lsBackend(fakeLS)); let notified = null; Pt.onError = e => { notified = e.message; };
+    const c = Pt.create({ name: 'x' }); await Pt.saveData(c.id, { state: st.toJSON() }, {}).catch(() => { });
+    check('患者管理: 保存に失敗したら通知する（容量不足など）', notified === 'QuotaExceededError');
+    Pt.onError = null;
   }
   /* 12. KB 整合性 */
   const bad = KB.relations.filter(r => r.values && r.values.some(v => !KB.feature[r.f].values || !KB.feature[r.f].values.some(x => x.code === v)));

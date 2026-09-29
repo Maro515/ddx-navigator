@@ -137,20 +137,45 @@ svg.body .rg.has{fill:rgba(14,116,144,.2);stroke:var(--pri);stroke-dasharray:non
 svg.body .rl{font-size:11px}
 #toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(var(--nav-h) + 20px);background:var(--ink);color:var(--bg);padding:10px 18px;border-radius:999px;font-size:16px;opacity:0;transition:opacity .2s;z-index:50;pointer-events:none;max-width:90vw}
 #toast.show{opacity:.95}
+button.pill{border:none;min-height:0;cursor:pointer;font:inherit;font-size:13px;padding:4px 10px}
+.ptpill{margin-left:auto;min-width:0;flex:0 1 auto;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:inline-block;background:var(--pri-soft);color:var(--pri);font-weight:700;font-size:15px}
+.aipill{flex:0 1 auto;min-width:0;max-width:34%;overflow:hidden;text-overflow:ellipsis;display:inline-block}
+.ptpill.none{background:var(--chip);color:var(--muted);font-weight:500}
+header.top h1{white-space:nowrap}
+@media (max-width:420px){header.top .h1rest{display:none}header.top{gap:6px}}
+.homehd{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.homehd .cnt{font-variant-numeric:tabular-nums}
+.fchips{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0 8px}
+.fchips .chip{white-space:nowrap;border:1px solid transparent;max-width:100%;overflow:hidden;text-overflow:ellipsis}
+.fchips .chip .n{margin-left:6px;font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
+.fchips .chip.sel .n{color:var(--pri)}
+.fbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:15px;margin-bottom:8px}
+.ptlist{display:flex;flex-direction:column;gap:8px}
+.pt{display:flex;align-items:center;gap:8px;padding:10px 12px;border-radius:12px;background:var(--chip);cursor:pointer;border:1px solid transparent}
+.pt.cur{border-color:var(--pri);background:var(--pri-soft)}
+.pt .pn{font-weight:700;font-size:18px;overflow-wrap:anywhere}
+.pt .sub{font-size:13px;color:var(--muted)}
+.pt .dx1{font-size:15px;margin-top:2px}
+.ptmenu{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin:-2px 0 4px}
+.ptmenu .row{margin-top:8px}
+.ptmenu input,.ptmenu select,.newpt input,.newpt select,.fbar input{font-size:16px;padding:8px 10px}
+.newpt .grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 @media (prefers-reduced-motion: reduce){*{transition:none!important}}
   .dx .head .prev { font-size: 12px; color: var(--muted); white-space: nowrap; margin-left: 6px; }
 </style>
 </head>
 <body>
 <div id="app">
-  <header class="top"><h1>DDx Navigator</h1><div class="spacer"></div><span class="pill" id="pillLLM">AI</span></header>
+  <header class="top"><h1>DDx<span class="h1rest"> Navigator</span></h1><button class="pill ptpill" id="pillPt" data-act="goHome" aria-label="表示中の患者（ホームへ）">患者未選択</button><span class="pill aipill" id="pillLLM">AI</span></header>
   <main>
-    <section class="view active" id="view-input"></section>
+    <section class="view active" id="view-home"></section>
+    <section class="view" id="view-input"></section>
     <section class="view" id="view-result"></section>
     <section class="view" id="view-settings"></section>
   </main>
   <nav class="tabs"><div class="inner">
-    <button data-tab="input" class="on"><span class="ic">✏️</span>入力</button>
+    <button data-tab="home" class="on"><span class="ic">🏠</span>ホーム</button>
+    <button data-tab="input"><span class="ic">✏️</span>入力</button>
     <button data-tab="result"><span class="ic">🩺</span>結果</button>
     <button data-tab="settings"><span class="ic">⚙️</span>設定</button>
   </div></nav>
@@ -5301,9 +5326,168 @@ ${catalogText()}
 })(typeof window !== 'undefined' ? window : globalThis);
 
 </script>
+<script>/* 70_patients.js */
+/* ============================================================
+ * 患者管理 — 新規登録・患者別データ・フォルダ（同時に最大 100 人）
+ *  保存先は IndexedDB（容量に余裕がある）→ 使えなければ localStorage → メモリ。
+ *  一覧（'index': 患者の見出し・フォルダ・表示中の患者）と患者別データ（'pt:<id>': 症例 state・検査値・下書き）を分けて保存し、
+ *  入力のたびに書き直すのはその患者の分だけにする。
+ *  患者の呼び名は端末内にだけ保存し、AI にも監査ログにも送らない（監査ログは case_token のみ）。
+ * ============================================================ */
+(function (g) {
+  const DDX = g.DDX = g.DDX || {};
+  const MAX = 100, NAME_MAX = 30, FOLDER_MAX = 20;
+  const uid = p => p + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+  const clean = (s, n) => String(s == null ? '' : s).replace(/\s+/g, ' ').trim().slice(0, n);
+  const copy = v => v == null ? v : JSON.parse(JSON.stringify(v));
+
+  /* ---- 保存先 ---- */
+  function memBackend() {
+    const m = new Map();
+    return { kind: 'memory', get: async k => m.has(k) ? copy(m.get(k)) : null, set: async (k, v) => { m.set(k, copy(v)); }, del: async k => { m.delete(k); } };
+  }
+  function lsBackend(ls, prefix) {
+    prefix = prefix || 'ddxnav_db:';
+    return {
+      kind: 'localStorage',
+      get: async k => { const v = ls.getItem(prefix + k); return v ? JSON.parse(v) : null; },
+      set: async (k, v) => { ls.setItem(prefix + k, JSON.stringify(v)); },   // 容量超過は例外 → 呼び出し側で通知
+      del: async k => { ls.removeItem(prefix + k); }
+    };
+  }
+  function idbBackend(idb, timeoutMs) {
+    return new Promise((resolve, reject) => {
+      const timer = setTimeout(() => reject(new Error('IndexedDB timeout')), timeoutMs || 2000);
+      let rq; try { rq = idb.open('ddxnav', 1); } catch (e) { clearTimeout(timer); reject(e); return; }
+      rq.onupgradeneeded = () => rq.result.createObjectStore('kv');
+      rq.onerror = () => { clearTimeout(timer); reject(rq.error); };
+      rq.onblocked = () => { clearTimeout(timer); reject(new Error('IndexedDB blocked')); };
+      rq.onsuccess = () => {
+        clearTimeout(timer); const db = rq.result;
+        const tx = (mode, fn) => new Promise((ok, ng) => {
+          const t = db.transaction('kv', mode); const r = fn(t.objectStore('kv'));
+          t.oncomplete = () => ok(r.result); t.onerror = t.onabort = () => ng(t.error || new Error('IndexedDB error'));
+        });
+        resolve({ kind: 'indexeddb', get: k => tx('readonly', s => s.get(k)).then(v => v === undefined ? null : v), set: (k, v) => tx('readwrite', s => s.put(copy(v), k)).then(() => { }), del: k => tx('readwrite', s => s.delete(k)).then(() => { }) });
+      };
+    });
+  }
+  async function pickBackend() {
+    try { if (g.indexedDB) return await idbBackend(g.indexedDB); } catch (e) { /* 次へ */ }
+    try { if (g.localStorage) { g.localStorage.setItem('ddxnav_db:probe', '1'); g.localStorage.removeItem('ddxnav_db:probe'); return lsBackend(g.localStorage); } } catch (e) { /* 次へ */ }
+    return memBackend();
+  }
+
+  const P = {
+    MAX, NAME_MAX, FOLDER_MAX,
+    backend: null,
+    index: { v: 1, currentId: null, folders: [], patients: [] },
+    onError: null,   // 書き込み失敗（容量不足など）の通知先
+    memBackend, lsBackend, idbBackend,
+
+    async open(backend) {
+      P.backend = backend || await pickBackend();
+      const idx = await P.backend.get('index');
+      P.index = { v: 1, currentId: null, folders: [], patients: [] };
+      if (idx && Array.isArray(idx.patients)) Object.assign(P.index, idx);
+      if (P.index.currentId && !P.get(P.index.currentId)) P.index.currentId = null;
+      return P;
+    },
+    // 書き込み失敗は onError に通知したうえで reject する。待たない呼び出し（一覧の更新）は quiet() で握りつぶす
+    write(key, value) { return P.backend.set(key, value).catch(e => { if (P.onError) P.onError(e); throw e; }); },
+    persistIndex() { return P.write('index', P.index); },
+    touchIndex() { P.persistIndex().catch(() => { }); },
+
+    /* ---- 患者 ---- */
+    count() { return P.index.patients.length; },
+    full() { return P.count() >= MAX; },
+    get(id) { return P.index.patients.find(p => p.id === id) || null; },
+    current() { return P.get(P.index.currentId); },
+    // folder: 'all' | 'none'（未分類）| フォルダ ID。新しく更新した順
+    list(folder, query) {
+      const q = clean(query, NAME_MAX).toLowerCase();
+      return P.index.patients.filter(p => (!folder || folder === 'all' || (folder === 'none' ? !p.folderId : p.folderId === folder)) && (!q || p.name.toLowerCase().includes(q)))
+        .sort((a, b) => b.updated - a.updated || b.created - a.created || a.name.localeCompare(b.name, 'ja', { numeric: true }));
+    },
+    create(o) {
+      o = o || {};
+      if (P.full()) throw new Error(`登録できるのは ${MAX} 人までです`);
+      const now = Date.now(), n = P.count() + 1;
+      const p = { id: uid('p'), name: clean(o.name, NAME_MAX) || `患者 ${n}`, folderId: P.folder(o.folderId) ? o.folderId : null, created: now, updated: now, context: { age_band: (o.context || {}).age_band || null, sex: (o.context || {}).sex || null }, summary: null, hash: null };
+      P.index.patients.push(p); P.touchIndex();
+      return p;
+    },
+    rename(id, name) { const p = P.get(id), nm = clean(name, NAME_MAX); if (!p || !nm) return false; p.name = nm; P.touchIndex(); return true; },
+    move(id, folderId) { const p = P.get(id); if (!p) return false; p.folderId = P.folder(folderId) ? folderId : null; P.touchIndex(); return true; },
+    async remove(id) {
+      if (!P.get(id)) return false;
+      P.index.patients = P.index.patients.filter(p => p.id !== id);
+      if (P.index.currentId === id) P.index.currentId = null;
+      await Promise.all([P.backend.del('pt:' + id), P.persistIndex()]);
+      return true;
+    },
+    setCurrent(id) { P.index.currentId = P.get(id) ? id : null; P.touchIndex(); },
+    loadData(id) { return P.backend.get('pt:' + id); },
+    // data = { state, labValues, draft }。meta = { hash, summary }。内容（hash）が変わったときだけ更新日時を進める
+    saveData(id, data, meta) {
+      const p = P.get(id); if (!p) return Promise.resolve(false);
+      meta = meta || {};
+      if (meta.hash !== undefined && meta.hash !== p.hash) { if (p.hash !== null || (data.state && data.state.observations && data.state.observations.length)) p.updated = Date.now(); p.hash = meta.hash; }
+      if (meta.summary !== undefined) p.summary = meta.summary;
+      const c = data.state && data.state.context; if (c) p.context = { age_band: c.age_band || null, sex: c.sex || null };
+      return Promise.all([P.write('pt:' + id, data), P.persistIndex()]).then(() => true);
+    },
+
+    /* ---- フォルダ（1 階層） ---- */
+    folder(id) { return id ? P.index.folders.find(f => f.id === id) || null : null; },
+    addFolder(name) {
+      const nm = clean(name, FOLDER_MAX); if (!nm) return null;
+      const ex = P.index.folders.find(f => f.name === nm); if (ex) return ex;
+      const f = { id: uid('f'), name: nm, created: Date.now() }; P.index.folders.push(f); P.touchIndex(); return f;
+    },
+    renameFolder(id, name) { const f = P.folder(id), nm = clean(name, FOLDER_MAX); if (!f || !nm) return false; f.name = nm; P.touchIndex(); return true; },
+    // フォルダを消しても患者は消さない（未分類に移す）
+    removeFolder(id) {
+      if (!P.folder(id)) return false;
+      P.index.folders = P.index.folders.filter(f => f.id !== id);
+      for (const p of P.index.patients) if (p.folderId === id) p.folderId = null;
+      P.touchIndex(); return true;
+    },
+    folderCount(id) { return P.index.patients.filter(p => id === 'none' ? !p.folderId : p.folderId === id).length; },
+
+    /* ---- バックアップ（患者名を含む） ---- */
+    async exportAll() {
+      const patients = [];
+      for (const p of P.index.patients) patients.push(Object.assign(copy(p), { data: await P.loadData(p.id) }));
+      return { app: 'ddx-navigator', kind: 'patients', v: 1, exported_at: new Date().toISOString(), folders: copy(P.index.folders), patients };
+    },
+    // 既存の患者は残し、ファイルの患者を追加する（同じ ID は取り込まない）。上限を超える分は取り込まない
+    async importAll(obj) {
+      if (!obj || obj.app !== 'ddx-navigator' || obj.kind !== 'patients' || !Array.isArray(obj.patients)) throw new Error('DDx Navigator の患者バックアップではありません');
+      const fmap = {};
+      for (const f of obj.folders || []) { const nf = P.addFolder(f && f.name); if (nf && f.id) fmap[f.id] = nf.id; }
+      let added = 0, dup = 0, over = 0;
+      for (const x of obj.patients) {
+        if (!x || typeof x !== 'object') continue;
+        if (x.id && P.get(x.id)) { dup++; continue; }
+        if (P.full()) { over++; continue; }
+        const p = { id: typeof x.id === 'string' && /^p[a-z0-9]{5,}$/.test(x.id) ? x.id : uid('p'), name: clean(x.name, NAME_MAX) || `患者 ${P.count() + 1}`, folderId: fmap[x.folderId] || null,
+          created: +x.created || Date.now(), updated: +x.updated || Date.now(), context: { age_band: (x.context || {}).age_band || null, sex: (x.context || {}).sex || null }, summary: x.summary || null, hash: x.hash || null };
+        P.index.patients.push(p);
+        await P.write('pt:' + p.id, x.data && typeof x.data === 'object' ? x.data : {});
+        added++;
+      }
+      await P.persistIndex();
+      return { added, dup, over };
+    }
+  };
+  DDX.Patients = P;
+})(typeof window !== 'undefined' ? window : globalThis);
+
+</script>
 <script>/* 75_ui_simple.js */
 /* ============================================================
- * Simple UI — フリー入力（音声可）中心の3画面: 入力 / 結果 / 設定
+ * Simple UI — ホーム（患者一覧・フォルダ）と、フリー入力（音声可）中心の 入力 / 結果 / 設定
  *  診断ロジックは持たない。大きな文字・少ない操作。
  * ============================================================ */
 (function (g) {
@@ -5312,7 +5496,9 @@ ${catalogText()}
   const $ = s => document.querySelector(s);
   const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const LS = { get(k, d) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch (e) { return d; } }, set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { } } };
-  const UI = { state: null, last: null, tab: 'input', busy: false, lastAdded: [], pending: null, listening: false, confirmKey: null, demoQueue: null, open: {} };
+  const UI = { state: null, last: null, tab: 'home', busy: false, lastAdded: [], pending: null, listening: false, confirmKey: null, demoQueue: null, open: {}, labValues: {}, draft: '',
+    homeFolder: 'all', homeQuery: '', ptMenu: null, newPt: false, folderEdit: null };
+  const P = () => DDX.Patients;
   DDX.UI = UI;
 
   /* ---------- helpers ---------- */
@@ -5326,7 +5512,15 @@ ${catalogText()}
     return { label: f.label.replace('（部位）', ''), value: v, meta: [o.note, sev && '程度' + sev, timeText(o), tr].filter(Boolean).join(' · '), absent: o.status === 'absent' };
   }
   function toast(msg) { const t = $('#toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(t._t); t._t = setTimeout(() => t.classList.remove('show'), 2000); }
-  function saveCase() { LS.set('ddxnav_case', UI.state.toJSON()); }
+  // 表示中の患者のデータ（症例 state・検査値・下書き）と一覧用の要約を保存する
+  function saveCase() {
+    const Pt = P(), id = Pt.index.currentId; if (!id || !UI.state) return Promise.resolve(false);
+    const r = UI.last, d = r && r.ddx;
+    const summary = d ? { top: d.likely.filter(x => !x.comorbid).slice(0, 3).map(x => x.id), n: d.nObs, alert: r.safety.alerts.filter(a => a.level === 'emergent').length, mnm: r.next.emergency.frame.length } : undefined;
+    return Pt.saveData(id, { state: UI.state.toJSON(), labValues: UI.labValues || {}, draft: UI.draft || '' }, { hash: UI.state.hash(), summary }).catch(() => false);
+  }
+  // 確認が要る操作（削除など）は 2 回押しで実行。4 秒で取り消し
+  function armConfirm(key, rerender) { UI.confirmKey = key; rerender(); setTimeout(() => { if (UI.confirmKey === key) { UI.confirmKey = null; rerender(); } }, 4000); }
   function dLabel(id) { return (KB().disease[id] || {}).label || id; }
   function fLabel(id) { return (KB().feature[id] || {}).label || id; }
   async function recompute(action) {
@@ -5337,14 +5531,15 @@ ${catalogText()}
   UI.recompute = recompute;
 
   /* ---------- render ---------- */
-  function renderAll() { renderTabs(); renderInput(); renderResult(); renderSettings(); }
+  function renderAll() { renderTabs(); renderHome(); renderInput(); renderResult(); renderSettings(); }
   UI.renderAll = renderAll;
   function renderTabs() {
     const em = UI.last ? UI.last.next.emergency.frame.length : 0, al = UI.last ? UI.last.safety.alerts.filter(a => a.level === 'emergent').length : 0;
     document.querySelectorAll('nav.tabs button').forEach(b => { b.classList.toggle('on', b.dataset.tab === UI.tab); const nn = b.querySelector('.n'); if (nn) nn.remove(); if (b.dataset.tab === 'result' && (em || al)) b.insertAdjacentHTML('beforeend', `<span class="n">${al ? '!' : em}</span>`); });
     document.querySelectorAll('section.view').forEach(s => s.classList.toggle('active', s.id === 'view-' + UI.tab));
     const p = $('#pillLLM'); const L = DDX.Extract.LLM;
-    p.textContent = L.ready() ? 'AI: ' + L.label() : 'AI: 未設定（ローカル解析）'; p.className = 'pill ' + (L.ready() ? 'on' : '');
+    p.textContent = L.ready() ? 'AI: ' + L.label() : 'ローカル解析'; p.title = L.ready() ? 'AI 解析: ' + L.label() : 'AI 未設定（ローカル解析で動作中）'; p.className = 'pill ' + (L.ready() ? 'on' : '');
+    const cp = P().current(), pp = $('#pillPt'); pp.textContent = cp ? '👤 ' + cp.name : '患者未選択'; pp.classList.toggle('none', !cp); pp.title = cp ? cp.name : '';
   }
   function bannersHtml() {
     if (!UI.last) return ''; const s = UI.last.safety; let h = '';
@@ -5353,7 +5548,11 @@ ${catalogText()}
     for (const c of s.contradictions) h += `<div class="banner warning"><b>❗ 矛盾の可能性</b><div class="msg">${esc(c.message)}</div></div>`;
     return h;
   }
+  function noPatientHtml() {
+    return `<div class="card"><div class="empty">患者が選ばれていません。<br>ホームで患者を選ぶか、新規登録してください。</div><div class="inputacts"><button class="big primary grow" data-act="quickPt" ${P().full() ? 'disabled' : ''}>＋ 新規患者（呼び名はあとで変更可）</button><button class="big" data-act="goHome">ホームへ</button></div></div>`;
+  }
   function renderInput() {
+    if (!P().current()) { $('#view-input').innerHTML = noPatientHtml(); return; }
     const st = UI.state, c = st.context, kb = KB();
     let h = '';
     h += `<div class="ctxrow"><select data-ctx="age_band" aria-label="年齢帯"><option value="">年齢帯</option>${kb.context.age_band.map(o => `<option value="${o.code}" ${o.code === c.age_band ? 'selected' : ''}>${esc(o.label)}</option>`).join('')}</select><select data-ctx="sex" aria-label="性別"><option value="">性別</option>${kb.context.sex.map(o => `<option value="${o.code}" ${o.code === c.sex ? 'selected' : ''}>${esc(o.label)}</option>`).join('')}</select>${c.sex !== 'male' ? `<select data-ctx="pregnancy" aria-label="妊娠可能性">${kb.context.pregnancy.map(o => `<option value="${o.code}" ${o.code === c.pregnancy ? 'selected' : ''}>${esc(o.label)}</option>`).join('')}</select>` : ''}${c.sex !== 'male' && c.pregnancy !== 'no' ? `<select data-ctx="preg_stage" aria-label="妊娠時期"><option value="">妊娠時期</option>${kb.context.preg_stage.map(o => `<option value="${o.code}" ${o.code === c.preg_stage ? 'selected' : ''}>${esc(o.label)}</option>`).join('')}</select>` : ''}</div>`;
@@ -5413,6 +5612,7 @@ ${catalogText()}
     return h;
   }
   function renderResult() {
+    if (!P().current()) { $('#view-result').innerHTML = noPatientHtml(); return; }
     if (!UI.last) { $('#view-result').innerHTML = ''; return; }
     const d = UI.last.ddx, n = UI.last.next, em = n.emergency, s = UI.last.safety;
     let h = bannersHtml();
@@ -5458,8 +5658,11 @@ ${catalogText()}
       <label class="chk"><input type="checkbox" id="confirmSend" ${L.config.confirm ? 'checked' : ''}> 送信前に除去後の文面を確認する</label>
       <div class="inputacts"><button class="big primary" data-act="saveLLM">保存</button></div>
       <div class="tiny muted">送信するのは除去後の本文と項目カタログだけです。API キーと本文はブラウザから直接、選んだモデルの提供元（Anthropic または OpenAI）に送られ、他のサーバーを経由しません。OpenAI には応答を保存しない指定（store: false）で送ります。選んだモデルのキーが無いときはローカル解析で動きます。</div></div>`;
-    h += `<div class="card"><h2>症例</h2><div class="inputacts"><button class="big ${UI.confirmKey === 'newCase' ? 'danger' : ''}" data-act="newCase">${UI.confirmKey === 'newCase' ? 'もう一度押して新規開始' : '新規症例'}</button><button class="big" data-act="exportCase">症例JSON書き出し</button></div>
-      <label class="lab" style="margin-top:10px">デモ症例（メモを順に入力）</label><select id="demoSel">${DDX.DEMO_TEXT.map((d, i) => `<option value="${i}">${esc(d.label)}</option>`).join('')}</select><div class="inputacts"><button class="big" data-act="demoStart">読み込む</button></div></div>`;
+    const cp = P().current();
+    h += `<div class="card"><h2>表示中の患者 <span class="cnt">${cp ? esc(cp.name) : 'なし'}</span></h2>${cp ? `<div class="inputacts"><button class="big ${UI.confirmKey === 'newCase' ? 'danger' : ''}" data-act="newCase">${UI.confirmKey === 'newCase' ? 'もう一度押して入力を消去' : 'この患者の入力をリセット'}</button><button class="big" data-act="exportCase">症例JSON書き出し</button></div><div class="tiny muted">症例JSONには呼び名を含めません。</div>` : '<div class="tiny muted">ホームで患者を選ぶと、入力のリセットや書き出しができます。</div>'}
+      <label class="lab" style="margin-top:10px">デモ症例（新しい患者として登録し、メモを順に入力）</label><select id="demoSel">${DDX.DEMO_TEXT.map((d, i) => `<option value="${i}">${esc(d.label)}</option>`).join('')}</select><div class="inputacts"><button class="big" data-act="demoStart" ${P().full() ? 'disabled' : ''}>読み込む</button></div></div>`;
+    h += `<div class="card"><h2>患者データの控え <span class="cnt">${P().count()} / ${P().MAX} 人</span></h2><div class="inputacts"><button class="big" data-act="exportAll" ${P().count() ? '' : 'disabled'}>全患者を書き出し</button><button class="big" data-act="importAll">控えから取り込み</button><input type="file" id="importFile" accept="application/json,.json" hidden></div>
+      <div class="tiny muted">書き出したファイルには患者の呼び名が含まれます。取り扱いに注意してください。取り込みは今の患者を残したまま追加します（同じ患者と上限 ${P().MAX} 人を超える分は取り込みません）。</div></div>`;
     h += `<div class="card"><h2>記録・根拠</h2><div class="small">監査ログ ${DDX.Audit.list().length} 件 · 根拠文献 ${KB().evidence.length} 件（感度+特異度を文献値で ${cov.with_values || 0} / 感度のみ ${cov.partial || 0} / 全 ${cov.total || 0} 関係）</div>
       <div class="inputacts"><button class="big" data-act="exportLog">ログ書き出し</button><button class="big danger" data-act="clearLog">${UI.confirmKey === 'clearLog' ? 'もう一度押して消去' : 'ログ消去'}</button></div>
       <details class="small" style="margin-top:8px"><summary>根拠文献一覧</summary>${KB().evidence.map(e => `<div class="log"><a href="${esc(e.url)}" target="_blank" rel="noopener">${esc(e.title)}</a> — ${esc(e.journal)} ${e.year}, ${esc(e.population)}, N=${e.n}</div>`).join('')}</details>
@@ -5548,20 +5751,104 @@ ${catalogText()}
     UI.listening = true; renderInput(); try { rec.start(); } catch (e) { UI.listening = false; renderInput(); toast('音声入力を開始できません'); }
   }
 
+  /* ---------- ホーム（患者一覧・フォルダ） ---------- */
+  function fmtTime(t) { const d = new Date(t), pad = n => String(n).padStart(2, '0'); return (d.toDateString() === new Date().toDateString() ? '今日 ' : `${d.getMonth() + 1}/${d.getDate()} `) + `${pad(d.getHours())}:${pad(d.getMinutes())}`; }
+  function ctxLabel(c) { const kb = KB(), lab = (list, code) => code ? (list.find(o => o.code === code) || {}).label || '' : ''; return [lab(kb.context.age_band, c && c.age_band), lab(kb.context.sex, c && c.sex)].filter(Boolean).join('・'); }
+  function folderOptions(sel) { return `<option value="" ${sel ? '' : 'selected'}>未分類</option>` + P().index.folders.map(f => `<option value="${f.id}" ${f.id === sel ? 'selected' : ''}>${esc(f.name)}</option>`).join(''); }
+  function ptRowHtml(p) {
+    const Pt = P(), cur = p.id === Pt.index.currentId, s = p.summary, f = Pt.folder(p.folderId);
+    const dx = s && s.n && s.top && s.top.length ? `1位 ${esc(dLabel(s.top[0]))}` : '未入力';
+    const flag = s && s.alert ? ` <span class="badge emergent">🚨 ${s.alert}</span>` : s && s.n && s.mnm ? ` <span class="badge open">除外待ち ${s.mnm}</span>` : '';
+    const sub = [ctxLabel(p.context), f ? '📁 ' + f.name : '', s && s.n ? '入力 ' + s.n + ' 件' : '', '更新 ' + fmtTime(p.updated)].filter(Boolean).join(' · ');
+    let h = `<div class="pt ${cur ? 'cur' : ''}" data-hopen="${p.id}"><div class="grow"><div class="pn">${esc(p.name)}${cur ? ' <span class="badge high">表示中</span>' : ''}</div><div class="sub">${esc(sub)}</div><div class="dx1">${dx}${flag}</div></div><button class="ghost" data-hmenu="${p.id}" aria-label="${esc(p.name)} の操作" aria-expanded="${UI.ptMenu === p.id}">⋯</button></div>`;
+    if (UI.ptMenu === p.id) h += `<div class="ptmenu"><label class="lab">呼び名</label><div class="row"><input type="text" id="ptRename" class="grow" value="${esc(p.name)}" maxlength="${Pt.NAME_MAX}" style="width:auto"><button data-act="ptRename" data-id="${p.id}">変更</button></div>
+      <label class="lab">フォルダ</label><select data-ptmove="${p.id}">${folderOptions(p.folderId)}</select>
+      <div class="row"><button class="danger" data-act="ptDelete" data-id="${p.id}">${UI.confirmKey === 'del:' + p.id ? 'もう一度押して削除（元に戻せません）' : 'この患者を削除'}</button></div></div>`;
+    return h;
+  }
+  function ptListHtml() {
+    const list = P().list(UI.homeFolder, UI.homeQuery);
+    if (!list.length) return `<div class="empty">${P().count() ? '該当する患者はいません' : 'まだ患者が登録されていません。<br>「＋ 新規患者」から登録してください。'}</div>`;
+    return list.map(ptRowHtml).join('');
+  }
+  function newPtHtml() {
+    const kb = KB();
+    return `<div class="newpt" style="margin-top:10px"><label class="lab">呼び名（ベッド番号・イニシャルなど。この端末にだけ保存し、AI には送りません）</label><input type="text" id="npName" placeholder="例: 救急3番" maxlength="${P().NAME_MAX}">
+      <div class="grid2"><div><label class="lab">年齢帯</label><select id="npAge"><option value="">未入力</option>${kb.context.age_band.map(o => `<option value="${o.code}">${esc(o.label)}</option>`).join('')}</select></div><div><label class="lab">性別</label><select id="npSex"><option value="">未入力</option>${kb.context.sex.map(o => `<option value="${o.code}">${esc(o.label)}</option>`).join('')}</select></div></div>
+      <label class="lab">フォルダ</label><select id="npFolder">${folderOptions(P().folder(UI.homeFolder) ? UI.homeFolder : '')}</select>
+      <div class="inputacts"><button class="big primary grow" data-act="createPt">登録して入力へ</button><button class="big ghost" data-act="cancelNewPt">取消</button></div></div>`;
+  }
+  function renderHome() {
+    const Pt = P(); if (!Pt.backend) { $('#view-home').innerHTML = ''; return; }
+    const n = Pt.count(), full = Pt.full(), fsel = UI.homeFolder, f = Pt.folder(fsel);
+    let h = `<div class="card"><div class="homehd"><h2 style="margin:0">患者</h2><span class="cnt muted small">${n} / ${Pt.MAX} 人</span><div class="grow"></div><button class="big primary" data-act="newPt" ${full || UI.newPt ? 'disabled' : ''}>＋ 新規患者</button></div>`;
+    if (full) h += `<div class="tiny" style="color:var(--danger);margin-top:6px">上限の ${Pt.MAX} 人に達しています。不要な患者を削除してから登録してください。</div>`;
+    if (UI.newPt && !full) h += newPtHtml();
+    const chip = (id, label, cnt) => `<button class="chip ${fsel === id ? 'sel' : ''}" data-hfolder="${id}">${esc(label)}<span class="n">${cnt}</span></button>`;
+    h += `<div class="fchips" role="tablist" aria-label="フォルダ">${chip('all', 'すべて', n)}${chip('none', '未分類', Pt.folderCount('none'))}${Pt.index.folders.map(x => chip(x.id, '📁 ' + x.name, Pt.folderCount(x.id))).join('')}<button class="chip" data-act="newFolder">＋ フォルダ</button></div>`;
+    if (UI.folderEdit === 'new') h += `<div class="fbar"><input type="text" id="folderName" class="grow" placeholder="フォルダ名（例: 救急外来、病棟5A）" maxlength="${Pt.FOLDER_MAX}" style="width:auto"><button class="primary" data-act="folderCreate">作成</button><button class="ghost" data-act="folderCancel">取消</button></div>`;
+    else if (f && UI.folderEdit === f.id) h += `<div class="fbar"><input type="text" id="folderName" class="grow" value="${esc(f.name)}" maxlength="${Pt.FOLDER_MAX}" style="width:auto"><button class="primary" data-act="folderRename" data-id="${f.id}">変更</button><button class="ghost" data-act="folderCancel">取消</button></div>`;
+    else if (f) h += `<div class="fbar muted"><span>📁 ${esc(f.name)}</span><button class="ghost" data-act="folderEdit" data-id="${f.id}">名前変更</button><button class="ghost" data-act="folderDelete" data-id="${f.id}" style="color:var(--danger)">${UI.confirmKey === 'fdel:' + f.id ? 'もう一度押して削除（患者は未分類へ）' : 'フォルダを削除'}</button></div>`;
+    if (n > 5) h += `<input type="text" id="ptSearch" placeholder="呼び名で検索" value="${esc(UI.homeQuery)}" style="margin-bottom:8px" aria-label="呼び名で検索">`;
+    h += `<div class="ptlist" id="ptList">${ptListHtml()}</div>`;
+    const where = { indexeddb: 'この端末のブラウザ内（IndexedDB）', localStorage: 'この端末のブラウザ内（localStorage）', memory: 'メモリ上だけ（このブラウザでは保存できないため、再読み込みで消えます）' }[Pt.backend.kind];
+    h += `<div class="tiny muted" style="margin-top:10px">患者データは${where}に保存します。呼び名は AI にも監査ログにも送りません。ブラウザのデータ消去などで消えることがあるため、設定の「全患者を書き出し」で控えを取ってください。</div></div>`;
+    $('#view-home').innerHTML = h;
+  }
+
+  /* ---------- 患者の切り替え・登録・削除 ---------- */
+  async function openPatient(id, tab) {
+    const Pt = P(), meta = Pt.get(id); if (!meta) return;
+    if (UI.busy) { toast('解析中は患者を切り替えられません'); return; }
+    if (id !== Pt.index.currentId) await saveCase();
+    const data = (await Pt.loadData(id)) || {};
+    UI.state = data.state ? DDX.ClinicalState.fromJSON(data.state) : new DDX.ClinicalState({ context: Object.assign({}, meta.context, meta.context.sex === 'male' ? { pregnancy: 'no' } : {}) });
+    UI.labValues = data.labValues || {}; UI.draft = data.draft || '';
+    UI.lastAdded = []; UI.lastResult = null; UI.pending = null; UI.demoQueue = null; UI.open = {}; UI.confirmKey = null; UI.ptMenu = null; UI.newPt = false;
+    Pt.setCurrent(id);
+    UI.tab = tab || (UI.state.observations.length ? 'result' : 'input');
+    await recompute('open_patient');
+  }
+  async function createPatient(o) {
+    const Pt = P();
+    if (UI.busy) { toast('解析中は登録できません'); return; }
+    if (Pt.full()) { toast(`登録できるのは ${Pt.MAX} 人までです`); return; }
+    const p = Pt.create(o);
+    const st = new DDX.ClinicalState({ context: Object.assign({}, p.context, p.context.sex === 'male' ? { pregnancy: 'no' } : {}) });
+    await Pt.saveData(p.id, { state: st.toJSON(), labValues: {}, draft: '' }, { hash: st.hash() }).catch(() => false);
+    // 保存を消されにくくする（許可はブラウザが判断。拒否されても動作は同じ）
+    try { if (Pt.count() === 1 && navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => { }); } catch (e) { }
+    toast(`「${p.name}」を登録しました`);
+    await openPatient(p.id, 'input');
+    return p;
+  }
+  async function deletePatient(id) {
+    const Pt = P(); if (UI.busy) { toast('解析中は削除できません'); return; }
+    const wasCurrent = id === Pt.index.currentId, name = (Pt.get(id) || {}).name;
+    await Pt.remove(id).catch(() => false);
+    if (wasCurrent) { UI.state = new DDX.ClinicalState({}); UI.labValues = {}; UI.draft = ''; UI.lastAdded = []; UI.lastResult = null; UI.pending = null; UI.demoQueue = null; UI.open = {}; UI.last = null; }
+    UI.ptMenu = null; UI.confirmKey = null;
+    toast(`「${name}」を削除しました`); renderAll();
+  }
+
   /* ---------- 解析 → 追加 ---------- */
   async function analyze() {
     const text = (($('#freeText') || {}).value || UI.draft || '').trim();
     if (!text) { toast('テキストを入力してください'); return; }
+    if (!P().current()) { toast('先に患者を選んでください'); return; }
     UI.draft = text;
     const L = DDX.Extract.LLM;
     if (L.ready() && L.config.confirm) { UI.pending = { text, scrubbed: DDX.Extract.scrub(text) }; renderInput(); return; }
     await runExtract(text, L.ready());
   }
   async function runExtract(text, useLLM) {
+    const pid = P().index.currentId, st0 = UI.state;
     UI.pending = null; UI.busy = true; renderInput();
     let res;
     try { res = await DDX.Extract.extract(text, { useLLM }); } catch (e) { res = { items: [], context: {}, unmapped: [], llm: { ok: false, error: String(e) } }; }
     UI.busy = false;
+    // 解析中の切り替えは止めているが、万一患者が変わっていたら別の患者に書き込まない
+    if (P().index.currentId !== pid || UI.state !== st0) { toast('患者が切り替わったため、解析結果は追加しませんでした'); renderAll(); return; }
     UI.lastResult = res; UI.lastAdded = [];
     for (const k in res.context) if (res.context[k] && !UI.state.context[k] || (k === 'pregnancy' && UI.state.context.pregnancy === 'unknown')) UI.state.context[k] = res.context[k];
     if (UI.state.context.sex === 'male') UI.state.context.pregnancy = 'no';
@@ -5581,7 +5868,7 @@ ${catalogText()}
   }
 
   /* ---------- demo ---------- */
-  function demoStart(i) { const d = DDX.DEMO_TEXT[i]; if (!d) return; UI.state = new DDX.ClinicalState({}); UI.labValues = {}; UI.demoQueue = { label: d.label, steps: d.steps.slice() }; UI.lastAdded = []; UI.lastResult = null; UI.tab = 'input'; demoNext(); }
+  async function demoStart(i) { const d = DDX.DEMO_TEXT[i]; if (!d) return; const p = await createPatient({ name: 'デモ: ' + d.label }); if (!p) return; UI.demoQueue = { label: d.label, steps: d.steps.slice() }; UI.tab = 'input'; demoNext(); }
   function demoNext() { if (!UI.demoQueue || !UI.demoQueue.steps.length) return; const t = UI.demoQueue.steps.shift(); if (!UI.demoQueue.steps.length) UI.demoQueue = null; UI.draft = t; UI.tab = 'input'; renderAll(); }
 
   /* ---------- events ---------- */
@@ -5589,11 +5876,22 @@ ${catalogText()}
   function bind() {
     document.querySelectorAll('nav.tabs button').forEach(b => b.addEventListener('click', () => { UI.tab = b.dataset.tab; renderTabs(); }));
     $('#sheetWrap .bg').addEventListener('click', () => { if (UI.labs) closeLabs(); else closeBody(); });
-    document.addEventListener('input', e => { if (e.target.id === 'freeText') UI.draft = e.target.value; });
-    document.addEventListener('change', e => { const t = e.target; if (t.dataset.ctx) { UI.state.context[t.dataset.ctx] = t.value || null; if (t.dataset.ctx === 'sex' && t.value === 'male') { UI.state.context.pregnancy = 'no'; UI.state.context.preg_stage = null; } if (t.dataset.ctx === 'pregnancy' && t.value === 'no') UI.state.context.preg_stage = null; if (t.dataset.ctx === 'preg_stage' && (t.value === 'first_tri' || t.value === 'late')) UI.state.context.pregnancy = 'confirmed'; recompute('context'); } });
+    document.addEventListener('input', e => {
+      if (e.target.id === 'freeText') UI.draft = e.target.value;
+      if (e.target.id === 'ptSearch') { UI.homeQuery = e.target.value; $('#ptList').innerHTML = ptListHtml(); }
+    });
+    document.addEventListener('keydown', e => { if (e.key !== 'Enter' || e.isComposing) return; const m = { npName: 'createPt', folderName: UI.folderEdit === 'new' ? 'folderCreate' : 'folderRename', ptRename: 'ptRename' }[e.target.id]; if (m) { e.preventDefault(); const b = document.querySelector(`[data-act="${m}"]`); if (b) b.click(); } });
+    document.addEventListener('change', async e => {
+      const t = e.target;
+      if (t.dataset.ptmove) { P().move(t.dataset.ptmove, t.value || null); toast('フォルダを移しました'); renderHome(); return; }
+      if (t.id === 'importFile' && t.files && t.files[0]) { try { const r = await P().importAll(JSON.parse(await t.files[0].text())); toast(`取り込み ${r.added} 人` + (r.dup ? `・既存 ${r.dup} 人は除外` : '') + (r.over ? `・上限超過 ${r.over} 人は除外` : '')); } catch (err) { toast('取り込めませんでした: ' + (err && err.message || err)); } t.value = ''; renderAll(); return; }
+      if (t.dataset.ctx) { UI.state.context[t.dataset.ctx] = t.value || null; if (t.dataset.ctx === 'sex' && t.value === 'male') { UI.state.context.pregnancy = 'no'; UI.state.context.preg_stage = null; } if (t.dataset.ctx === 'pregnancy' && t.value === 'no') UI.state.context.preg_stage = null; if (t.dataset.ctx === 'preg_stage' && (t.value === 'first_tri' || t.value === 'late')) UI.state.context.pregnancy = 'confirmed'; recompute('context'); } });
     document.addEventListener('toggle', e => { const d = e.target.dataset && e.target.dataset.details; if (d) UI.open[d] = e.target.open; }, true);
     document.addEventListener('click', async e => {
-      const el = e.target.closest('[data-act],[data-toggle],[data-del],[data-qa],[data-ins],[data-bregion],[data-bview],[data-btoggle],[data-lab],[data-key],[data-labchoice]'); if (!el) return; const d = el.dataset;
+      const el = e.target.closest('[data-act],[data-toggle],[data-del],[data-qa],[data-ins],[data-bregion],[data-bview],[data-btoggle],[data-lab],[data-key],[data-labchoice],[data-hopen],[data-hmenu],[data-hfolder]'); if (!el || el.disabled) return; const d = el.dataset;
+      if (d.hmenu) { UI.ptMenu = UI.ptMenu === d.hmenu ? null : d.hmenu; UI.confirmKey = null; renderHome(); return; }
+      if (d.hopen) { await openPatient(d.hopen); return; }
+      if (d.hfolder) { UI.homeFolder = d.hfolder; UI.folderEdit = null; UI.confirmKey = null; renderHome(); return; }
       if (d.toggle) { UI.open[d.toggle] = !UI.open[d.toggle]; renderResult(); return; }
       if (d.del) { UI.state.remove(d.del); UI.lastAdded = UI.lastAdded.filter(x => x !== d.del); recompute('delete'); return; }
       if (d.qa) { quickAnswer(d.qa); return; }
@@ -5620,7 +5918,23 @@ ${catalogText()}
         case 'localOnly': await runExtract(UI.pending.text, false); break;
         case 'cancelSend': UI.pending = null; renderInput(); break;
         case 'saveLLM': { const L = DDX.Extract.LLM; L.config.apiKey = $('#apiKey').value.trim(); L.config.openaiKey = $('#openaiKey').value.trim(); L.config.model = $('#model').value; L.config.confirm = $('#confirmSend').checked; LS.set('ddxnav_llm', { apiKey: L.config.apiKey, openaiKey: L.config.openaiKey, model: L.config.model, confirm: L.config.confirm }); toast(L.ready() ? '保存しました' : `保存しました（${L.vendorName[L.vendor()]} のキーが未入力のためローカル解析）`); renderAll(); break; }
-        case 'newCase': if (UI.confirmKey === 'newCase') { UI.confirmKey = null; UI.state = new DDX.ClinicalState({}); UI.labValues = {}; UI.lastAdded = []; UI.lastResult = null; UI.demoQueue = null; UI.open = {}; UI.draft = ''; recompute('new_case'); UI.tab = 'input'; } else { UI.confirmKey = 'newCase'; renderSettings(); setTimeout(() => { if (UI.confirmKey === 'newCase') { UI.confirmKey = null; renderSettings(); } }, 4000); } break;
+        // 表示中の患者の入力だけを消す（呼び名・フォルダ・年齢帯・性別は残す）
+        case 'newCase': if (!P().current() || UI.busy) break; if (UI.confirmKey === 'newCase') { UI.confirmKey = null; const c = UI.state.context; UI.state = new DDX.ClinicalState({ context: { age_band: c.age_band, sex: c.sex, pregnancy: c.sex === 'male' ? 'no' : 'unknown' } }); UI.labValues = {}; UI.lastAdded = []; UI.lastResult = null; UI.demoQueue = null; UI.open = {}; UI.draft = ''; UI.pending = null; recompute('reset_patient'); UI.tab = 'input'; } else armConfirm('newCase', renderSettings); break;
+        case 'goHome': UI.tab = 'home'; renderAll(); break;
+        case 'newPt': UI.newPt = true; renderHome(); { const i = $('#npName'); if (i) i.focus(); } break;
+        case 'cancelNewPt': UI.newPt = false; renderHome(); break;
+        case 'createPt': await createPatient({ name: $('#npName').value, folderId: $('#npFolder').value || null, context: { age_band: $('#npAge').value || null, sex: $('#npSex').value || null } }); break;
+        case 'quickPt': await createPatient({}); break;
+        case 'newFolder': UI.folderEdit = 'new'; renderHome(); { const i = $('#folderName'); if (i) i.focus(); } break;
+        case 'folderCancel': UI.folderEdit = null; renderHome(); break;
+        case 'folderCreate': { const f = P().addFolder($('#folderName').value); if (!f) { toast('フォルダ名を入力してください'); break; } UI.folderEdit = null; UI.homeFolder = f.id; renderHome(); break; }
+        case 'folderEdit': UI.folderEdit = d.id; renderHome(); { const i = $('#folderName'); if (i) i.focus(); } break;
+        case 'folderRename': if (!P().renameFolder(d.id, $('#folderName').value)) { toast('フォルダ名を入力してください'); break; } UI.folderEdit = null; renderAll(); break;
+        case 'folderDelete': if (UI.confirmKey === 'fdel:' + d.id) { UI.confirmKey = null; P().removeFolder(d.id); UI.homeFolder = 'all'; toast('フォルダを削除しました（患者は未分類へ）'); renderAll(); } else armConfirm('fdel:' + d.id, renderHome); break;
+        case 'ptRename': if (!P().rename(d.id, $('#ptRename').value)) { toast('呼び名を入力してください'); break; } UI.ptMenu = null; renderAll(); break;
+        case 'ptDelete': if (UI.confirmKey === 'del:' + d.id) await deletePatient(d.id); else armConfirm('del:' + d.id, renderHome); break;
+        case 'exportAll': { const x = await P().exportAll(); const ts = new Date().toISOString().slice(0, 16).replace(/[-:T]/g, ''); download(`ddx_patients_${ts}.json`, JSON.stringify(x)); break; }
+        case 'importAll': $('#importFile').click(); break;
         case 'exportCase': download(`ddx_case_${UI.state.case_token}.json`, JSON.stringify(UI.state.toJSON(), null, 2)); break;
         case 'exportLog': download('ddx_audit_log.json', DDX.Audit.export()); break;
         case 'clearLog': if (UI.confirmKey === 'clearLog') { UI.confirmKey = null; DDX.Audit.clear(); renderSettings(); } else { UI.confirmKey = 'clearLog'; renderSettings(); setTimeout(() => { if (UI.confirmKey === 'clearLog') { UI.confirmKey = null; renderSettings(); } }, 4000); } break;
@@ -5629,11 +5943,20 @@ ${catalogText()}
       }
     });
   }
-  UI.init = function () {
-    const saved = LS.get('ddxnav_case', null);
-    UI.state = saved ? DDX.ClinicalState.fromJSON(saved) : new DDX.ClinicalState({});
+  UI.init = async function () {
     const lc = LS.get('ddxnav_llm', null); if (lc) Object.assign(DDX.Extract.LLM.config, lc);
-    bind(); recompute('boot');
+    UI.state = new DDX.ClinicalState({});
+    bind();
+    const Pt = P(); Pt.onError = err => toast('保存できませんでした（容量不足の可能性）: ' + (err && err.message || err));
+    await Pt.open();
+    // 旧版（患者管理なし）で保存していた症例を最初の患者として引き継ぐ
+    const old = LS.get('ddxnav_case', null);
+    let migrated = !(old && old.observations && old.observations.length);
+    if (!migrated) { try { const p = Pt.create({ name: '以前の症例' }); await Pt.saveData(p.id, { state: old, labValues: {}, draft: '' }, {}); Pt.setCurrent(p.id); migrated = true; } catch (e) { console.warn(e); } }
+    if (migrated) { try { localStorage.removeItem('ddxnav_case'); } catch (e) { } }
+    if (Pt.current()) await openPatient(Pt.index.currentId, 'home'); else { UI.tab = 'home'; await recompute('boot'); }
+    // 画面を離れるときに下書きも保存する
+    document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') saveCase(); });
   };
 })(typeof window !== 'undefined' ? window : globalThis);
 
